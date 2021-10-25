@@ -1,5 +1,5 @@
-Package: certetemplate
-Title: A Certe R Package for ...
+Package: certeprojects
+Title: A Certe R Package for Department Projects
 Version: 0.0.1
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
@@ -16,11 +16,21 @@ Authors@R: c(
          email = "e.dijkstra@certe.nl"),
   person(given = "Certe Medical Diagnostics & Advice Foundation",
          role = c("cph", "fnd")))
-Description: A Certe R Package for ... .
+Description: A Certe R Package with functions to automate department projects
+  using Shiny, MS Teams and Trello.
   This package is part of the 'certedata' universe.
-URL: https://github.com/certe-medical-epidemiology/certetemplate
+URL: https://certe-medical-epidemiology.github.io/certeprojects, https://github.com/certe-medical-epidemiology/certeprojects
 Depends: 
   R (>= 3.6.0)
+Imports:
+  certestyle,
+  dplyr (>= 1.0.0),
+  httr (>= 1.4.0),
+  jsonlite (>= 1.7.2),
+  rstudioapi (>= 0.10),
+  shiny (>= 1.6.0),
+  shinyjs (>= 2.0.0),
+  yaml (>= 2.2.0)
 Suggests: 
   testthat (>= 2.0.0)
 License: GPL-2

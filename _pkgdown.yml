@@ -17,8 +17,8 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-title: "certetemplate"
-url: "https://certe-medical-epidemiology.github.io/certetemplate/"
+title: "certeprojects"
+url: "https://certe-medical-epidemiology.github.io/certeprojects/"
 
 navbar:
   title: "AMR (for R)"
@@ -31,7 +31,7 @@ navbar:
       href: "reference/index.html"
     - text: "Source Code"
       icon: "fab fa-github"
-      href: "https://github.com/certe-medical-epidemiology/certetemplate"
+      href: "https://github.com/certe-medical-epidemiology/certeprojects"
   right:
     - text: "Certe Website"
       icon: "fa-flask"

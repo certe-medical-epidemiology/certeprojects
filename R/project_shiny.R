@@ -1,0 +1,936 @@
+# ===================================================================== #
+#  An R package by Certe:                                               #
+#  https://github.com/certe-medical-epidemiology                        #
+#                                                                       #
+#  Licensed as GPL-v2.0.                                                #
+#                                                                       #
+#  Developed at non-profit organisation Certe Medical Diagnostics &     #
+#  Advice, department of Medical Epidemiology.                          #
+#                                                                       #
+#  This R package is free software; you can freely use and distribute   #
+#  it for both personal and commercial purposes under the terms of the  #
+#  GNU General Public License version 2.0 (GNU GPL-2), as published by  #
+#  the Free Software Foundation.                                        #
+#                                                                       #
+#  We created this package for both routine data analysis and academic  #
+#  research and it was publicly released in the hope that it will be    #
+#  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
+# ===================================================================== #
+
+#' Add Project
+#' @export
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer
+#' @importFrom shinyjs useShinyjs
+#' @importFrom certestyle colourpicker
+#' @rdname project
+project_add <- function() {
+  ui <- fluidPage(
+    useShinyjs(),
+    
+    # keys: 112-123 = F1-F12, date ('new Date()') needed to trigger again:
+    # https://stackoverflow.com/a/44500961/4575331
+    # F4 = accept, F8 = cancel
+    tags$script('$(document).on("keydown", function (e) {
+                if (e.which == 115) {
+                Shiny.onInputChange("create", new Date());
+                } else if (e.which == 119) {
+                Shiny.onInputChange("cancel", new Date());
+                }});
+                $(document).ready(function() {
+                var textbox = document.getElementById("title");
+                textbox.focus();
+                });'),
+    tags$style(paste0(".container-fluid { margin-top: 15px; }
+                      .well { background-color: ", colourpicker("certeblauw3"), "; }
+                      .well label { color: ", colourpicker("certeblauw"), "; }
+                      .form-group { margin-bottom: 5px; }
+                      .well .form-group { margin-bottom: 14px; }
+                      .h2, h2 { color: ", colourpicker("certeblauw"), "; }
+                      certeblauw, .certeblauw { color: ", colourpicker("certeblauw"), "; }
+                      certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
+                      .results_count { margin-left: 10px; }
+                      label[for=title] { font-size: 16px; }
+                      #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw3"), " !important; }
+                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
+    
+    sidebarLayout(
+      sidebarPanel(
+        textInput("title", "Titel", placeholder = ""),
+        textAreaInput("description", "Omschrijving", cols = 1, rows = 2, resize = "vertical"),
+        textAreaInput("checklist", "Taken", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 taak per regel)"),
+        uiOutput("requested_by"),
+        selectInput("priority", "Prioriteit", c("Laag", "Normaal", "Hoog"),
+                    ifelse(as.integer(format(today(), "%u")) %in% c(6:7),
+                           "Hoog", # standaard als je op zaterdag of zondag een kaart maakt
+                           "Normaal")),
+        tags$label("Deadline"),
+        checkboxInput("has_deadline", "Deadline instellen", TRUE),
+        uiOutput("deadline"),
+        textInput("topdesk", "Meldingsnummer TOPDesk", placeholder = ""),
+        br(),
+        br(),
+        actionButton("create", "Aanmaken (F4)", width = "49%", icon = icon("check"), class = "btn-success"),
+        actionButton("cancel", "Annuleren (F8)", width = "49%", icon = icon("ban"), class = "btn-danger"),
+        width = 6),
+      
+      mainPanel(
+        img(src = img_trello(), height = "40px", style = "margin-top: 10px"),
+        checkboxInput("trello_upload", "Uploaden naar Trello.com", TRUE),
+        uiOutput("trello_boards"),
+        uiOutput("trello_settings"),
+        uiOutput("trello_search_select"),
+        hr(),
+        img(src = img_rstudio(), height = "45px"),
+        br(),
+        br(),
+        radioButtons("filetype",
+                     label =  "Bestandstype",
+                     choices =  c("R Markdown", "R", "Beide"),
+                     selected = "",
+                     inline = TRUE,
+                     width = "100%"),
+        checkboxInput("rstudio_projectfile",
+                      label = "RStudio-projectbestand aanmaken en openen",
+                      value = FALSE,
+                      width = "100%"),
+        
+        hr(),
+        width = 6
+      )
+    )
+  )
+  
+  server <- function(input, output, session) {
+    
+    is_active_project <- !is.null(rstudioapi::getActiveProject())
+    
+    output$requested_by <- renderUI({
+      # gebruikers ophalen uit csv; waarden zijn eigenlijk Certe-ID's, maar je ziet namen met functies
+      users <- users_list()
+      if (!is.null(users)) {
+        tagList(
+          selectizeInput("requested_by",
+                         label = "Aanvrager(s)",
+                         choices = users,
+                         multiple = TRUE,
+                         options = list(
+                           # niet-bestaande aanvragers ondersteunen:
+                           create = TRUE,
+                           # maakt nieuw item als je veld verlaat zonder op 'Add ...' te drukken:
+                           createOnBlur = TRUE,
+                           # na kiezen dropdown sluiten:
+                           closeAfterSelect = TRUE))
+        )
+      } else {
+        tagList(
+          textInput("requested_by", "Aanvrager(s)")
+        )
+      }
+    })
+    
+    output$deadline <- renderUI({
+      if (input$has_deadline == TRUE) {
+        tagList(
+          dateInput("deadline", NULL,
+                    value = today() + 14,
+                    min = today(),
+                    format = "DD d MM yyyy",
+                    language = "nl")
+        )
+      }
+    })
+    
+    output$trello_boards <- renderUI({
+      if (input$trello_upload == TRUE) {
+        boards_settings <- trello_credentials("board", item = NULL) %>% strsplit(",") %>% unlist()
+        boards_df <- trello_getboards() %>%
+          filter(closed == FALSE & shortLink %in% boards_settings) %>%
+          select(id, name, shortLink)
+        boards_shortLink <- boards_df %>% pull(shortLink)
+        names(boards_shortLink) <- boards_df %>% pull(name)
+        
+        slct <- selectInput("trello_boards",
+                            label = "Bord",
+                            choices = boards_shortLink,
+                            selected = trello_credentials("board_default"),
+                            multiple = FALSE,
+                            width = "100%")
+        
+        # als er maar 1 bord is, deze select verbergen
+        if (length(boards_shortLink) == 1) {
+          slct <- shinyjs::hidden(slct)
+        }
+        
+        tagList(slct)
+      }
+    })
+    
+    output$trello_settings <- renderUI({
+      if (input$trello_upload == TRUE) {
+        
+        board_selected <- input$trello_boards
+        
+        if (!is.null(board_selected)) {
+          
+          if (length(board_selected) > 1) {
+            board_selected <- board_selected[1]
+          }
+          
+          lists <- trello_getlists(board = board_selected)$id
+          names(lists) <- trello_getlists(board = board_selected)$name
+          
+          members <- trello_getmembers(board = board_selected)$fullName
+          user <- Sys.info()['user']
+          if (user %in% c("5595", "Erwin")) {
+            active <- "Erwin Hassing"
+          } else if (user %in% c("5580", "Matthijs", "msberends")) {
+            active <- "Matthijs Berends"
+          } else {
+            active <- NULL
+          }
+          
+          tagList(
+            selectInput("trello_list",
+                        label = "Lijst",
+                        choices = lists,
+                        selected = lists[3], # 3 = bezig
+                        multiple = FALSE,
+                        width = "100%"),
+            selectizeInput("trello_members",
+                           label = "Data-onderzoeker",
+                           choices = members,
+                           selected = active,
+                           multiple = TRUE,
+                           width = "100%",
+                           options = list(
+                             # niet-bestaande leden niet ondersteunen:
+                             create = FALSE,
+                             createOnBlur = FALSE,
+                             # na kiezen dropdown sluiten:
+                             closeAfterSelect = TRUE)),
+            textAreaInput("trello_comments",
+                          label = "Opmerkingen",
+                          width = "395px",
+                          cols = 1,
+                          rows = 2,
+                          resize = "vertical",
+                          placeholder = ""),
+            searchInput("trello_search",
+                        label = "Gerelateerde kaart(en)",
+                        value = "",
+                        placeholder = "Zoeken in titel/beschrijving/taken...",
+                        btnSearch = icon("search"),
+                        btnReset = icon("remove"),
+                        width = "100%")
+          )
+        }
+      }
+    })
+    
+    
+    output$trello_search_select <- renderUI({
+      if (input$trello_upload == TRUE) {
+        board_selected <- input$trello_boards
+        searchterm <- input$trello_search
+        if (!is.null(searchterm)) { # niet bij opstarten, dan is het NULL. Wordt hierna "".
+          if (!is.null(board_selected)) {
+            if (length(board_selected) > 1) {
+              board_selected <- board_selected[1]
+            }
+            shinyjs::disable("trello_cards")
+            found_cards <- trello_searchcard(searchterm, board = board_selected)
+            shinyjs::enable("trello_cards")
+            if (length(found_cards) > 0) {
+              tagList(
+                selectizeInput("trello_cards",
+                               label = NULL,
+                               choices = found_cards,
+                               multiple = TRUE,
+                               width = "100%",
+                               options = list(
+                                 # niet-bestaande kaarten niet ondersteunen:
+                                 create = FALSE,
+                                 createOnBlur = FALSE,
+                                 # na kiezen dropdown sluiten:
+                                 closeAfterSelect = TRUE)),
+                p(paste(length(found_cards),
+                        if_else(length(found_cards) == 1,
+                                "resultaat",
+                                "resultaten.")),
+                  class = "certeblauw results_count")
+              )
+            }
+          }
+        }
+      }
+    })
+    
+    # OPSLAAN ----
+    observeEvent(input$create, {
+      
+      empty_field <- function(field, value) {
+        if (all(is.null(value)) || length(value) == 0 || value == "") {
+          rstudioapi::showDialog(title = field,
+                                 message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
+          TRUE
+        } else {
+          FALSE
+        }
+      }
+      invalid_title <- function(title) {
+        if (title %like% "[/\\><*|?\"]") {
+          q <- rstudioapi::showQuestion(title = " Titel",
+                                        message = paste("De titel mag de volgende tekens niet bevatten: / \\ | < > * ? \". Vervangen door een streepje (-)?"),
+                                        ok = "OK",
+                                        cancel = "Annuleren")
+          if (q == TRUE) {
+            title <<- gsub("[/\\><*|?\"]+", "-", title)
+            # is invalid?
+            return(FALSE)
+          } else {
+            # is invalid?
+            return(TRUE)
+          }
+        } else {
+          # is invalid?
+          FALSE
+        }
+      }
+      
+      title <- trimws(input$title)
+      title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
+      if (empty_field("Titel", title) || invalid_title(title)) return(invisible())
+      requested_by <- input$requested_by
+      if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
+      filetype <- input$filetype
+      if (empty_field("Bestandstype", filetype)) return(invisible())
+      
+      shinyjs::disable("create")
+      shinyjs::disable("cancel")
+      on.exit(shinyjs::disable("create"))
+      on.exit(shinyjs::disable("cancel"))
+      
+      description <- trimws(input$description)
+      if (!is.null(input$topdesk)) {
+        topdesk <- trimws(input$topdesk)
+        if (topdesk != "") {
+          description <- paste0("TOPDesk-nummer: [",
+                                topdesk,
+                                "](https://topdesk.in.certe.nl/tas/public/ssp/content/search?q=",
+                                topdesk, ")\n\n",
+                                description)
+        }
+      }
+      if (length(description) == 0) {
+        description <- ""
+      }
+      checklist <- input$checklist
+      if (all(is.null(checklist)) | length(checklist) == 0) {
+        checklist <- ""
+      }
+      trello_cards <- input$trello_cards
+      if (all(is.null(trello_cards)) | length(trello_cards) == 0) {
+        trello_cards <- ""
+      }
+      
+      withProgress(message = "Aanmaken...", value = 0, {
+        progress_items <- input$rstudio_projectfile + input$trello_upload + 1 # (+ 1 voor mappen aanmaken)
+        # Trello ----
+        trello_card_id <- NULL
+        if (input$trello_upload == TRUE) {
+          incProgress(1 / progress_items, detail = "Uploaden naar Trello")
+          if (is.null(input$deadline) | input$has_deadline == FALSE) {
+            deadline <- ""
+          } else {
+            deadline <- input$deadline
+          }
+          trello_card_id <- trello_upload(board = input$trello_boards,
+                                          title = input$title,
+                                          member = input$trello_members,
+                                          requested_by = requested_by,
+                                          project_path = "",
+                                          list = input$trello_list,
+                                          prio = input$priority,
+                                          duedate = deadline,
+                                          attachments = trello_cards,
+                                          checklist = checklist %>% strsplit("\n") %>% unlist(),
+                                          desc = description,
+                                          comments = input$trello_comments)
+        }
+        
+        fullpath <- paste0(Sys.getenv("R_PROJECTS"), "/",
+                           trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", input$title)),
+                           ifelse(is.null(trello_card_id), "", paste0(" - p", trello_card_id)))
+        fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
+        
+        header_text <- c(paste0(        '# Titel:            ', input$title),
+                         if_else(!is.null(trello_card_id),
+                                 paste0('# Projectnummer:    p', trello_card_id),
+                                 NA_character_),
+                         if_else(requested_by != "",
+                                 paste0('# Aangevraagd door: ', get_certe_user(requested_by)),
+                                 NA_character_),
+                         paste0(        '# Aangemaakt op:    ', format2(Sys.time(), "d mmmm yyyy H:MM")))
+        
+        incProgress(1 / progress_items, detail = "Map aanmaken")
+        # map maken
+        dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
+        
+        # bestand(en) maken
+        if (input$filetype %in% c("R Markdown", "Beide")) {
+          extension <- 'Rmd'
+          filecontent <- c(
+            '---',
+            paste0('title: "', input$title, '"'),
+            'subtitle:  ""',
+            'author: "`r Sys.getenv(\'R_USERNAME\')`"',
+            'date: "`r sub(\'  \', \' \', format(Sys.Date(), \'%e %B %Y\'))`"',
+            'output:',
+            '  word_document:',
+            '    toc: true',
+            '    toc_depth: 2',
+            '    fig_width: 6.5',
+            '    fig_height: 5',
+            '    fig_caption: true',
+            paste0('    reference_docx: "', templatedoc(type = "refdoc"), '"'),
+            '---',
+            "",
+            '```{r Setup, include = FALSE, message = FALSE}',
+            header_text,
+            "",
+            'knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,',
+            '                      results = "asis", comment = NA, dpi = 600)',
+            "library(certedata)",
+            "",
+            "forceer_data_downloaden <- FALSE",
+            paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ')) & !forceer_data_downloaden) {'),
+            paste0('  data_', trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
+            "} else {",
+            paste0('  data_', trello_card_id, ' <- certedb_getmmb(dates = c(start, stop),'),
+            "                             where  = where(db))",
+            paste0('  export.R(data_', trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
+            "}",
+            "```",
+            "",
+            '# Inleiding',
+            "",
+            '```{r}',
+            "",
+            '```',
+            ""
+          )
+          filename <- paste0(fullpath, "/Analyse",
+                             ifelse(!is.null(trello_card_id),
+                                    paste0(" p", trello_card_id, "."),
+                                    "."),
+                             extension)
+          writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
+                     con = file.path(filename))
+        }
+        if (input$filetype %in% c("R", "Beide")) {
+          extension <- 'R'
+          filecontent <- c(header_text,
+                           "",
+                           "library(certedata)",
+                           paste0('data_', trello_card_id, ' <- certedb_getmmb(dates = c(start, stop),'),
+                           paste0(strrep(" ", nchar(trello_card_id)), '                        where = where(db))'),
+                           paste0("export.R(data_", trello_card_id, ', "data_', trello_card_id, '.rds", card_number = ', trello_card_id, ")"),
+                           paste0('# data_', trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
+                           ""
+          )
+          filename <- paste0(fullpath, "/Analyse",
+                             ifelse(!is.null(trello_card_id),
+                                    paste0(" p", trello_card_id, "."),
+                                    "."),
+                             extension)
+          writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
+                     con = file.path(filename))
+        }
+        
+        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden maken", ""))
+        Sys.sleep(0.1)
+      })
+      
+      message("Project p", trello_card_id, " created.")
+      
+      if (isTRUE(input$rstudio_projectfile)) {
+        # project aanmaken en openen
+        rstudioapi::initializeProject(fullpath)
+        rstudioapi::openProject(fullpath, newSession = TRUE)
+      } else {
+        # bestand openen
+        rstudioapi::navigateToFile(filename)
+      }
+      
+      stopApp()
+    })
+    
+    # ANNULEREN ----
+    observeEvent(input$cancel, {
+      stopApp()
+    })
+  }
+  
+  viewer <- dialogViewer(dialogName = "Nieuw project",
+                         width = 850,
+                         height = 825)
+  
+  suppressMessages(
+    runGadget(app = ui,
+              server = server,
+              viewer = viewer,
+              stopOnCancel = FALSE))
+}
+
+#' @rdname project
+#' @export
+project_edit <- function(card_number = project_get_current_id()) {
+  card_number <- gsub("[^0-9]", "", card_number)
+  if (Sys.getenv("R_PROJECTS") == "") {
+    stop('Environmental variable `R_PROJECTS` for user not set.', call. = FALSE)
+  }
+  
+  if (is.null(card_number) | all(is.na(card_number))) {
+    return(invisible())
+  }
+  
+  library(certedata, warn.conflicts = FALSE, quietly = TRUE)
+  
+  library(shiny)
+  library(shinyWidgets)
+  
+  card_info <- trello_getcards() %>% filter(idShort == card_number) %>% as.list()
+  if (length(card_info$id) == 0) {
+    stop(paste0("Project p", card_number, " not found on Trello"), call. = FALSE)
+  }
+  lists <- trello_getlists()
+  card_status <- lists %>% filter(id == card_info$idList) %>% pull(name)
+  card_comments <- trello_getcomments(card_info$id)
+  if (NROW(card_comments) > 0) {
+    card_comments <- card_comments %>%
+      transmute(by = memberCreator.fullName,
+                date = date,
+                text = data.text)
+  }
+  card_members <- trello_getmembers() %>%
+    filter(id %in% unlist(trello_get_card_property(card_number, "idMembers"))) %>%
+    pull(fullName) %>%
+    paste(collapse = ", ")
+  card_checklist <- trello_getchecklists() %>% filter(idCard == card_info$id) %>% pull(checkItems) %>% .[[1]]
+  
+  ui <- fluidPage(
+    shinyjs::useShinyjs(),
+    
+    # keys: 112-123 = F1-F12, datum ('new Date()') nodig om steeds opnieuw te kunnen triggeren:
+    # https://stackoverflow.com/a/44500961/4575331
+    # F4 = accept, F8 = cancel
+    tags$script('$(document).on("keydown", function (e) {
+                if (e.which == 115) {
+                Shiny.onInputChange("save", new Date());
+                } else if (e.which == 119) {
+                Shiny.onInputChange("cancel", new Date());
+                }});
+                $(document).ready(function() {
+                var textbox = document.getElementById("comment");
+                textbox.focus();
+                });'),
+    tags$style(paste0(".container-fluid { margin-top: 15px; }
+                      .form-group { margin-bottom: 5px; }
+                      .well .form-group { margin-bottom: 14px; }
+                      .h2, h2 { color: ", colourpicker("certeblauw"), "; }
+                      h5 { font-weight: bold }
+                      certeblauw, .certeblauw { color: ", colourpicker("certeblauw"), "; }
+                      certeroze { color: ", colourpicker("certeroze"), "; }
+                      .results_count { margin-left: 10px; }
+                      label[for=title] { font-size: 16px; }
+                      .task input:checked ~ span { text-decoration: line-through; }
+                      .comment { font-style: italic; margin: 0 }
+                      .code { font-family: 'Fira Code', 'Courier New'; font-size: 13px; font-style: normal; color: ", colourpicker("certeblauw"), "; }
+                      p { cursor: default; }
+                      .comment_box { border: 1px solid #dddddd; width: fit-content; border-radius: 10px; padding: 5px; margin-bottom: 10px; background-color: ", colourpicker("certeblauw3"), " }
+                      #save { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw3"), " !important; }
+                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
+    sidebarLayout(
+      sidebarPanel(
+        uiOutput('style_tag'),
+        tags$label("Titel", style = "font-size: 16px;"),
+        HTML(paste0('<p class="last_update">', card_info$name, '</p>')),
+        tags$label("Laatste update"),
+        HTML(paste0('<p class="last_update">',
+                    format2(as.Date(card_info$dateLastActivity), "dddd d mmmm yyyy"),
+                    " (", as.integer(difftime(today(), as.Date(card_info$dateLastActivity), units = "days")), " dgn ~=",
+                    " ", as.integer(difftime(today(), as.Date(card_info$dateLastActivity), units = "weeks")),
+                    " wkn geleden)</p>")),
+        selectInput("status", "Status", choices = lists$name, selected = card_status),
+        tags$label("Deadline"),
+        checkboxInput("has_deadline", "Deadline instellen", value = ifelse(is.na(card_info$due), FALSE, TRUE)),
+        uiOutput("deadline"),
+        textAreaInput("comment", "Nieuwe opmerking", cols = 1, rows = 3, resize = "vertical"),
+        br(),
+        actionButton("save", "Opslaan (F4)", width = "43%", icon = icon("check"), class = "btn-success"),
+        actionButton("cancel", "Annuleren (F8)", width = "43%", icon = icon("ban"), class = "btn-danger"),
+        actionButton('trello_open', NULL, width = "11%", icon = icon("trello"), class = 'btn-primary'),
+        width = 7),
+      
+      mainPanel(
+        uiOutput("tasks_and_comments"),
+        width = 5)
+    )
+  )
+  
+  server <- function(input, output, session) {
+    shinyjs::disable("title")
+    
+    output$deadline <- renderUI({
+      val <- case_when(isTRUE(input$has_deadline) & !is.na(as.Date(card_info$due)) ~ as.Date(card_info$due),
+                       isTRUE(input$has_deadline) ~  today() + 14,
+                       TRUE ~ as.Date(NA_character_))
+      tagList(
+        dateInput("deadline", NULL,
+                  value = val,
+                  format = "DD d MM yyyy",
+                  language = "nl"),
+        checkboxInput("deadline_finished", "Deadline voltooid", value = card_info$dueComplete & !is.na(card_info$due))
+      )
+    })
+    
+    output$tasks_and_comments <- renderUI({
+      desc <- unlist(strsplit(card_info$desc,  "\n\n"))
+      desc <- desc[desc %unlike% "[*].*[*]"] # niet die beginnen en eindigen met *, zoals 'Aangevraagd door' en 'Maplocatie'
+      desc <- paste(gsub("\n", "<br>", desc, fixed = TRUE), collapse = "\n")
+      while (desc %like% "\\[.*\\]\\(.*\\)") {
+        # URLs van markdown naar HTML
+        desc <- sub("(.*)\\[(.*?)\\]\\((.*?)\\)(.*)", '\\1<a href="\\3">\\2</a>\\4', desc)
+      }
+      
+      l <- tagList()
+      
+      if (length(desc) > 0 & desc != "") {
+        l <- tagList(l, h4("Omschrijving"),
+                     HTML(paste0("<p>", desc, "</p>")))
+      }
+      
+      l <- tagList(l, HTML(paste0("<p><b>Data-onderzoeker: </b>", card_members, "</p>")))
+      
+      if (NROW(card_checklist) > 0) {
+        l <- tagList(l, h4("Taken"))
+        for (i in 1:nrow(card_checklist)) {
+          l <- tagList(l,
+                       div(checkboxInput(inputId = card_checklist$id[i],
+                                         label = card_checklist$name[i],
+                                         value = isTRUE(card_checklist$state[i] == "complete"),
+                                         width = "100%"),
+                           class = "task"))
+        }
+      } else {
+        l <- tagList(l, p("Nog geen taken opgegeven."))
+      }
+      l <- tagList(l, textAreaInput("newtasks",
+                                    label = NULL,
+                                    width = "100%",
+                                    cols = 1,
+                                    rows = 1,
+                                    resize = "vertical",
+                                    placeholder = "Nieuwe taak (1 per regel)"))
+      
+      l <- tagList(l, hr())
+      
+      if (NROW(card_comments) > 0) {
+        l <- tagList(l, h4("Opmerkingen"))
+        for (i in 1:nrow(card_comments)) {
+          # code maken van alle '```' dingen; ondersteunt:
+          #
+          # ```test```
+          #
+          # en
+          #
+          # ```r
+          # test
+          # ```
+          comment_text <- gsub("```([a-z]+\\n)?(.*?)(\\n)?```", '<div class="code">\\2</div>', card_comments$text[i])
+          l <- tagList(l,
+                       div(HTML(paste0('<p style="font-weight: bold; font-size: 11px;">', card_comments$by[i], " op ", format2(as.Date(card_comments$date[i]), "ddd d mmm yyyy"), ":</p>")),
+                           HTML(paste0('<p class="comment">', comment_text, "</p>")),
+                           class = "comment_box"))
+        }
+      } else {
+        l <- tagList(l, h5("Geen opmerkingen."))
+      }
+      
+      div(l, style = "height: 580px; overflow: auto;")
+    })
+    
+    output$style_tag <- renderUI({
+      if (input$status == "Bezig") {
+        col1 <- colourpicker("certeblauw")
+        col2 <- colourpicker("certeblauw2")
+        col3 <- colourpicker("certeblauw3")
+      } else if (input$status == "Voltooid") {
+        col1 <- colourpicker("certegroen")
+        col2 <- colourpicker("certegroen2")
+        col3 <- colourpicker("certegroen3")
+      } else if (input$status == "Wachten op een ander") {
+        col1 <- colourpicker("certeroze")
+        col2 <- colourpicker("certeroze2")
+        col3 <- colourpicker("certeroze3")
+      } else {
+        col1 <- colourpicker("certeblauw")
+        col2 <- "#f5f5f5"
+        col3 <- "#f5f5f5"
+      }
+      return(tags$head(tags$style(HTML(paste0(".well { background-color:", col3, "; }
+                                               .well label { color: ", col1, "; }
+                                               .last_update { margin: 0 10px 10px; font-size: 13px; color: ", col1, "; }")))))
+    })
+    
+    # OPSLAAN ----
+    observeEvent(input$save, {
+      shinyjs::disable("save")
+      shinyjs::disable("cancel")
+      
+      if (input$status == card_status & trimws(input$comment) == "" & input$status %unlike% "(wachten|voltooid)") {
+        rstudioapi::showDialog("Status gewijzigd", "Als de status gewijzigd is naar 'wachten op een ander' of 'voltooid', moet een opmerking ingevuld worden.")
+      } else {
+        
+        # status
+        if (input$status != card_status) {
+          trello_movecard(card_id = card_info$id,
+                          list_id = lists %>% filter(name == input$status) %>% pull(id))
+        }
+        
+        # deadline
+        if (input$has_deadline == FALSE) {
+          trello_setdeadline(card_id = card_info$id,
+                             duedate = NULL,
+                             duecomplete = TRUE)
+        } else {
+          trello_setdeadline(card_id = card_info$id,
+                             duedate = clean_Date(input$deadline),
+                             duecomplete = clean_Date(input$deadline_finished))
+        }
+        
+        # comment
+        if (trimws(input$comment) != "") {
+          trello_setcomment(card_id = card_info$id,
+                            comment = input$comment)
+        }
+        
+        # leden
+        # trello_setmembers(card_id = card_info$id,
+        #                   member = input$trello_members)
+        
+        # checklist
+        if (NROW(card_checklist) > 0) {
+          for (i in 1:nrow(card_checklist)) {
+            trello_settask_state(card_id = card_info$id,
+                                 checkitem_id = card_checklist$id[i],
+                                 new_value = input[[card_checklist$id[i]]])
+          }
+        }
+        newtasks <- input$newtasks
+        if (all(is.null(newtasks)) | length(newtasks) == 0) {
+          newtasks <- ""
+        }
+        if (newtasks != "") {
+          trello_addtask(card_id = card_info$id,
+                         new_items_vector = newtasks %>% strsplit("\n") %>% unlist())
+        }
+        
+        stopApp()
+      }
+    })
+    
+    # ANNULEREN ----
+    observeEvent(input$cancel, {
+      stopApp()
+    })
+    
+    # TRELLO OPENEN ----
+    observeEvent(input$trello_open, {
+      browseURL(card_info$url)
+    })
+    
+  }
+  
+  viewer <- dialogViewer(dialogName = paste0("Project aanpassen, projectnummer p", card_number),
+                         width = 800,
+                         height = 620)
+  
+  suppressMessages(
+    runGadget(app = ui,
+              server = server,
+              viewer = viewer,
+              stopOnCancel = FALSE))
+}
+
+users_list <- function() {
+  users <- get_certe_users()
+  if (!is.null(users)) {
+    users_id <- users$id
+    if (!all(is.na(users$job))) {
+      users$job[is.na(users$job) | users$job == ""] <- 'functie onbekend'
+      names(users_id) <- paste0(users$name, ' (', tolower(users$job), ')')
+    } else {
+      names(users_id) <- users$name
+    }
+    users <- users_id
+  }
+  users
+}
+
+img_rstudio <- function() {
+  concat(
+    c("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIE",
+      "lsbHVzdHJhdG9yIDE5LjIuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcn",
+      "Npb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3",
+      "cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHdpZHRoPSIzMDBweCIgaGVpZ2h0PSIxMDBweCIgdmlld0JveD0iMCAwID",
+      "MwMCAxMDAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDMwMCAxMDA7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIH",
+      "R5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojNzRBQURCO30KCS5zdDF7ZmlsbDojNEU0RTRFO30KCS5zdDJ7ZmlsbDojRkZGRkZGO30KPC",
+      "9zdHlsZT4KPGc+Cgk8Y2lyY2xlIGNsYXNzPSJzdDAiIGN4PSI1MSIgY3k9IjQ5LjkiIHI9IjUwIi8+Cgk8Zz4KCQk8cGF0aCBjbGFzcz0ic3",
+      "QxIiBkPSJNMTExLjcsNjQuOGMyLjYsMS43LDYuMywyLjksMTAuMywyLjljNS45LDAsOS40LTMuMSw5LjQtNy42YzAtNC4xLTIuNC02LjYtOC",
+      "40LTguOAoJCQljLTcuMy0yLjctMTEuOC02LjUtMTEuOC0xMi44YzAtNyw1LjgtMTIuMiwxNC41LTEyLjJjNC41LDAsNy45LDEuMSw5LjgsMi",
+      "4ybC0xLjYsNC43Yy0xLjQtMC45LTQuNC0yLjEtOC40LTIuMQoJCQljLTYuMSwwLTguNCwzLjctOC40LDYuN2MwLDQuMiwyLjcsNi4zLDguOS",
+      "w4LjZjNy42LDIuOSwxMS40LDYuNiwxMS40LDEzLjJjMCw2LjktNS4xLDEzLTE1LjYsMTNjLTQuMywwLTktMS4zLTExLjQtMi45CgkJCUwxMT",
+      "EuNyw2NC44eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xNTEuOCwzMS45djcuN2g4LjR2NC41aC04LjR2MTcuNGMwLDQsMS4xLDYuMy",
+      "w0LjQsNi4zYzEuNiwwLDIuNS0wLjEsMy40LTAuNGwwLjMsNC41CgkJCWMtMS4xLDAuNC0yLjksMC44LTUuMiwwLjhjLTIuNywwLTQuOS0wLj",
+      "ktNi4zLTIuNWMtMS42LTEuOC0yLjMtNC43LTIuMy04LjRWNDQuMWgtNXYtNC41aDV2LTZMMTUxLjgsMzEuOXoiLz4KCQk8cGF0aCBjbGFzcz",
+      "0ic3QxIiBkPSJNMTkzLjcsNjNjMCwzLjQsMC4xLDYuMywwLjMsOC44aC01LjJsLTAuMy01LjNoLTAuMWMtMS41LDIuNi00LjksNi0xMC42LD",
+      "ZjLTUuMSwwLTExLjEtMi45LTExLjEtMTQuMVYzOS42CgkJCWg1Ljl2MTcuOGMwLDYuMSwxLjksMTAuMyw3LjIsMTAuM2MzLjksMCw2LjYtMi",
+      "43LDcuNy01LjRjMC4zLTAuOCwwLjUtMS45LDAuNS0zVjM5LjZoNS45VjYzSDE5My43eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMz",
+      "EuMSwyNC42djM4LjljMCwyLjksMC4xLDYuMSwwLjMsOC4zaC01LjJsLTAuMy01LjZoLTAuMmMtMS43LDMuNi01LjYsNi4zLTEwLjgsNi4zCg",
+      "kJCWMtNy44LDAtMTMuOC02LjYtMTMuOC0xNi40Yy0wLjEtMTAuNyw2LjYtMTcuMiwxNC40LTE3LjJjNSwwLDguMiwyLjMsOS43LDQuOWgwLj",
+      "FWMjQuNkgyMzEuMXogTTIyNS40LDUyLjdjMC0wLjctMC4xLTEuNy0wLjMtMi41CgkJCWMtMC45LTMuNy00LjEtNi43LTguNC02LjdjLTYuMS",
+      "wwLTkuNiw1LjMtOS42LDEyLjRjMCw2LjUsMy4zLDExLjksOS41LDExLjljMy45LDAsNy41LTIuNyw4LjYtN2MwLjItMC44LDAuMy0xLjYsMC",
+      "4zLTIuNXYtNS42CgkJCUMyMjUuNSw1Mi43LDIyNS40LDUyLjcsMjI1LjQsNTIuN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjQ3Lj",
+      "QsMzAuNmMwLDItMS40LDMuNi0zLjcsMy42Yy0yLjEsMC0zLjUtMS42LTMuNS0zLjZzMS41LTMuNywzLjctMy43QzI0NiwyNi45LDI0Ny40LD",
+      "I4LjUsMjQ3LjQsMzAuNnoKCQkJIE0yNDAuOSw3MS44VjM5LjZoNS45djMyLjJIMjQwLjl6Ii8+CgkJPHBhdGggY2xhc3M9InN0MSIgZD0iTT",
+      "I4NS42LDU1LjVjMCwxMS45LTguMywxNy4xLTE2LDE3LjFjLTguNiwwLTE1LjQtNi40LTE1LjQtMTYuNmMwLTEwLjcsNy4xLTE3LDE2LTE3Cg",
+      "kJCUMyNzkuNCwzOSwyODUuNiw0NS43LDI4NS42LDU1LjV6IE0yNjAuMSw1NS44YzAsNyw0LDEyLjQsOS43LDEyLjRjNS42LDAsOS44LTUuMy",
+      "w5LjgtMTIuNWMwLTUuNS0yLjctMTIuMy05LjYtMTIuMwoJCQlDMjYzLjEsNDMuNCwyNjAuMSw0OS43LDI2MC4xLDU1Ljh6Ii8+Cgk8L2c+Cg",
+      "k8Zz4KCQk8cGF0aCBjbGFzcz0ic3QyIiBkPSJNNjguMSw2NS45aDUuNHY0LjJoLTguM0w1MS42LDQ5LjVoLTcuM3YxNi4zaDcuMlY3MGgtMT",
+      "h2LTQuMmg2LjFWMjkuN2wtNi4yLTAuOHYtNGMyLjMsMC41LDQuNCwwLjksNi45LDAuOQoJCQljMy44LDAsNy44LTAuOSwxMS42LTAuOWM3Lj",
+      "UsMCwxNC40LDMuNCwxNC40LDExLjdjMCw2LjQtMy44LDEwLjUtOS44LDEyLjJMNjguMSw2NS45eiBNNDQuMiw0NS41bDMuOSwwLjEKCQkJYz",
+      "kuNiwwLjIsMTMuMy0zLjUsMTMuMy04LjRjMC01LjctNC4xLTgtOS40LThjLTIuNSwwLTUsMC4yLTcuOCwwLjVDNDQuMiwyOS43LDQ0LjIsND",
+      "UuNSw0NC4yLDQ1LjV6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg=="))
+}
+
+img_trello <- function() {
+  concat(
+    c("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iODg1cHgiIGhlaW",
+      "dodD0iMjcycHgiIHZpZXdCb3g9IjAgMCA4ODUgMjcyIiB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zy",
+      "IgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPgogICAgPCEtLSBHZW5lcmF0b3I6IFNrZXRjaCA0MSAoMzUzMj",
+      "YpIC0gaHR0cDovL3d3dy5ib2hlbWlhbmNvZGluZy5jb20vc2tldGNoIC0tPgogICAgPHRpdGxlPnRyZWxsby1sb2dvLWJsdWUtZmxhdDwvdG",
+      "l0bGU+CiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCB4MT",
+      "0iNTAlIiB5MT0iMCUiIHgyPSI1MCUiIHkyPSIxMDAlIiBpZD0ibGluZWFyR3JhZGllbnQtMSI+CiAgICAgICAgICAgIDxzdG9wIHN0b3AtY2",
+      "9sb3I9IiMwMDc5QkYiIG9mZnNldD0iMCUiPjwvc3RvcD4KICAgICAgICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzAwNzlCRiIgb2Zmc2V0PS",
+      "IxMDAlIj48L3N0b3A+CiAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDwvZGVmcz4KICAgIDxnIGlkPSJQYWdlLTEiIHN0cm9rZT0ibm",
+      "9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJMb2dvcyIgdHJhbn",
+      "Nmb3JtPSJ0cmFuc2xhdGUoLTUwOS4wMDAwMDAsIC00ODUuMDAwMDAwKSI+CiAgICAgICAgICAgIDxnIGlkPSJHcm91cCIgdHJhbnNmb3JtPS",
+      "J0cmFuc2xhdGUoLTkuMDAwMDAwLCAxLjAwMDAwMCkiPgogICAgICAgICAgICAgICAgPGcgaWQ9IlRyZWxsby1Mb2dvIiB0cmFuc2Zvcm09In",
+      "RyYW5zbGF0ZSg0NjguMDAwMDAwLCAwLjAwMDAwMCkiPgogICAgICAgICAgICAgICAgICAgIDxnIGlkPSJUcmVsbG8tTG9nby0tLUJsdWUtLS",
+      "1GbGF0IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAwMDAwMCwgNDIwLjAwMDAwMCkiPgogICAgICAgICAgICAgICAgICAgICAgICA8ZyBpZD",
+      "0iTG9nbyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTAuMDAwMDAwLCA2NC4wMDAwMDApIj4KICAgICAgICAgICAgICAgICAgICAgICAgICAgID",
+      "xnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUwLjAwMDAwMCwgMS4wMDAwMDApIj4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8cG",
+      "F0aCBkPSJNNjczLjI5MzU0LDE3Ny41ODk1MjUgQzY2MC41MjI4NjgsMTgyLjc5MzE0NyA2NTAuNDQ1Mjc4LDIwMC43NzA4ODEgNjM1LjExOD",
+      "QsMjEwLjk4ODggQzYzNC4xNjgsMjExLjYyMjQgNjMzLjIxNzYsMjExLjkzOTIgNjMyLjU4NCwyMTEuOTM5MiBDNjMxLjMxNjgsMjExLjkzOT",
+      "IgNjI5LjczMjgsMjEwLjY3MiA2MjkuNzMyOCwyMDQuOTY5NiBDNjI5LjczMjgsMTg1LjMyOCA2MzYuMDY4OCwxNzUuODI0IDY0MS40NTQ0LD",
+      "E2MS44ODQ4IEM2NjAuMTQ1NiwxMTMuNDE0NCA2OTIuMTQyNCw3MS45MTM2IDcyMC42NTQ0LDI2LjYxMTIgQzcyMi44NzIsMjMuMTI2NCA3Mj",
+      "QuMTM5MiwxOS4zMjQ4IDcyNC4xMzkyLDE1LjIwNjQgQzcyNC4xMzkyLDExLjcyMTYgNzIyLjg3Miw4Ljg3MDQgNzIxLjI4OCw1LjM4NTYgQz",
+      "cyMC4wMjA4LDIuNTM0NCA3MTQuMzE4NCwwIDcwNy45ODI0LDAgQzcwNC40OTc2LDAgNzAxLjMyOTYsMC4zMTY4IDY5Ny4yMTEyLDAuMzE2OC",
+      "BDNjgyLjMyMTYsMC4zMTY4IDY3OS4xNTM2LDIyLjE3NiA2NzUuNjY4OCwyNy44Nzg0IEM2NTEuOTA4OCw2OC4xMTIgNjI0LjY2NCwxMTcuOD",
+      "Q5NiA2MTAuNzI0OCwxNTMuMDE0NCBDNjA3LjY2ODEwMiwxNjAuODk3NDY0IDYwNC4zNjYzMDksMTY4Ljc4MDUyOCA2MDEuODU2NjMsMTc2Lj",
+      "g3MTAzNCBDNTg4LjA4MTg4MywxODAuODU5ODI2IDU3Ny43NjI0NTQsMjAwLjIyNzY5NyA1NjEuNjIwOCwyMTAuOTg4OCBDNTYwLjY3MDQsMj",
+      "ExLjYyMjQgNTU5LjcyLDIxMS45MzkyIDU1OS4wODY0LDIxMS45MzkyIEM1NTcuODE5MiwyMTEuOTM5MiA1NTYuMjM1MiwyMTAuNjcyIDU1Ni",
+      "4yMzUyLDIwNC45Njk2IEM1NTYuMjM1MiwxODUuMzI4IDU2Mi41NzEyLDE3NS44MjQgNTY3Ljk1NjgsMTYxLjg4NDggQzU4Ni42NDgsMTEzLj",
+      "QxNDQgNjE4LjY0NDgsNzEuOTEzNiA2NDcuMTU2OCwyNi42MTEyIEM2NDkuMzc0NCwyMy4xMjY0IDY1MC42NDE2LDE5LjMyNDggNjUwLjY0MT",
+      "YsMTUuMjA2NCBDNjUwLjY0MTYsMTEuNzIxNiA2NDkuMzc0NCw4Ljg3MDQgNjQ3Ljc5MDQsNS4zODU2IEM2NDYuNTIzMiwyLjUzNDQgNjQwLj",
+      "gyMDgsMCA2MzQuNDg0OCwwIEM2MzEsMCA2MjcuODMyLDAuMzE2OCA2MjMuNzEzNiwwLjMxNjggQzYwOC44MjQsMC4zMTY4IDYwNS42NTYsMj",
+      "IuMTc2IDYwMi4xNzEyLDI3Ljg3ODQgQzU3OC40MTEyLDY4LjExMiA1NTEuMTY2NCwxMTcuODQ5NiA1MzcuMjI3MiwxNTMuMDE0NCBDNTM2Lj",
+      "ExOTAzOCwxNTUuODcyMjkyIDUzNC45Nzg2NjIsMTU4LjczMDE4NSA1MzMuODU1NDk1LDE2MS41OTc5NjIgQzUzMy41MDg2NTksMTYxLjc4Mz",
+      "IxOCA1MzMuMTU0NDc3LDE2MS45ODQxMTQgNTMyLjc5MiwxNjIuMjAxNiBDNTE2LjYzNTIsMTcxLjcwNTYgNTAzLjAxMjgsMTg4LjQ5NiA0OD",
+      "MuMzcxMiwxOTkuOTAwOCBDNDc5LjU2OTYsMjAyLjExODQgNDY3Ljg0OCwyMTAuMzU1MiA0NTguMzQ0LDIxMC4zNTUyIEM0NTYuMTI2NCwyMT",
+      "AuMzU1MiA0NTQuMjI1NiwyMDkuNzIxNiA0NTIuMzI0OCwyMDguNzcxMiBDNDQ5LjQ3MzYsMjA3LjUwNCA0NDYuNjIyNCwyMDEuNDg0OCA0ND",
+      "YuNjIyNCwxOTkuNTg0IEM0NDYuNjIyNCwxOTggNDQ2LjkzOTIsMTk3LjY4MzIgNDUwLjEwNzIsMTk1Ljc4MjQgQzQ3Ny45ODU2LDE3OC45OT",
+      "IgNTAwLjc5NTIsMTU0LjkxNTIgNTIwLjQzNjgsMTMwLjgzODQgQzUyNy43MjMyLDEyMS45NjggNTM3LjIyNzIsMTA0LjU0NCA1MzcuMjI3Mi",
+      "w5MS44NzIgQzUzNy4yMjcyLDgzLjYzNTIgNTM0LjM3Niw3NC4xMzEyIDUyNC41NTUyLDcwLjY0NjQgQzUxNy41ODU2LDY4LjExMiA1MDkuNj",
+      "Y1Niw2Ni44NDQ4IDUwMy4zMjk2LDY2Ljg0NDggQzQ4Ni41MzkyLDY2Ljg0NDggNDc0LjE4NCw3NC40NDggNDY3LjIxNDQsODEuNzM0NCBDND",
+      "YwLjExODk2Miw4OS4zMDkyNTk2IDQ1My4yNTU2OSw5Ny4wODcyNjUgNDQ2Ljg3OTMxLDEwNS4xMzg2ODUgQzQ0MC4yMTcwMDQsOTkuMzg2OD",
+      "Q5NiA0MzAuODE5ODk3LDk2Ljk0MDggNDIxLjkxMiw5Ni45NDA4IEM0MTEuNDU3Niw5Ni45NDA4IDM5MS44MTYsMTA5LjkyOTYgMzgxLjY3OD",
+      "QsMTE3LjUzMjggQzM4MC4wOTQ0LDExOC44IDM3OS4xNDQsMTE5LjQzMzYgMzc4LjUxMDQsMTE5LjQzMzYgQzM3OC4xOTM2LDExOS40MzM2ID",
+      "M3Ny44NzY4LDExOS4xMTY4IDM3Ny44NzY4LDExOC40ODMyIEMzNzcuODc2OCwxMTguMTY2NCAzNzguNTEwNCwxMTUuMzE1MiAzNzguNTEwNC",
+      "wxMTAuMjQ2NCBDMzc4LjUxMDQsMTA1LjgxMTIgMzc3LjU2LDEwMC4xMDg4IDM3My40NDE2LDkzLjEzOTIgQzM3Mi40OTEyLDkxLjU1NTIgMz",
+      "Y2Ljc4ODgsODguMDcwNCAzNTkuODE5Miw4OC4wNzA0IEMzNTEuMjY1Niw4OC4wNzA0IDM0My4zNDU2LDkyLjE4ODggMzQzLjM0NTYsOTYuNj",
+      "I0IEMzNDMuMzQ1Niw5OS43OTIgMzQ2LjE5NjgsMTAxLjA1OTIgMzQ2LjE5NjgsMTAzLjkxMDQgQzM0Ni4xOTY4LDEwNS40OTQ0IDM0NC45Mj",
+      "k2LDExMi43ODA4IDM0My4wMjg4LDExOS43NTA0IEMzMzcuNjQzMiwxNDAuMDI1NiAzMzAuOTkwNCwxNTkuOTg0IDMyNC4wMjA4LDE3OS45ND",
+      "I0IEMzMjAuMjE5MiwxOTEuMDMwNCAzMDcuNTQ3MiwyMDAuODUxMiAzMDcuNTQ3MiwyMTIuODg5NiBDMzA3LjU0NzIsMjE2LjY5MTIgMzEwLj",
+      "A4MTYsMjIxLjc2IDMxMy41NjY0LDIyNS41NjE2IEMzMTkuMjY4OCwyMzEuODk3NiAzMjIuNzUzNiwyMzQuMTE1MiAzMjcuODIyNCwyMzQuMT",
+      "E1MiBDMzMwLjA0LDIzNC4xMTUyIDMzMi41NzQ0LDIzMy40ODE2IDMzNC43OTIsMjMxLjU4MDggQzMzOS41NDQsMjI3LjQ2MjQgMzQyLjA3OD",
+      "QsMjIzLjM0NCAzNDMuMzQ1NiwyMTcuNjQxNiBDMzUxLjU4MjQsMTgwLjI1OTIgMzc1LjM0MjQsMTU0LjkxNTIgNDAxLjYzNjgsMTM4LjEyND",
+      "ggQzQxMC41MDcyLDEzMi40MjI0IDQyMi41NDU2LDEyNi40MDMyIDQyNC4xMjk2LDEyNi40MDMyIEM0MjUuNzUzODM5LDEyNi40MDMyIDQyOC",
+      "4yOTQxMDMsMTI3LjE1MjY3NSA0MzAuODUzNzkzLDEyNy44ODMxMTEgQzQyMy41MDM1MjIsMTM5Ljg3MTk2OSA0MTcuNTQ3OTM5LDE1Mi41MT",
+      "UzODYgNDEzLjY3NTIsMTY2LjAwMzIgQzQxMi40MDgsMTcwLjQzODQgNDExLjc3NDQsMTc0LjU1NjggNDExLjc3NDQsMTc4Ljk5MiBDNDExLj",
+      "c3NDQsMTg2LjI3ODQgNDEzLjM1ODQsMTkzLjg4MTYgNDE1Ljg5MjgsMjAxLjE2OCBDNDE5LjM3NzYsMjExLjMwNTYgNDI1LjA4LDIyMC4xNz",
+      "YgNDMzLDIyNC4yOTQ0IEM0NDcuNTcyOCwyMzEuODk3NiA0NTguMDI3MiwyMzYuMDE2IDQ2Ny41MzEyLDIzNi4wMTYgQzQ3Mi45MTY4LDIzNi",
+      "4wMTYgNDc3LjAzNTIsMjM1LjA2NTYgNDgxLjQ3MDQsMjMyLjUzMTIgQzUwMi4yOTI2NzMsMjIwLjc1MDE3NyA1MTUuMDU4ODg0LDIxMS44MT",
+      "I0NyA1MjQuMjc3MTU3LDIwMy44NzM4NDYgQzUyNC41Mjk5MTgsMjExLjkyMjkyMyA1MjYuMTE2NTY2LDIxNi4zODIzMTQgNTMxLjg0MTYsMj",
+      "IyLjM5MzYgQzUzNy41NDQsMjI4LjQxMjggNTQ2LjQxNDQsMjMzLjc5ODQgNTU4LjEzNiwyMzYuMzMyOCBDNTYwLjAzNjgsMjM2LjY0OTYgNT",
+      "YxLjkzNzYsMjM2Ljk2NjQgNTYzLjgzODQsMjM2Ljk2NjQgQzU3Ny4yNDk0OTksMjM2Ljk2NjQgNTkwLjE1NTk0NywyMjYuMDY1OTQxIDYwMC",
+      "4xMDgwNzUsMjE1LjI2MDA0OSBDNjAxLjI2MDM0MiwyMTcuNjE4MDg4IDYwMi45MzQ4LDIxOS44Njg5OCA2MDUuMzM5MiwyMjIuMzkzNiBDNj",
+      "ExLjA0MTYsMjI4LjQxMjggNjE5LjkxMiwyMzMuNzk4NCA2MzEuNjMzNiwyMzYuMzMyOCBDNjMzLjUzNDQsMjM2LjY0OTYgNjM1LjQzNTIsMj",
+      "M2Ljk2NjQgNjM3LjMzNiwyMzYuOTY2NCBDNjUzLjA0NTc2NywyMzYuOTY2NCA2NjguMDYzMDYyLDIyMi4wMDkwMiA2NzguNDUwMzYsMjA5Lj",
+      "c2NzM0NSBDNjgxLjkxMjI4MiwyMTYuOTI3ODQ4IDY5MS41ODY1NDMsMjI0LjAwNzM1MSA3MDMuMjMwNCwyMjkuNjggQzcwNi4zOTg0LDIzMS",
+      "4yNjQgNzEwLjIsMjMyLjIxNDQgNzEzLjY4NDgsMjMyLjIxNDQgQzcyNy4zMDcyLDIzMi4yMTQ0IDczNy4xMjgsMjIxLjEyNjQgNzQ0LjczMT",
+      "IsMjEyLjg4OTYgQzc2NC4zNzI4LDE5MS4zNDcyIDc3NS4xNDQsMTY0LjczNiA3ODMuMzgwOCwxMzEuMTU1MiBDNzg0LjAxNDQsMTI4LjYyMD",
+      "ggNzg0Ljk2NDgsMTI3LjY3MDQgNzg2LjIzMiwxMjcuNjcwNCBDNzg5LjQsMTI3LjY3MDQgNzkzLjUxODQsMTI3LjY3MDQgNzk3Ljk1MzYsMT",
+      "I3LjAzNjggQzgwNi41MDcyLDEyNS43Njk2IDgxMy4xNiwxMjIuOTE4NCA4MjEuMDgsMTIxLjY1MTIgQzgyNS44MzIsMTIwLjcwMDggODI1Lj",
+      "E5ODQsMTE5LjExNjggODI5LjYzMzYsMTE3LjUzMjggQzgzMi44MDE2LDExNi4yNjU2IDgzNS4zMzYsMTE0Ljk5ODQgODM1LjMzNiwxMTEuOD",
+      "MwNCBDODM1LjMzNiwxMDYuNDQ0OCA4MjUuNTE1MiwxMDAuNzQyNCA4MTAuNjI1NiwxMDAuNzQyNCBDNzk4LjkwNCwxMDAuNzQyNCA3OTEuOT",
+      "M0NCwxMDEuNjkyOCA3ODcuMTgyNCwxMDEuNjkyOCBDNzc5Ljg5NiwxMDEuNjkyOCA3NzcuOTk1Miw5OS40NzUyIDc3My4yNDMyLDg3LjEyIE",
+      "M3NzMuMjQzMiw4Ny4xMiA3NzcuOTk1Miw5OS40NzUyIDc3My4yNDMyLDg3LjEyIEM3NzIuMjkyOCw4NC41ODU2IDc3MS4zNDI0LDgzLjMxOD",
+      "QgNzY4LjQ5MTIsODAuNzg0IEM3NjEuODM4NCw3NS4wODE2IDc1My42MDE2LDczLjE4MDggNzQ2Ljk0ODgsNzMuMTgwOCBDNzMxLjEwODgsNz",
+      "MuMTgwOCA3MTcuNDg2NCw4OS4zMzc2IDcwNy45ODI0LDEwMi45NiBDNzA1Ljc2NDgsMTA2LjEyOCA3MDIuNTk2OCwxMDguNjYyNCA3MDAuMz",
+      "c5MiwxMTIuMTQ3MiBDNjg3LjMyOTE4NSwxMzEuNzIyMjIyIDY3NC44MzQ1MTMsMTUzLjc5NjI5IDY3My4yOTM1NCwxNzcuNTg5NTI1IFogTT",
+      "I2OC4yNjQsNjkuNjk2IEMyNzYuMTg0LDY5LjY5NiAyODAuNjE5Miw2OS4wNjI0IDI4MS41Njk2LDY5LjA2MjQgQzI4Mi41Miw2OS4wNjI0ID",
+      "I4My4xNTM2LDY5LjM3OTIgMjgzLjE1MzYsNzAuMzI5NiBDMjgzLjE1MzYsNzAuOTYzMiAyODIuODM2OCw3MS45MTM2IDI4MC42MTkyLDc2Lj",
+      "Y2NTYgQzI2MS4yOTQ0LDExOC4xNjY0IDI0Ny45ODg4LDE2MC4zMDA4IDIzNi4yNjcyLDIwNi44NzA0IEMyMzUuOTUwNCwyMDguMTM3NiAyMz",
+      "UsMjEyLjg4OTYgMjM1LDIxNy42NDE2IEMyMzUsMjIyLjA3NjggMjM2LjI2NzIsMjI2LjgyODggMjQwLjcwMjQsMjI5LjM2MzIgQzI0OS4yNT",
+      "YsMjM0LjQzMiAyNTYuMjI1NiwyMzYuNjQ5NiAyNjAuOTc3NiwyMzYuNjQ5NiBDMjY3Ljk0NzIsMjM2LjY0OTYgMjcxLjQzMiwyMzIuMjE0NC",
+      "AyNzEuNDMyLDIyNC45MjggQzI3MS40MzIsMjE4LjU5MiAyNzEuNzQ4OCwyMTEuOTM5MiAyNzIuNjk5MiwyMDYuODcwNCBDMjgxLjU2OTYsMT",
+      "YwLjMwMDggMjk0Ljg3NTIsMTIzLjg2ODggMzE1LjQ2NzIsODUuODUyOCBDMzI1LjI4OCw2Ny43OTUyIDMyNi41NTUyLDY2Ljg0NDggMzI2Lj",
+      "U1NTIsNjUuMjYwOCBDMzI2LjU1NTIsNjQuNjI3MiAzMjYuMjM4NCw2My42NzY4IDMyNS42MDQ4LDYyLjcyNjQgQzMzOC4yNzY4LDU5Ljg3NT",
+      "IgMzUzLjQ4MzIsNTcuOTc0NCAzNjcuNDIyNCw1Ny45NzQ0IEMzNjkuMDA2NCw1Ny45NzQ0IDM3NS4zNDI0LDYwLjE5MiAzNzYuMjkyOCw2MS",
+      "4xNDI0IEMzNzguNTEwNCw2My4zNiAzODAuNzI4LDY1LjU3NzYgMzg0LjUyOTYsNjUuNTc3NiBDMzg3LjY5NzYsNjUuNTc3NiAzOTMuMDgzMi",
+      "w2My4zNiAzOTQuOTg0LDYyLjA5MjggQzM5OS40MTkyLDU4LjkyNDggNDAxLjYzNjgsNTUuNDQgNDAxLjYzNjgsNDkuNzM3NiBDNDAxLjYzNj",
+      "gsNDQuMzUyIDM4MS42Nzg0LDMxLjA0NjQgMzY3LjczOTIsMzEuMDQ2NCBDMzUwLjYzMiwzMS4wNDY0IDMzNS4xMDg4LDMzLjI2NCAzMjAuNT",
+      "M2LDM2LjExNTIgQzMxNC4yLDM3LjM4MjQgMjkxLjM5MDQsNDAuODY3MiAyNzQuOTE2OCw0MC44NjcyIEMyNTkuMDc2OCw0MC44NjcyIDI2MC",
+      "4wMjcyLDM4LjY0OTYgMjUzLjM3NDQsMzguNjQ5NiBDMjQ5LjU3MjgsMzguNjQ5NiAyNDcuNjcyLDQwLjU1MDQgMjQ2LjA4OCw0Mi4xMzQ0IE",
+      "MyNDQuNTA0LDQzLjcxODQgMjQzLjU1MzYsNTAuMDU0NCAyNDMuNTUzNiw1NS43NTY4IEMyNDMuNTUzNiw1OC42MDggMjQzLjU1MzYsNjAuOD",
+      "I1NiAyNDUuMTM3Niw2Mi43MjY0IEMyNDkuODg5Niw2OC40Mjg4IDI1OS4wNzY4LDY5LjY5NiAyNjguMjY0LDY5LjY5NiBDMjY4LjI2NCw2OS",
+      "42OTYgMjU5LjA3NjgsNjkuNjk2IDI2OC4yNjQsNjkuNjk2IFogTTUwMy4wMTI4LDk1LjM1NjggQzUwMy4wMTI4LDk4LjIwOCA1MDIuMDYyNC",
+      "wxMDAuMTA4OCA0OTguMjYwOCwxMDYuMTI4IEM0OTQuNDU5MiwxMTIuMTQ3MiA0OTYuMDQzMiwxMTIuMTQ3MiA0OTEuMjkxMiwxMTguNDgzMi",
+      "BDNDgyLjEwNCwxMzAuODM4NCA0NzAuNjk5MiwxNDMuMTkzNiA0NTUuODA5NiwxNTYuODE2IEM0NTEuNjkxMiwxNjAuNjE3NiA0NTEuMDU3Ni",
+      "wxNjAuNjE3NiA0NTAuNDI0LDE2MC42MTc2IEM0NTAuMTA3MiwxNjAuNjE3NiA0NDkuNDczNiwxNjAuMzAwOCA0NDkuNDczNiwxNTkuNjY3Mi",
+      "BDNDQ5LjQ3MzYsMTU4LjcxNjggNDQ5Ljc5MDQsMTU3LjQ0OTYgNDUyLjk1ODQsMTUwLjc5NjggQzQ2Mi43NzkyLDEzMC4yMDQ4IDQ3NC44MT",
+      "c2LDExNi41ODI0IDQ4OC4xMjMyLDEwMy4yNzY4IEM0OTUuNDA5Niw5NS45OTA0IDQ5OS44NDQ4LDkzLjQ1NiA1MDEuNDI4OCw5My40NTYgQz",
+      "UwMi4zNzkyLDkzLjQ1NiA1MDMuMDEyOCw5My43NzI4IDUwMy4wMTI4LDk1LjM1NjggQzUwMy4wMTI4LDk1LjM1NjggNTAzLjAxMjgsOTMuNz",
+      "cyOCA1MDMuMDEyOCw5NS4zNTY4IFogTTc0Ni42MzIsMTAzLjU5MzYgQzc0Ni45NDg4LDEwMy41OTM2IDc0Ny4yNjU2LDEwMy45MTA0IDc0Ny",
+      "41ODI0LDEwNC41NDQgQzc0Ny44OTkyLDEwNS40OTQ0IDc0OC41MzI4LDEwNi40NDQ4IDc1MC4xMTY4LDEwNy43MTIgQzc1MS4zODQsMTA4Lj",
+      "Y2MjQgNzUxLjM4NCwxMTMuMDk3NiA3NTEuMzg0LDExNi41ODI0IEM3NTEuMzg0LDE0Ny4zMTIgNzMzLjk2LDE3Mi42NTYgNzE2Ljg1MjgsMT",
+      "k4LjMxNjggQzcxMy4wNTEyLDIwNC4wMTkyIDcxMC44MzM2LDIwNC45Njk2IDcwOC45MzI4LDIwNC45Njk2IEM3MDcuMzQ4OCwyMDQuOTY5Ni",
+      "A3MDQuODE0NCwyMDAuODUxMiA3MDMuODY0LDE5OC4zMTY4IEM3MDIuNTk2OCwxOTQuODMyIDcwMi4yOCwxOTAuNzEzNiA3MDIuMjgsMTg5Lj",
+      "EyOTYgQzcwMi4yOCwxNjQuNDE5MiA3MjUuNzIzMiwxMjcuNjcwNCA3NDEuMjQ2NCwxMDcuMzk1MiBDNzQzLjc4MDgsMTAzLjkxMDQgNzQ1Lj",
+      "Y4MTYsMTAzLjU5MzYgNzQ2LjYzMiwxMDMuNTkzNiBDNzQ2LjYzMiwxMDMuNTkzNiA3NDUuNjgxNiwxMDMuNTkzNiA3NDYuNjMyLDEwMy41OT",
+      "M2IFoiIGlkPSJUeXBlIiBmaWxsPSIjMDA3OUJGIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPGcgaWQ9Ik1hcm",
+      "siIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMDAwMDAwLCAzNS4wMDAwMDApIj4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC",
+      "AgPHJlY3QgaWQ9IkJvYXJkIiBmaWxsPSJ1cmwoI2xpbmVhckdyYWRpZW50LTEpIiB4PSIwIiB5PSIwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9Ij",
+      "IwMCIgcng9IjI1Ij48L3JlY3Q+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJSaWdodC1MaXN0IiBmaW",
+      "xsPSIjRkZGRkZGIiB4PSIxMTMiIHk9IjI2IiB3aWR0aD0iNjEiIGhlaWdodD0iODcuNSIgcng9IjEyIj48L3JlY3Q+CiAgICAgICAgICAgIC",
+      "AgICAgICAgICAgICAgICAgICAgICAgIDxyZWN0IGlkPSJMZWZ0LUxpc3QiIGZpbGw9IiNGRkZGRkYiIHg9IjI2IiB5PSIyNiIgd2lkdGg9Ij",
+      "YxIiBoZWlnaHQ9IjEzNy41IiByeD0iMTIiPjwvcmVjdD4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2c+CiAgICAgICAgIC",
+      "AgICAgICAgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgICAgICAgICAgICAgIDwvZz4KICAgICAgICAgICAgICAgICAgICA8L2c+CiAgIC",
+      "AgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgIDwvZz4KICAgICAgICA8L2c+CiAgICA8L2c+Cjwvc3ZnPg=="))
+}

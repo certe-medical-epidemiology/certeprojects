@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • certeprojects</title>
+<title>Add Project — project_add • certeprojects</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,8 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Add Project — project_add" />
+<meta property="og:description" content="Add Project" />
 <meta property="og:image" content="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" />
 
 
@@ -66,7 +67,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -126,54 +127,24 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Add Project</h1>
+    <small class="dont-index">Source: <a href='https://github.com/certe-medical-epidemiology/certeprojects/blob/master/R/project_shiny.R'><code>R/project_shiny.R</code></a></small>
+    <div class="hidden name"><code>project.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Add Project</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='fu'>project_add</span><span class='op'>(</span><span class='op'>)</span>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="project.html">project_add()</a></code> <code><a href="project.html">project_edit()</a></code> </p>
-        </td>
-        <td><p>Add Project</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="project_properties.html">project_get_current_id()</a></code> <code><a href="project_properties.html">project_get_folder()</a></code> <code><a href="project_properties.html">project_get_folder_full()</a></code> <code><a href="project_properties.html">project_get_title()</a></code> <code><a href="project_properties.html">project_get_file()</a></code> <code><a href="project_properties.html">project_set_file()</a></code> <code><a href="project_properties.html">project_open_analysis_file()</a></code> </p>
-        </td>
-        <td><p>Project Properties</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="trello.html">trello_upload()</a></code> <code><a href="trello.html">trello_credentials()</a></code> <code><a href="trello.html">trello_getboards()</a></code> <code><a href="trello.html">trello_getlists()</a></code> <code><a href="trello.html">trello_getmembers()</a></code> <code><a href="trello.html">trello_getcards()</a></code> <code><a href="trello.html">trello_getlabels()</a></code> <code><a href="trello.html">trello_getcustomfields()</a></code> <code><a href="trello.html">trello_getchecklists()</a></code> <code><a href="trello.html">trello_getcomments()</a></code> <code><a href="trello.html">trello_searchcard()</a></code> <code><a href="trello.html">trello_openboard()</a></code> <code><a href="trello.html">trello_opencard()</a></code> <code><a href="trello.html">trello_get_card_property()</a></code> <code><a href="trello.html">trello_get_card_id()</a></code> <code><a href="trello.html">trello_setcomment()</a></code> <code><a href="trello.html">trello_setdeadline()</a></code> <code><a href="trello.html">trello_addtask()</a></code> <code><a href="trello.html">trello_settask_state()</a></code> <code><a href="trello.html">trello_movecard()</a></code> </p>
-        </td>
-        <td><p>Work with Trello Cards</p></td>
-      </tr>
-    </tbody>
-    </table>
+<span class='fu'>project_edit</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'><a href='project_properties.html'>project_get_current_id</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></pre>
+
+
+
   </div>
-
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>

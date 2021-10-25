@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • certeprojects</title>
+<title>Project Properties — project_properties • certeprojects</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,8 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Project Properties — project_properties" />
+<meta property="og:description" content="Retrieve project properties, such as the title, folder location and Trello card number." />
 <meta property="og:image" content="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" />
 
 
@@ -66,7 +67,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -126,54 +127,58 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Project Properties</h1>
+    <small class="dont-index">Source: <a href='https://github.com/certe-medical-epidemiology/certeprojects/blob/master/R/project_properties.R'><code>R/project_properties.R</code></a></small>
+    <div class="hidden name"><code>project_properties.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Retrieve project properties, such as the title, folder location and Trello card number.</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='fu'>project_get_current_id</span><span class='op'>(</span>ask <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="project.html">project_add()</a></code> <code><a href="project.html">project_edit()</a></code> </p>
-        </td>
-        <td><p>Add Project</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="project_properties.html">project_get_current_id()</a></code> <code><a href="project_properties.html">project_get_folder()</a></code> <code><a href="project_properties.html">project_get_folder_full()</a></code> <code><a href="project_properties.html">project_get_title()</a></code> <code><a href="project_properties.html">project_get_file()</a></code> <code><a href="project_properties.html">project_set_file()</a></code> <code><a href="project_properties.html">project_open_analysis_file()</a></code> </p>
-        </td>
-        <td><p>Project Properties</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="trello.html">trello_upload()</a></code> <code><a href="trello.html">trello_credentials()</a></code> <code><a href="trello.html">trello_getboards()</a></code> <code><a href="trello.html">trello_getlists()</a></code> <code><a href="trello.html">trello_getmembers()</a></code> <code><a href="trello.html">trello_getcards()</a></code> <code><a href="trello.html">trello_getlabels()</a></code> <code><a href="trello.html">trello_getcustomfields()</a></code> <code><a href="trello.html">trello_getchecklists()</a></code> <code><a href="trello.html">trello_getcomments()</a></code> <code><a href="trello.html">trello_searchcard()</a></code> <code><a href="trello.html">trello_openboard()</a></code> <code><a href="trello.html">trello_opencard()</a></code> <code><a href="trello.html">trello_get_card_property()</a></code> <code><a href="trello.html">trello_get_card_id()</a></code> <code><a href="trello.html">trello_setcomment()</a></code> <code><a href="trello.html">trello_setdeadline()</a></code> <code><a href="trello.html">trello_addtask()</a></code> <code><a href="trello.html">trello_settask_state()</a></code> <code><a href="trello.html">trello_movecard()</a></code> </p>
-        </td>
-        <td><p>Work with Trello Cards</p></td>
-      </tr>
-    </tbody>
+<span class='fu'>project_get_folder</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='fu'>project_get_folder_full</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='fu'>project_get_title</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='fu'>project_get_file</span><span class='op'>(</span>
+  <span class='va'>filename</span>,
+  card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span><span class='op'>)</span>,
+  fixed <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span>
+
+<span class='fu'>project_set_file</span><span class='op'>(</span><span class='va'>filename</span>, card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='fu'>project_open_analysis_file</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'>project_get_current_id</span><span class='op'>(</span>ask <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span></pre>
+
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>ask</th>
+      <td><p>logical to indicate whether the project number should always be asked</p></td>
+    </tr>
+    <tr>
+      <th>card_number</th>
+      <td><p>Trello card number</p></td>
+    </tr>
+    <tr>
+      <th>filename</th>
+      <td><p>filename to set or get</p></td>
+    </tr>
+    <tr>
+      <th>fixed</th>
+      <td><p>logical to turn off regular expressions</p></td>
+    </tr>
     </table>
-  </div>
 
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>

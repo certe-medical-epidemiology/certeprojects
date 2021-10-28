@@ -44,6 +44,12 @@ jobs:
           extra-packages: pkgdown
           needs: website
 
+      - name: Generate Dutch locale for website examples
+        run: |
+          sudo locale-gen nl_NL
+          sudo locale-gen nl_NL.UTF-8
+          sudo update-locale
+
       - name: Deploy package
         run: |
           git config --local user.name "$GITHUB_ACTOR"

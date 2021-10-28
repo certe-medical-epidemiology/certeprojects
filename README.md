@@ -5,7 +5,7 @@
 [![R-CMD-check](https://github.com/certe-medical-epidemiology/certeprojects/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/certe-medical-epidemiology/certeprojects/actions/workflows/R-CMD-check.yaml)
 [![CodeFactor](https://www.codefactor.io/repository/github/certe-medical-epidemiology/certeprojects/badge/main)](https://www.codefactor.io/repository/github/certe-medical-epidemiology/certeprojects/overview/main)
 
-<img src="./logo.svg" height="150px" />
+<img src="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" alt="The certeprojects R package" style="width: 181px; height: 209px;">
 
 ### General Information
 
@@ -26,6 +26,30 @@ options(repos = c(
 # our 'loader package' certedata installs all Certe R packages:
 install.packages("certedata")
 ```
+
+<div style="position: relative; height: 275px;">
+  <a href="https://certe-medical-epidemiology.github.io/certedata/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certedata/logo.svg" alt="The certedata R package" style="position: absolute; left: 0px; top: 0px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certestyle/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certestyle/logo.svg" alt="The certestyle R package" style="position: absolute; left: 135px; top: 0px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certetoolbox/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certetoolbox/logo.svg" alt="The certetoolbox R package" style="position: absolute; left: 270px; top: 0px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certemail/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certemail/logo.svg" alt="The certemail R package" style="position: absolute; left: 405px; top: 0px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certeprojects/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" alt="The certeprojects R package" style="position: absolute; left: 67.5px; top: 122px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certedb/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certedb/logo.svg" alt="The certedb R package" style="position: absolute; left: 202.5px; top: 122px; width: 136px; height: 156px;">
+  </a>
+  <a href="https://certe-medical-epidemiology.github.io/certeplot2/" target="_blank">
+    <img src="https://certe-medical-epidemiology.github.io/certeplot2/logo.svg" alt="The certeplot2 R package" style="position: absolute; left: 337.5px; top: 122px; width: 136px; height: 156px;">
+  </a>
+</div>
 
 ### Copyright regarding this software
 

@@ -5,6 +5,7 @@
 \alias{trello_upload}
 \alias{trello_credentials}
 \alias{trello_getboards}
+\alias{trello_getboardname}
 \alias{trello_getlists}
 \alias{trello_getmembers}
 \alias{trello_getcards}
@@ -47,6 +48,13 @@ trello_upload(
 trello_credentials(x = c("member", "key", "token"))
 
 trello_getboards(
+  username = trello_credentials("member"),
+  key = trello_credentials("key"),
+  token = trello_credentials("token")
+)
+
+trello_getboardname(
+  board = read_secret("trello.default.board"),
   username = trello_credentials("member"),
   key = trello_credentials("key"),
   token = trello_credentials("token")

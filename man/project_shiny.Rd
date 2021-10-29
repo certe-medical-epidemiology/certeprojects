@@ -5,13 +5,31 @@
 \alias{project_edit}
 \title{Add Project Using Shiny}
 \usage{
-project_add()
+project_add(
+  board = read_secret("trello.default.board"),
+  username = trello_credentials("member"),
+  key = trello_credentials("key"),
+  token = trello_credentials("token")
+)
 
-project_edit(card_number = project_get_current_id())
+project_edit(
+  card_number = project_get_current_id(ask = TRUE),
+  board = read_secret("trello.default.board"),
+  key = trello_credentials("key"),
+  token = trello_credentials("token")
+)
 }
 \arguments{
+\item{board}{Trello board}
+
+\item{username}{Trello username}
+
+\item{key}{Trello API key}
+
+\item{token}{Trello API token}
+
 \item{card_number}{Trello card number}
 }
 \description{
-This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello.
+This is a Shiny app to add a new project: it creates a project folder, generates the required R files and uploads a new card to Trello. They come with RStudio addins to quickly access existing projects.
 }

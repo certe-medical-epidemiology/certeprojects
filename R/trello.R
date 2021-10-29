@@ -239,6 +239,16 @@ trello_getboards <- function(username = trello_credentials("member"),
 
 #' @rdname trello
 #' @export
+trello_getboardname <- function(board = read_secret("trello.default.board"),
+                                username = trello_credentials("member"),
+                                key = trello_credentials("key"),
+                                token = trello_credentials("token")) {
+  boards <- trello_getboards(username = username, key = key, token = token)
+  boards$name[which(boards$id == board | boards$shortLink == board)][1]
+}
+
+#' @rdname trello
+#' @export
 trello_getlists <- function(board = read_secret("trello.default.board"),
                             key = trello_credentials("key"),
                             token = trello_credentials("token")) {
@@ -356,7 +366,7 @@ trello_openboard <- function(board = read_secret("trello.default.board")) {
 #' @rdname trello
 #' @export
 trello_opencard <- function() {
-  content <- trello_get_card_property(project_get_current_id(), "url")
+  content <- trello_get_card_property(project_get_current_id(ask = TRUE), "url")
   utils::browseURL(content)
 }
 

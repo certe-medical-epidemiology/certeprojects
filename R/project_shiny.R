@@ -19,7 +19,8 @@
 
 #' Add Project Using Shiny
 #' 
-#' This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello.
+#' This is a Shiny app to add a new project: it creates a project folder, generates the required R files and uploads a new card to Trello. They come with RStudio addins to quickly access existing projects.
+#' @inheritParams trello
 #' @export
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
 #' @importFrom shinyjs useShinyjs enable disable
@@ -28,7 +29,10 @@
 #' @importFrom certestyle colourpicker format2
 #' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject
 #' @rdname project_shiny
-project_add <- function() {
+project_add <- function(board = read_secret("trello.default.board"),
+                        username = trello_credentials("member"),
+                        key = trello_credentials("key"),
+                        token = trello_credentials("token")) {
   ui <- fluidPage(
     useShinyjs(),
     
@@ -149,9 +153,8 @@ project_add <- function() {
     
     output$trello_boards <- renderUI({
       if (input$trello_upload == TRUE) {
-        boards_settings <- trello_credentials("board") %>% strsplit(",") %>% unlist()
-        boards_df <- trello_getboards() %>%
-          filter(closed == FALSE & shortLink %in% boards_settings) %>%
+        boards_df <- trello_getboards(username = username, key = key, token = token) %>%
+          filter(closed == FALSE) %>%
           select(id, name, shortLink)
         boards_shortLink <- boards_df %>% pull(shortLink)
         names(boards_shortLink) <- boards_df %>% pull(name)
@@ -159,11 +162,11 @@ project_add <- function() {
         slct <- selectInput("trello_boards",
                             label = "Bord",
                             choices = boards_shortLink,
-                            selected = trello_credentials("board_default"),
+                            selected = read_secret("trello.default.board"),
                             multiple = FALSE,
                             width = "100%")
         
-        # als er maar 1 bord is, deze select verbergen
+        # hide others if only one Trello board is available
         if (length(boards_shortLink) == 1) {
           slct <- hidden(slct)
         }
@@ -183,10 +186,10 @@ project_add <- function() {
             board_selected <- board_selected[1]
           }
           
-          lists <- trello_getlists(board = board_selected)$id
-          names(lists) <- trello_getlists(board = board_selected)$name
+          lists <- trello_getlists(board = board_selected, key = key, token = token)$id
+          names(lists) <- trello_getlists(board = board_selected, key = key, token = token)$name
           
-          members <- trello_getmembers(board = board_selected)$fullName
+          members <- trello_getmembers(board = board_selected, key = key, token = token)$fullName
           user <- Sys.info()['user']
           if (user %in% c("5595", "Erwin")) {
             active <- "Erwin Hassing"
@@ -204,7 +207,7 @@ project_add <- function() {
                         multiple = FALSE,
                         width = "100%"),
             selectizeInput("trello_members",
-                           label = "Data-onderzoeker",
+                           label = "Uitgevoerd door",
                            choices = members,
                            selected = active,
                            multiple = TRUE,
@@ -245,7 +248,7 @@ project_add <- function() {
               board_selected <- board_selected[1]
             }
             disable("trello_cards")
-            found_cards <- trello_searchcard(searchterm, board = board_selected)
+            found_cards <- trello_searchcard(x = searchterm, board = board_selected, key = key, token = token)
             enable("trello_cards")
             if (length(found_cards) > 0) {
               tagList(
@@ -362,7 +365,9 @@ project_add <- function() {
                                           attachments = trello_cards,
                                           checklist = checklist %>% strsplit("\n") %>% unlist(),
                                           desc = description,
-                                          comments = input$trello_comments)
+                                          comments = input$trello_comments,
+                                          key = key,
+                                          token = token)
         }
         
         fullpath <- paste0(Sys.getenv("R_PROJECTS"), "/",
@@ -478,9 +483,9 @@ project_add <- function() {
     })
   }
   
-  viewer <- dialogViewer(dialogName = "Nieuw project",
+  viewer <- dialogViewer(dialogName = paste("Nieuw project -", read_secret("department.name")),
                          width = 850,
-                         height = 825)
+                         height = 780)
   
   suppressMessages(
     runGadget(app = ui,
@@ -491,37 +496,46 @@ project_add <- function() {
 
 #' @rdname project_shiny
 #' @param card_number Trello card number
+#' @inheritParams trello
 #' @importFrom shiny HTML h4 div h5
 #' @importFrom dplyr `%>%` filter pull case_when
 #' @importFrom shinyjs useShinyjs enable disable hidden
 #' @importFrom rstudioapi showDialog
 #' @importFrom cleaner clean_Date
 #' @export
-project_edit <- function(card_number = project_get_current_id()) {
+project_edit <- function(card_number = project_get_current_id(ask = TRUE),
+                         board = read_secret("trello.default.board"),
+                         key = trello_credentials("key"),
+                         token = trello_credentials("token")) {
   card_number <- gsub("[^0-9]", "", card_number)
 
   if (is.null(card_number) | all(is.na(card_number))) {
     return(invisible())
   }
   
-  card_info <- trello_getcards() %>% filter(idShort == card_number) %>% as.list()
+  card_info <- trello_getcards(board = board, key = key, token = token) %>%
+    filter(idShort == card_number) %>%
+    as.list()
   if (length(card_info$id) == 0) {
     stop(paste0("Project p", card_number, " not found on Trello"), call. = FALSE)
   }
-  lists <- trello_getlists()
+  lists <- trello_getlists(board = board, key = key, token = token)
   card_status <- lists %>% filter(id == card_info$idList) %>% pull(name)
-  card_comments <- trello_getcomments(card_info$id)
+  card_comments <- trello_getcomments(card_id = card_info$id, key = key, token = token)
   if (NROW(card_comments) > 0) {
     card_comments <- card_comments %>%
       transmute(by = memberCreator.fullName,
                 date = date,
                 text = data.text)
   }
-  card_members <- trello_getmembers() %>%
-    filter(id %in% unlist(trello_get_card_property(card_number, "idMembers"))) %>%
+  card_members <- trello_getmembers(board = board, key = key, token = token) %>%
+    filter(id %in% unlist(trello_get_card_property(card_number, "idMembers", board = board, key = key, token = token))) %>%
     pull(fullName) %>%
     paste(collapse = ", ")
-  card_checklist <- trello_getchecklists() %>% filter(idCard == card_info$id) %>% pull(checkItems) %>% .[[1]]
+  card_checklist <- trello_getchecklists(board = board, key = key, token = token) %>%
+    filter(idCard == card_info$id) %>%
+    pull(checkItems) %>%
+    .[[1]]
   
   ui <- fluidPage(
     useShinyjs(),
@@ -702,36 +716,49 @@ project_edit <- function(card_number = project_get_current_id()) {
         # status
         if (input$status != card_status) {
           trello_movecard(card_id = card_info$id,
-                          list_id = lists %>% filter(name == input$status) %>% pull(id))
+                          list_id = lists %>% filter(name == input$status) %>% pull(id), 
+                          key = key,
+                          token = token)
         }
         
         # deadline
         if (input$has_deadline == FALSE) {
           trello_setdeadline(card_id = card_info$id,
                              duedate = NULL,
-                             duecomplete = TRUE)
+                             duecomplete = TRUE, 
+                             key = key,
+                             token = token)
         } else {
           trello_setdeadline(card_id = card_info$id,
                              duedate = clean_Date(input$deadline),
-                             duecomplete = clean_Date(input$deadline_finished))
+                             duecomplete = clean_Date(input$deadline_finished), 
+                             key = key,
+                             token = token)
         }
         
         # comment
         if (trimws(input$comment) != "") {
           trello_setcomment(card_id = card_info$id,
-                            comment = input$comment)
+                            comment = input$comment,
+                            key = key,
+                            token = token)
         }
         
         # members
         trello_setmembers(card_id = card_info$id,
-                          member = input$trello_members)
+                          member = input$trello_members, 
+                          board = board,
+                          key = key,
+                          token = token)
         
         # checklist
         if (NROW(card_checklist) > 0) {
           for (i in 1:nrow(card_checklist)) {
             trello_settask_state(card_id = card_info$id,
                                  checkitem_id = card_checklist$id[i],
-                                 new_value = input[[card_checklist$id[i]]])
+                                 new_value = input[[card_checklist$id[i]]],
+                                 key = key,
+                                 token = token)
           }
         }
         newtasks <- input$newtasks
@@ -740,7 +767,10 @@ project_edit <- function(card_number = project_get_current_id()) {
         }
         if (newtasks != "") {
           trello_addtask(card_id = card_info$id,
-                         new_items = newtasks %>% strsplit("\n") %>% unlist())
+                         new_items = newtasks %>% strsplit("\n") %>% unlist(),
+                         board = board,
+                         key = key,
+                         token = token)
         }
         
         stopApp()
@@ -771,7 +801,11 @@ project_edit <- function(card_number = project_get_current_id()) {
 }
 
 users_list <- function() {
-  users <- utils::read.csv(read_secret("users.csv.file"))
+  user_file <- read_secret("users.csv.file")
+  if (user_file == "") {
+    return("")
+  }
+  users <- utils::read.csv(user_file)
   if (!is.null(users)) {
     users_id <- users$id
     if (!all(is.na(users$job))) {

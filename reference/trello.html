@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.4</span>
       </span>
     </div>
 
@@ -160,6 +160,13 @@
 <span class='fu'>trello_credentials</span><span class='op'>(</span>x <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"member"</span>, <span class='st'>"key"</span>, <span class='st'>"token"</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='fu'>trello_getboards</span><span class='op'>(</span>
+  username <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"member"</span><span class='op'>)</span>,
+  key <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"key"</span><span class='op'>)</span>,
+  token <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"token"</span><span class='op'>)</span>
+<span class='op'>)</span>
+
+<span class='fu'>trello_getboardname</span><span class='op'>(</span>
+  board <span class='op'>=</span> <span class='fu'>read_secret</span><span class='op'>(</span><span class='st'>"trello.default.board"</span><span class='op'>)</span>,
   username <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"member"</span><span class='op'>)</span>,
   key <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"key"</span><span class='op'>)</span>,
   token <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"token"</span><span class='op'>)</span>

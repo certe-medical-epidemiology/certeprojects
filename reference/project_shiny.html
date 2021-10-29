@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Add Project — project_add • certeprojects</title>
+<title>Add Project Using Shiny — project_add • certeprojects</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Add Project — project_add" />
-<meta property="og:description" content="Add Project" />
+<meta property="og:title" content="Add Project Using Shiny — project_add" />
+<meta property="og:description" content="This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello." />
 <meta property="og:image" content="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" />
 
 
@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.3</span>
       </span>
     </div>
 
@@ -129,19 +129,27 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Add Project</h1>
+    <h1>Add Project Using Shiny</h1>
     <small class="dont-index">Source: <a href='https://github.com/certe-medical-epidemiology/certeprojects/blob/master/R/project_shiny.R'><code>R/project_shiny.R</code></a></small>
-    <div class="hidden name"><code>project.Rd</code></div>
+    <div class="hidden name"><code>project_shiny.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Add Project</p>
+    <p>This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello.</p>
     </div>
 
     <pre class="usage"><span class='fu'>project_add</span><span class='op'>(</span><span class='op'>)</span>
 
 <span class='fu'>project_edit</span><span class='op'>(</span>card_number <span class='op'>=</span> <span class='fu'><a href='project_properties.html'>project_get_current_id</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>card_number</th>
+      <td><p>Trello card number</p></td>
+    </tr>
+    </table>
 
 
   </div>

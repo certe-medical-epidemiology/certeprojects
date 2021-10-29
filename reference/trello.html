@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Work with Trello Cards — trello_upload • certeprojects</title>
+<title>Work with Trello Cards — trello • certeprojects</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,7 +46,7 @@
 
 
 
-<meta property="og:title" content="Work with Trello Cards — trello_upload" />
+<meta property="og:title" content="Work with Trello Cards — trello" />
 <meta property="og:description" content="This functions all call the Trello api." />
 <meta property="og:image" content="https://certe-medical-epidemiology.github.io/certeprojects/logo.svg" />
 
@@ -80,7 +80,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.3</span>
       </span>
     </div>
 
@@ -157,7 +157,7 @@
   <span class='va'>...</span>
 <span class='op'>)</span>
 
-<span class='fu'>trello_credentials</span><span class='op'>(</span>x <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"member"</span>, <span class='st'>"key"</span>, <span class='st'>"token"</span><span class='op'>)</span>, item <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
+<span class='fu'>trello_credentials</span><span class='op'>(</span>x <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"member"</span>, <span class='st'>"key"</span>, <span class='st'>"token"</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='fu'>trello_getboards</span><span class='op'>(</span>
   username <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"member"</span><span class='op'>)</span>,
@@ -240,6 +240,14 @@
   token <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"token"</span><span class='op'>)</span>
 <span class='op'>)</span>
 
+<span class='fu'>trello_setmembers</span><span class='op'>(</span>
+  <span class='va'>card_id</span>,
+  <span class='va'>member</span>,
+  board <span class='op'>=</span> <span class='fu'>read_secret</span><span class='op'>(</span><span class='st'>"trello.default.board"</span><span class='op'>)</span>,
+  key <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"key"</span><span class='op'>)</span>,
+  token <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"token"</span><span class='op'>)</span>
+<span class='op'>)</span>
+
 <span class='fu'>trello_setdeadline</span><span class='op'>(</span>
   <span class='va'>card_id</span>,
   <span class='va'>duedate</span>,
@@ -250,7 +258,7 @@
 
 <span class='fu'>trello_addtask</span><span class='op'>(</span>
   <span class='va'>card_id</span>,
-  new_items_vector <span class='op'>=</span> <span class='cn'>NULL</span>,
+  new_items <span class='op'>=</span> <span class='cn'>NULL</span>,
   checklist_name <span class='op'>=</span> <span class='st'>"Taken"</span>,
   board <span class='op'>=</span> <span class='fu'>read_secret</span><span class='op'>(</span><span class='st'>"trello.default.board"</span><span class='op'>)</span>,
   key <span class='op'>=</span> <span class='fu'>trello_credentials</span><span class='op'>(</span><span class='st'>"key"</span><span class='op'>)</span>,
@@ -301,7 +309,7 @@
     </tr>
     <tr>
       <th>duedate</th>
-      <td><p>deadline</p></td>
+      <td><p>a <a href='https://rdrr.io/r/base/Dates.html'>Date</a> object</p></td>
     </tr>
     <tr>
       <th>checklist</th>
@@ -309,7 +317,7 @@
     </tr>
     <tr>
       <th>checklist_name</th>
-      <td><p>name for the checklist</p></td>
+      <td><p>name of the checklist</p></td>
     </tr>
     <tr>
       <th>comments</th>
@@ -338,6 +346,50 @@
     <tr>
       <th>...</th>
       <td><p>arguments passed on to methods</p></td>
+    </tr>
+    <tr>
+      <th>x</th>
+      <td><p>search string</p></td>
+    </tr>
+    <tr>
+      <th>username</th>
+      <td><p>Trello username</p></td>
+    </tr>
+    <tr>
+      <th>card_id</th>
+      <td><p>Trello card ID (<em>not</em> the card number)</p></td>
+    </tr>
+    <tr>
+      <th>card_number</th>
+      <td><p>Trello card number</p></td>
+    </tr>
+    <tr>
+      <th>property</th>
+      <td><p>property to take from card</p></td>
+    </tr>
+    <tr>
+      <th>comment</th>
+      <td><p>the comment to set, supports markdown</p></td>
+    </tr>
+    <tr>
+      <th>duecomplete</th>
+      <td><p>a <a href='https://rdrr.io/r/base/logical.html'>logical</a> to indicate whether due date is already completed</p></td>
+    </tr>
+    <tr>
+      <th>new_items</th>
+      <td><p>character vector of checklist items</p></td>
+    </tr>
+    <tr>
+      <th>checkitem_id</th>
+      <td><p>checkitem ID of item in checklist</p></td>
+    </tr>
+    <tr>
+      <th>new_value</th>
+      <td><p>the new value to set: a <a href='https://rdrr.io/r/base/logical.html'>logical</a> to indicate the 'complete' state of the checklist item</p></td>
+    </tr>
+    <tr>
+      <th>list_id</th>
+      <td><p>ID of the Trello board list</p></td>
     </tr>
     </table>
 

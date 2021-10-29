@@ -117,13 +117,13 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
   }
   if (!is.na(folder)) {
     # regex, try to find file
-    files_found <- list.files(path = folder,
-                              pattern = filename,
-                              full.names = TRUE,
-                              recursive = FALSE,
-                              all.files = FALSE,
-                              include.dirs = FALSE,
-                              ignore.case = TRUE)
+    files_found <- sort(list.files(path = folder,
+                                   pattern = filename,
+                                   full.names = TRUE,
+                                   recursive = FALSE,
+                                   all.files = FALSE,
+                                   include.dirs = FALSE,
+                                   ignore.case = TRUE))
     files_found_base <- basename(files_found)
     # sort on length:
     files_found_base <- files_found_base[order(nchar(files_found), files_found)]
@@ -136,12 +136,12 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
     if (length(files_found) > 0) {
       if (length(files_found) > 1) {
         if (interactive()) {
-          keuze <- menu(choices = files_found_base,
-                        title = paste0("Files found with '", filename, "' in ", folder, ":"))
-          if (keuze == 0) {
+          choice <- utils::menu(choices = files_found_base,
+                                title = paste0("Files found with '", filename, "' in ", folder, ":"))
+          if (choice == 0) {
             return(NA_character_)
           }
-          filename <- files_found[keuze]
+          filename <- files_found[choice]
         } else {
           message("Files found with '", filename, "':\n  - ", paste(files_found_base, collapse = "\n  - "),
                   "\nSelecting first match.")

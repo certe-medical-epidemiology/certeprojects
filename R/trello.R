@@ -37,6 +37,7 @@
 #' @param token Trello API token 
 #' @param ... arguments passed on to methods
 #' @rdname trello
+#' @name trello
 #' @importFrom httr POST stop_for_status content
 #' @export
 trello_upload <- function(title,
@@ -104,7 +105,7 @@ trello_upload <- function(title,
   # }
   if (project_path != "") {
     description <- c(description,
-                     paste0("*Project path: [", basename(project_path), "](file://", URLencode(project_path), ")*"))
+                     paste0("*Project path: [", basename(project_path), "](file://", utils::URLencode(project_path), ")*"))
   }
   if (desc != "") {
     description <- c(description,
@@ -130,7 +131,7 @@ trello_upload <- function(title,
   card_nr <- content(request_card, "parsed", "application/json")$idShort
   stop_for_status(request_card, task = paste("add card", title))
   
-  # add
+  # add comments
   if (is.null(comments)) {
     comments <- ""
   }
@@ -223,17 +224,12 @@ trello_upload <- function(title,
 
 #' @rdname trello
 #' @export
-trello_credentials <- function(x = c("member", "key", "token"),
-                               item = 1) {
-  out <- read_secret(paste0("trello.", Sys.info()["user"], ".", x[1]))
-  if (is.null(item)) {
-    out
-  } else {
-    out[1]
-  }
+trello_credentials <- function(x = c("member", "key", "token")) {
+  read_secret(paste0("trello.", Sys.info()["user"], ".", x[1]))
 }
 
 #' @rdname trello
+#' @param username Trello username
 #' @export
 trello_getboards <- function(username = trello_credentials("member"),
                              key = trello_credentials("key"),
@@ -300,11 +296,12 @@ trello_getchecklists <- function(board = read_secret("trello.default.board"),
 trello_getcomments <- function(card_id,
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
-  sGET_df(paste0("https://api.trello.com/1/cards/", card_id,
-                 "/actions?filter=commentCard&key=", key, "&token=", token))
+  GET_df(paste0("https://api.trello.com/1/cards/", card_id,
+                "/actions?filter=commentCard&key=", key, "&token=", token))
 }
 
 #' @rdname trello
+#' @param x search string
 #' @importFrom dplyr `%>%` transmute pull left_join mutate filter
 #' @export
 trello_searchcard <- function(x,
@@ -325,7 +322,7 @@ trello_searchcard <- function(x,
     total <- total %>%
       left_join(checklists, by = c("id" = "idCard"), suffix = c(".card", ".checklist")) %>%
       mutate(checklistitems = "")
-    # checklistitems toevoegen
+    # add checklist items
     for (i in 1:nrow(total)) {
       if (is.list(total[i, 'checkItems'])) {
         total[i, 'checklistitems'] <- concat(total[i, 'checkItems'][[1]]$name, " ")
@@ -364,6 +361,7 @@ trello_opencard <- function() {
 }
 
 #' @rdname trello
+#' @param property property to take from card
 #' @importFrom dplyr `%>%` filter pull
 #' @export
 trello_get_card_property <- function(card_number,
@@ -375,6 +373,7 @@ trello_get_card_property <- function(card_number,
 }
 
 #' @rdname trello
+#' @param card_number Trello card number
 #' @importFrom dplyr `%>%` filter pull
 #' @export
 trello_get_card_id <- function(card_number,
@@ -385,6 +384,8 @@ trello_get_card_id <- function(card_number,
 }
 
 #' @rdname trello
+#' @param card_id Trello card ID (*not* the card number)
+#' @param comment the comment to set, supports markdown
 #' @importFrom httr POST stop_for_status
 #' @export
 trello_setcomment <- function(card_id,
@@ -399,42 +400,48 @@ trello_setcomment <- function(card_id,
   stop_for_status(request_comments, task = paste("add comment to card", card_id))
 }
 
-# @rdname trello
-# @export
-# trello_setmembers <- function(card_id,
-#                               member,
-#                               board = read_secret("trello.default.board"),
-#                               key = trello_credentials("key"),
-#                               token = trello_credentials("token")) {
-#
-#   members <- trello_getmembers(board = board, key = key, token = token)
-#   members_new <- members %>% filter(fullName %in% member | username %in% member) %>% pull(id)
-#   members_old <- trello_getcards() %>%
-#     filter(id == card_id) %>%
-#     pull(idMembers) %>%
-#     unlist()
-#
-#   members_to_add <- members_new[!members_new %in% members_old]
-#   members_to_delete <- members_old[!members_old %in% members_new]
-#
-#   for (member_id in members_to_add) {
-#     add_members <- POST(url = paste0("https://api.trello.com/1/cards/", card_id, "/idMembers"),
-#                         body = list(value = member_id,
-#                                     key = key,
-#                                     token = token))
-#     stop_for_status(add_members, task = paste("add member", members[which(members$id == member_id),]$fullName))
-#   }
-#   for (member_id in members_to_delete) {
-#     remove_members <- DELETE(url = paste0("https://api.trello.com/1/cards/", card_id, "/idMembers/", member_id),
-#                              body = list(idMember = member_id,
-#                                          value = member_id,
-#                                          key = key,
-#                                          token = token))
-#     stop_for_status(remove_members, task = paste("remove member", members[which(members$id == member_id),]$fullName))
-#   }
-# }
+#' @rdname trello
+#' @importFrom dplyr `%>%` filter pull 
+#' @importFrom httr POST stop_for_status DELETE
+#' @export
+trello_setmembers <- function(card_id,
+                              member,
+                              board = read_secret("trello.default.board"),
+                              key = trello_credentials("key"),
+                              token = trello_credentials("token")) {
+  
+  members <- trello_getmembers(board = board, key = key, token = token)
+  members_new <- members %>%
+    filter(fullName %in% member | username %in% member) %>%
+    pull(id)
+  members_old <- trello_getcards() %>%
+    filter(id == card_id) %>%
+    pull(idMembers) %>%
+    unlist()
+  
+  members_to_add <- members_new[!members_new %in% members_old]
+  members_to_delete <- members_old[!members_old %in% members_new]
+  
+  for (member_id in members_to_add) {
+    add_members <- POST(url = paste0("https://api.trello.com/1/cards/", card_id, "/idMembers"),
+                        body = list(value = member_id,
+                                    key = key,
+                                    token = token))
+    stop_for_status(add_members, task = paste("add member", members[which(members$id == member_id),]$fullName))
+  }
+  for (member_id in members_to_delete) {
+    remove_members <- DELETE(url = paste0("https://api.trello.com/1/cards/", card_id, "/idMembers/", member_id),
+                             body = list(idMember = member_id,
+                                         value = member_id,
+                                         key = key,
+                                         token = token))
+    stop_for_status(remove_members, task = paste("remove member", members[which(members$id == member_id),]$fullName))
+  }
+}
 
 #' @rdname trello
+#' @param duedate a [Date] object
+#' @param duecomplete a [logical] to indicate whether due date is already completed
 #' @importFrom httr PUT stop_for_status
 #' @export
 trello_setdeadline <- function(card_id,
@@ -459,11 +466,13 @@ trello_setdeadline <- function(card_id,
 }
 
 #' @rdname trello
+#' @param new_items character vector of checklist items
+#' @param checklist_name name of the checklist
 #' @importFrom httr POST stop_for_status
 #' @importFrom dplyr `%>%` filter
 #' @export
 trello_addtask <- function(card_id,
-                           new_items_vector = NULL,
+                           new_items = NULL,
                            checklist_name = "Taken",
                            board = read_secret("trello.default.board"),
                            key = trello_credentials("key"),
@@ -486,23 +495,25 @@ trello_addtask <- function(card_id,
   }
   
   # checklist items toevoegen
-  if (all(is.null(new_items_vector)) | length(new_items_vector) == 0) {
-    new_items_vector <- ""
+  if (all(is.null(new_items)) | length(new_items) == 0) {
+    new_items <- ""
   }
-  for (i in 1:length(new_items_vector)) {
-    new_items_vector[i] <- trimws(new_items_vector[i])
-    if (new_items_vector[i] != "") {
+  for (i in 1:length(new_items)) {
+    new_items[i] <- trimws(new_items[i])
+    if (new_items[i] != "") {
       request_checklist_add <- POST(url = paste0("https://api.trello.com/1/checklists/", checklist_id, "/checkItems"),
-                                    body = list(name = new_items_vector[i],
+                                    body = list(name = new_items[i],
                                                 pos = "bottom",
                                                 key = key,
                                                 token = token))
-      stop_for_status(request_checklist_add, task = paste("add checklist item", new_items_vector[i]))
+      stop_for_status(request_checklist_add, task = paste("add checklist item", new_items[i]))
     }
   }
 }
 
 #' @rdname trello
+#' @param checkitem_id checkitem ID of item in checklist
+#' @param new_value the new value to set: a [logical] to indicate the 'complete' state of the checklist item
 #' @importFrom httr PUT stop_for_status
 #' @export
 trello_settask_state <- function(card_id,
@@ -520,6 +531,7 @@ trello_settask_state <- function(card_id,
 }
 
 #' @rdname trello
+#' @param list_id ID of the Trello board list
 #' @importFrom httr PUT stop_for_status
 #' @export
 trello_movecard <- function(card_id,

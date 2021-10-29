@@ -4,3 +4,5 @@
 ^\.github$
 ^certeprojects\.Rproj$
 ^_pkgdown\.yml$
+^logo\.svg$
+^\.DS_Store$

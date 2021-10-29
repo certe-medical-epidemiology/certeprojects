@@ -17,12 +17,17 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-#' Add Project
+#' Add Project Using Shiny
+#' 
+#' This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello.
 #' @export
-#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer
-#' @importFrom shinyjs useShinyjs
-#' @importFrom certestyle colourpicker
-#' @rdname project
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
+#' @importFrom shinyjs useShinyjs enable disable
+#' @importFrom shinyWidgets searchInput
+#' @importFrom dplyr `%>%` select pull filter if_else
+#' @importFrom certestyle colourpicker format2
+#' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject
+#' @rdname project_shiny
 project_add <- function() {
   ui <- fluidPage(
     useShinyjs(),
@@ -41,7 +46,7 @@ project_add <- function() {
                 textbox.focus();
                 });'),
     tags$style(paste0(".container-fluid { margin-top: 15px; }
-                      .well { background-color: ", colourpicker("certeblauw3"), "; }
+                      .well { background-color: ", colourpicker("certeblauw6"), "; }
                       .well label { color: ", colourpicker("certeblauw"), "; }
                       .form-group { margin-bottom: 5px; }
                       .well .form-group { margin-bottom: 14px; }
@@ -52,7 +57,7 @@ project_add <- function() {
                       label[for=title] { font-size: 16px; }
                       #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
-                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw3"), " !important; }
+                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
     
     sidebarLayout(
@@ -62,7 +67,7 @@ project_add <- function() {
         textAreaInput("checklist", "Taken", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 taak per regel)"),
         uiOutput("requested_by"),
         selectInput("priority", "Prioriteit", c("Laag", "Normaal", "Hoog"),
-                    ifelse(as.integer(format(today(), "%u")) %in% c(6:7),
+                    ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
                            "Hoog", # standaard als je op zaterdag of zondag een kaart maakt
                            "Normaal")),
         tags$label("Deadline"),
@@ -104,7 +109,7 @@ project_add <- function() {
   
   server <- function(input, output, session) {
     
-    is_active_project <- !is.null(rstudioapi::getActiveProject())
+    is_active_project <- !is.null(getActiveProject())
     
     output$requested_by <- renderUI({
       # gebruikers ophalen uit csv; waarden zijn eigenlijk Certe-ID's, maar je ziet namen met functies
@@ -134,8 +139,8 @@ project_add <- function() {
       if (input$has_deadline == TRUE) {
         tagList(
           dateInput("deadline", NULL,
-                    value = today() + 14,
-                    min = today(),
+                    value = Sys.Date() + 14,
+                    min = Sys.Date(),
                     format = "DD d MM yyyy",
                     language = "nl")
         )
@@ -144,7 +149,7 @@ project_add <- function() {
     
     output$trello_boards <- renderUI({
       if (input$trello_upload == TRUE) {
-        boards_settings <- trello_credentials("board", item = NULL) %>% strsplit(",") %>% unlist()
+        boards_settings <- trello_credentials("board") %>% strsplit(",") %>% unlist()
         boards_df <- trello_getboards() %>%
           filter(closed == FALSE & shortLink %in% boards_settings) %>%
           select(id, name, shortLink)
@@ -160,7 +165,7 @@ project_add <- function() {
         
         # als er maar 1 bord is, deze select verbergen
         if (length(boards_shortLink) == 1) {
-          slct <- shinyjs::hidden(slct)
+          slct <- hidden(slct)
         }
         
         tagList(slct)
@@ -239,9 +244,9 @@ project_add <- function() {
             if (length(board_selected) > 1) {
               board_selected <- board_selected[1]
             }
-            shinyjs::disable("trello_cards")
+            disable("trello_cards")
             found_cards <- trello_searchcard(searchterm, board = board_selected)
-            shinyjs::enable("trello_cards")
+            enable("trello_cards")
             if (length(found_cards) > 0) {
               tagList(
                 selectizeInput("trello_cards",
@@ -267,7 +272,7 @@ project_add <- function() {
       }
     })
     
-    # OPSLAAN ----
+    # SAVE ----
     observeEvent(input$create, {
       
       empty_field <- function(field, value) {
@@ -307,10 +312,10 @@ project_add <- function() {
       filetype <- input$filetype
       if (empty_field("Bestandstype", filetype)) return(invisible())
       
-      shinyjs::disable("create")
-      shinyjs::disable("cancel")
-      on.exit(shinyjs::disable("create"))
-      on.exit(shinyjs::disable("cancel"))
+      disable("create")
+      disable("cancel")
+      on.exit(disable("create"))
+      on.exit(disable("cancel"))
       
       description <- trimws(input$description)
       if (!is.null(input$topdesk)) {
@@ -335,12 +340,12 @@ project_add <- function() {
         trello_cards <- ""
       }
       
-      withProgress(message = "Aanmaken...", value = 0, {
-        progress_items <- input$rstudio_projectfile + input$trello_upload + 1 # (+ 1 voor mappen aanmaken)
+      withProgress(message = "Creating...", value = 0, {
+        progress_items <- input$rstudio_projectfile + input$trello_upload + 1 # (+ 1 for creating folders)
         # Trello ----
         trello_card_id <- NULL
         if (input$trello_upload == TRUE) {
-          incProgress(1 / progress_items, detail = "Uploaden naar Trello")
+          incProgress(1 / progress_items, detail = "Uploading to Trello")
           if (is.null(input$deadline) | input$has_deadline == FALSE) {
             deadline <- ""
           } else {
@@ -370,11 +375,11 @@ project_add <- function() {
                                  paste0('# Projectnummer:    p', trello_card_id),
                                  NA_character_),
                          if_else(requested_by != "",
-                                 paste0('# Aangevraagd door: ', get_certe_user(requested_by)),
+                                 paste0('# Aangevraagd door: ', requested_by),
                                  NA_character_),
                          paste0(        '# Aangemaakt op:    ', format2(Sys.time(), "d mmmm yyyy H:MM")))
         
-        incProgress(1 / progress_items, detail = "Map aanmaken")
+        incProgress(1 / progress_items, detail = "Creating folder")
         # map maken
         dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
         
@@ -394,7 +399,7 @@ project_add <- function() {
             '    fig_width: 6.5',
             '    fig_height: 5',
             '    fig_caption: true',
-            paste0('    reference_docx: "', templatedoc(type = "refdoc"), '"'),
+            paste0('    reference_docx: "', read_secret("refdoc.blauw"), '"'),
             '---',
             "",
             '```{r Setup, include = FALSE, message = FALSE}',
@@ -449,25 +454,25 @@ project_add <- function() {
                      con = file.path(filename))
         }
         
-        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden maken", ""))
+        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "Writing R files", ""))
         Sys.sleep(0.1)
       })
       
       message("Project p", trello_card_id, " created.")
       
       if (isTRUE(input$rstudio_projectfile)) {
-        # project aanmaken en openen
-        rstudioapi::initializeProject(fullpath)
-        rstudioapi::openProject(fullpath, newSession = TRUE)
+        # create project and open it
+        initializeProject(fullpath)
+        openProject(fullpath, newSession = TRUE)
       } else {
-        # bestand openen
-        rstudioapi::navigateToFile(filename)
+        # open file
+        navigateToFile(filename)
       }
       
       stopApp()
     })
     
-    # ANNULEREN ----
+    # CANCEL ----
     observeEvent(input$cancel, {
       stopApp()
     })
@@ -484,22 +489,20 @@ project_add <- function() {
               stopOnCancel = FALSE))
 }
 
-#' @rdname project
+#' @rdname project_shiny
+#' @param card_number Trello card number
+#' @importFrom shiny HTML h4 div h5
+#' @importFrom dplyr `%>%` filter pull case_when
+#' @importFrom shinyjs useShinyjs enable disable hidden
+#' @importFrom rstudioapi showDialog
+#' @importFrom cleaner clean_Date
 #' @export
 project_edit <- function(card_number = project_get_current_id()) {
   card_number <- gsub("[^0-9]", "", card_number)
-  if (Sys.getenv("R_PROJECTS") == "") {
-    stop('Environmental variable `R_PROJECTS` for user not set.', call. = FALSE)
-  }
-  
+
   if (is.null(card_number) | all(is.na(card_number))) {
     return(invisible())
   }
-  
-  library(certedata, warn.conflicts = FALSE, quietly = TRUE)
-  
-  library(shiny)
-  library(shinyWidgets)
   
   card_info <- trello_getcards() %>% filter(idShort == card_number) %>% as.list()
   if (length(card_info$id) == 0) {
@@ -521,7 +524,7 @@ project_edit <- function(card_number = project_get_current_id()) {
   card_checklist <- trello_getchecklists() %>% filter(idCard == card_info$id) %>% pull(checkItems) %>% .[[1]]
   
   ui <- fluidPage(
-    shinyjs::useShinyjs(),
+    useShinyjs(),
     
     # keys: 112-123 = F1-F12, datum ('new Date()') nodig om steeds opnieuw te kunnen triggeren:
     # https://stackoverflow.com/a/44500961/4575331
@@ -549,10 +552,10 @@ project_edit <- function(card_number = project_get_current_id()) {
                       .comment { font-style: italic; margin: 0 }
                       .code { font-family: 'Fira Code', 'Courier New'; font-size: 13px; font-style: normal; color: ", colourpicker("certeblauw"), "; }
                       p { cursor: default; }
-                      .comment_box { border: 1px solid #dddddd; width: fit-content; border-radius: 10px; padding: 5px; margin-bottom: 10px; background-color: ", colourpicker("certeblauw3"), " }
+                      .comment_box { border: 1px solid #dddddd; width: fit-content; border-radius: 10px; padding: 5px; margin-bottom: 10px; background-color: ", colourpicker("certeblauw6"), " }
                       #save { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
-                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw3"), " !important; }
+                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
     sidebarLayout(
       sidebarPanel(
@@ -562,8 +565,8 @@ project_edit <- function(card_number = project_get_current_id()) {
         tags$label("Laatste update"),
         HTML(paste0('<p class="last_update">',
                     format2(as.Date(card_info$dateLastActivity), "dddd d mmmm yyyy"),
-                    " (", as.integer(difftime(today(), as.Date(card_info$dateLastActivity), units = "days")), " dgn ~=",
-                    " ", as.integer(difftime(today(), as.Date(card_info$dateLastActivity), units = "weeks")),
+                    " (", as.integer(difftime(Sys.Date(), as.Date(card_info$dateLastActivity), units = "days")), " dgn ~=",
+                    " ", as.integer(difftime(Sys.Date(), as.Date(card_info$dateLastActivity), units = "weeks")),
                     " wkn geleden)</p>")),
         selectInput("status", "Status", choices = lists$name, selected = card_status),
         tags$label("Deadline"),
@@ -583,11 +586,11 @@ project_edit <- function(card_number = project_get_current_id()) {
   )
   
   server <- function(input, output, session) {
-    shinyjs::disable("title")
+    disable("title")
     
     output$deadline <- renderUI({
       val <- case_when(isTRUE(input$has_deadline) & !is.na(as.Date(card_info$due)) ~ as.Date(card_info$due),
-                       isTRUE(input$has_deadline) ~  today() + 14,
+                       isTRUE(input$has_deadline) ~  Sys.Date() + 14,
                        TRUE ~ as.Date(NA_character_))
       tagList(
         dateInput("deadline", NULL,
@@ -667,16 +670,16 @@ project_edit <- function(card_number = project_get_current_id()) {
     output$style_tag <- renderUI({
       if (input$status == "Bezig") {
         col1 <- colourpicker("certeblauw")
-        col2 <- colourpicker("certeblauw2")
-        col3 <- colourpicker("certeblauw3")
+        col2 <- colourpicker("certeblauw4")
+        col3 <- colourpicker("certeblauw6")
       } else if (input$status == "Voltooid") {
         col1 <- colourpicker("certegroen")
-        col2 <- colourpicker("certegroen2")
-        col3 <- colourpicker("certegroen3")
+        col2 <- colourpicker("certegroen4")
+        col3 <- colourpicker("certegroen6")
       } else if (input$status == "Wachten op een ander") {
         col1 <- colourpicker("certeroze")
-        col2 <- colourpicker("certeroze2")
-        col3 <- colourpicker("certeroze3")
+        col2 <- colourpicker("certeroze4")
+        col3 <- colourpicker("certeroze6")
       } else {
         col1 <- colourpicker("certeblauw")
         col2 <- "#f5f5f5"
@@ -687,13 +690,13 @@ project_edit <- function(card_number = project_get_current_id()) {
                                                .last_update { margin: 0 10px 10px; font-size: 13px; color: ", col1, "; }")))))
     })
     
-    # OPSLAAN ----
+    # SAVE ----
     observeEvent(input$save, {
-      shinyjs::disable("save")
-      shinyjs::disable("cancel")
+      disable("save")
+      disable("cancel")
       
       if (input$status == card_status & trimws(input$comment) == "" & input$status %unlike% "(wachten|voltooid)") {
-        rstudioapi::showDialog("Status gewijzigd", "Als de status gewijzigd is naar 'wachten op een ander' of 'voltooid', moet een opmerking ingevuld worden.")
+        showDialog("Status gewijzigd", "Als de status gewijzigd is naar 'wachten op een ander' of 'voltooid', moet een opmerking ingevuld worden.")
       } else {
         
         # status
@@ -719,9 +722,9 @@ project_edit <- function(card_number = project_get_current_id()) {
                             comment = input$comment)
         }
         
-        # leden
-        # trello_setmembers(card_id = card_info$id,
-        #                   member = input$trello_members)
+        # members
+        trello_setmembers(card_id = card_info$id,
+                          member = input$trello_members)
         
         # checklist
         if (NROW(card_checklist) > 0) {
@@ -737,21 +740,21 @@ project_edit <- function(card_number = project_get_current_id()) {
         }
         if (newtasks != "") {
           trello_addtask(card_id = card_info$id,
-                         new_items_vector = newtasks %>% strsplit("\n") %>% unlist())
+                         new_items = newtasks %>% strsplit("\n") %>% unlist())
         }
         
         stopApp()
       }
     })
     
-    # ANNULEREN ----
+    # CANCEL ----
     observeEvent(input$cancel, {
       stopApp()
     })
     
-    # TRELLO OPENEN ----
+    # OPEN TRELLO ----
     observeEvent(input$trello_open, {
-      browseURL(card_info$url)
+      utils::browseURL(card_info$url)
     })
     
   }
@@ -768,12 +771,12 @@ project_edit <- function(card_number = project_get_current_id()) {
 }
 
 users_list <- function() {
-  users <- get_certe_users()
+  users <- utils::read.csv(read_secret("users.csv.file"))
   if (!is.null(users)) {
     users_id <- users$id
     if (!all(is.na(users$job))) {
-      users$job[is.na(users$job) | users$job == ""] <- 'functie onbekend'
-      names(users_id) <- paste0(users$name, ' (', tolower(users$job), ')')
+      users$job[is.na(users$job) | users$job == ""] <- ""
+      names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
     } else {
       names(users_id) <- users$name
     }

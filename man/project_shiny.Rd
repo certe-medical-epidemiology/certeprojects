@@ -3,12 +3,15 @@
 \name{project_add}
 \alias{project_add}
 \alias{project_edit}
-\title{Add Project}
+\title{Add Project Using Shiny}
 \usage{
 project_add()
 
 project_edit(card_number = project_get_current_id())
 }
+\arguments{
+\item{card_number}{Trello card number}
+}
 \description{
-Add Project
+This is a Dutch Shiny app to add new projects: it creates a project folder, generates the required R files and uploads a new card to Trello.
 }

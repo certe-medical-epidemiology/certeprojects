@@ -18,10 +18,10 @@
 # ===================================================================== #
 
 title: "certeprojects"
-url: "https://certe-medical-epidemiology.github.io/certeprojects/"
+url: "https://certe-medical-epidemiology.github.io/certeprojects"
 
 navbar:
-  title: "AMR (for R)"
+  title: "certeprojects"
   left:
     - text: "Home"
       icon: "fa-home"
@@ -33,6 +33,9 @@ navbar:
       icon: "fab fa-github"
       href: "https://github.com/certe-medical-epidemiology/certeprojects"
   right:
+    - text: "Certe Med Epi"
+      icon: "fab fa-github"
+      href: "https://github.com/certe-medical-epidemiology"
     - text: "Certe Website"
       icon: "fa-flask"
       href: "https://certe.nl"

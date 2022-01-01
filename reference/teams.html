@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.5</span>
       </span>
     </div>
 
@@ -75,7 +75,8 @@
     <p>Send messages to Microsoft Teams from R. This function relies on the <code>httr</code> package and only requires <a href="https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel" class="external-link">Incoming Webhooks</a> to be set in Teams.</p>
     </div>
 
-    <div id="ref-usage">Usage,<div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">teams</span><span class="op">(</span>
+    <div id="ref-usage">
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">teams</span><span class="op">(</span>
   message <span class="op">=</span> <span class="st">""</span>,
   <span class="va">channel</span>,
   title <span class="op">=</span> <span class="cn">NULL</span>,
@@ -91,12 +92,13 @@
   <span class="va">...</span>
 <span class="op">)</span>
 
-<span class="fu">teams_webhooks</span><span class="op">(</span>webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span><span class="op">)</span></code></pre></div></div>
+<span class="fu">teams_webhooks</span><span class="op">(</span>webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+    </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>message</dt>
-<dd><p>message to send, supports markdown</p></dd>
+<dd><p>message to send, supports markdown. Can also be a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>, which will be transformed using <code>plain_html_table()</code>.</p></dd>
 <dt>channel</dt>
 <dd><p>channel to send message to, run <code>teams_webhooks()</code> for list of valid channels</p></dd>
 <dt>title</dt>
@@ -140,7 +142,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.0.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
 </div>
 
       </footer></div>

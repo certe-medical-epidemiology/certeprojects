@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 0.0.4
+Version: 0.0.5
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -22,7 +22,7 @@ Description: A Certe R Package with functions to automate department projects
 URL: https://certe-medical-epidemiology.github.io/certeprojects, https://github.com/certe-medical-epidemiology/certeprojects
 Depends: 
   R (>= 3.6.0)
-Imports:
+Imports: 
   certestyle,
   base64enc (>= 0.1-3),
   cleaner (>= 1.5.1),

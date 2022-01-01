@@ -20,7 +20,7 @@
 #' Send Teams Messages
 #'
 #' Send messages to Microsoft Teams from R. This function relies on the `httr` package and only requires [Incoming Webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel) to be set in Teams.
-#' @param message message to send, supports markdown
+#' @param message message to send, supports markdown. Can also be a [data.frame], which will be transformed using [certestyle::plain_html_table()].
 #' @param channel channel to send message to, run [teams_webhooks()] for list of valid channels
 #' @param title title for message
 #' @param subtitle subtitle for message
@@ -42,7 +42,7 @@
 #' @importFrom httr POST warn_for_status add_headers upload_file content
 #' @importFrom xml2 as_list read_xml
 #' @importFrom base64enc base64encode
-#' @importFrom certestyle colourpicker
+#' @importFrom certestyle colourpicker plain_html_table
 #' @export
 teams <- function(message = "",
                   channel,
@@ -81,6 +81,10 @@ teams <- function(message = "",
     }
   } else {
     items_list <- ""
+  }
+  
+  if (is.data.frame(message)) {
+    message <- plain_html_table(message, max_col = Inf)
   }
   
   sections_list <- list(markdown = markdown,

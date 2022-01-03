@@ -17,6 +17,12 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
+coverage:
+  # more than 50% coverage is unfeasible in non-interactive mode
+  range:
+  - 0.0
+  - 50.0
+
 ignore:
   - "R/addins.R"
   - "R/project_shiny.R"

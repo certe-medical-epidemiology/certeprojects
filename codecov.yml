@@ -17,7 +17,8 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-test_that("function_name works", {
-  expect_true(1 + 1 == 2)
-  expect_identical(1, 2 - 1)
-})
+ignore:
+  - "R/addins.R"
+  - "R/project_shiny.R"
+  - "R/trello.R"
+  - "R/universal.R"

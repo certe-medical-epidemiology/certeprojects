@@ -33,6 +33,11 @@ project_add <- function(board = read_secret("trello.default.board"),
                         username = trello_credentials("member"),
                         key = trello_credentials("key"),
                         token = trello_credentials("token")) {
+  
+  trello_set <- tryCatch(is.data.frame(trello_getboards(username = username, key = key, token = token)),
+                         error = function(e) FALSE)
+  
+  # ui ----
   ui <- fluidPage(
     useShinyjs(),
     
@@ -85,12 +90,12 @@ project_add <- function(board = read_secret("trello.default.board"),
         width = 6),
       
       mainPanel(
-        img(src = img_trello(), height = "40px", style = "margin-top: 10px"),
-        checkboxInput("trello_upload", "Uploaden naar Trello.com", TRUE),
-        uiOutput("trello_boards"),
-        uiOutput("trello_settings"),
-        uiOutput("trello_search_select"),
-        hr(),
+        if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px"),
+        if (isTRUE(trello_set)) checkboxInput("trello_upload", "Uploaden naar Trello.com", TRUE),
+        if (isTRUE(trello_set)) uiOutput("trello_boards"),
+        if (isTRUE(trello_set)) uiOutput("trello_settings"),
+        if (isTRUE(trello_set)) uiOutput("trello_search_select"),
+        if (isTRUE(trello_set)) hr(),
         img(src = img_rstudio(), height = "45px"),
         br(),
         br(),
@@ -111,6 +116,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     )
   )
   
+  # server ----
   server <- function(input, output, session) {
     
     is_active_project <- !is.null(getActiveProject())
@@ -369,8 +375,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                                           key = key,
                                           token = token)
         }
-        
-        fullpath <- paste0(Sys.getenv("R_PROJECTS"), "/",
+        fullpath <- paste0(read_secret("projects.path"), "/",
                            trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", input$title)),
                            ifelse(is.null(trello_card_id), "", paste0(" - p", trello_card_id)))
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
@@ -537,6 +542,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
     pull(checkItems) %>%
     .[[1]]
   
+  # ui ----
   ui <- fluidPage(
     useShinyjs(),
     
@@ -599,6 +605,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
     )
   )
   
+  # server ----
   server <- function(input, output, session) {
     disable("title")
     

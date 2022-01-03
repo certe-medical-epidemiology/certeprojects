@@ -24,7 +24,7 @@ teams(
 teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 }
 \arguments{
-\item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[=plain_html_table]{plain_html_table()}}.}
+\item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[certestyle:plain_html_table]{certestyle::plain_html_table()}}.}
 
 \item{channel}{channel to send message to, run \code{\link[=teams_webhooks]{teams_webhooks()}} for list of valid channels}
 

@@ -59,14 +59,15 @@ teams <- function(message = "",
                   ...) {
   
   if (!file.exists(webhooks_file)) {
-    stop("File not found: ", webhooks_file, call. = FALSE)
-  }
-  webhooks <- read_yaml(file = webhooks_file)
-  
-  channel <- channel[1]
-  channel <- gsub("^#", "", channel)
-  if (!channel %in% names(webhooks)) {
-    stop("No webhook for channel '", channel, "'. Create it in your Teams channel.")
+    warning("Webhooks file not found: ", webhooks_file, call. = FALSE)
+    webhooks <- NULL
+  } else {
+    webhooks <- read_yaml(file = webhooks_file)
+    channel <- channel[1]
+    channel <- gsub("^#", "", channel)
+    if (!channel %in% names(webhooks)) {
+      stop("No webhook for channel '", channel, "'. Create it in your Teams channel.")
+    }
   }
   
   if (!is.null(items)) {
@@ -108,13 +109,17 @@ teams <- function(message = "",
       return(invisible())
     }
     
-    tryCatch(
-      warn_for_status(
-        out <- POST(url = webhooks[[channel]],
-                    encode = "json",
-                    body = list(text = message))
-      ),
-      error = function(e) message("Error in Teams: ", e$message))
+    if (!is.null(webhooks)) {
+      tryCatch(
+        warn_for_status(
+          out <- POST(url = webhooks[[channel]],
+                      encode = "json",
+                      body = list(text = message))
+        ),
+        error = function(e) message("Error in Teams: ", e$message))
+    } else {
+      return(message)
+    }
     
   } else {
     # also includes title / subtitle / ...
@@ -208,13 +213,17 @@ teams <- function(message = "",
                         actions = buttons_list))))
     }
     
-    tryCatch(
-      warn_for_status(
-        out <- POST(url = webhooks[[channel]],
-                    encode = "json",
-                    body = body_lst)
-      ),
-      error = function(e) message("Error in Teams: ", e$message))
+    if (!is.null(webhooks)) {
+      tryCatch(
+        warn_for_status(
+          out <- POST(url = webhooks[[channel]],
+                      encode = "json",
+                      body = body_lst)
+        ),
+        error = function(e) message("Error in Teams: ", e$message))
+    } else {
+      return(body_lst)
+    }
   }
   
   # sleep for 1/4 seconds, only 4 messages per second can be sent:

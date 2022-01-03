@@ -18,10 +18,10 @@
 # ===================================================================== #
 
 coverage:
-  # more than 50% coverage is unfeasible in non-interactive mode
+  # more than 75% coverage is unfeasible in non-interactive mode
   range:
   - 0.0
-  - 50.0
+  - 75.0
 
 ignore:
   - "R/addins.R"

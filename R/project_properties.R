@@ -23,6 +23,7 @@
 #' @param ask logical to indicate whether the project number should always be asked
 #' @param card_number Trello card number
 #' @param filename filename to set or get
+#' @param foldername foldername to set
 #' @param fixed logical to turn off regular expressions
 #' @name project_properties
 #' @details [project_set_folder()] will create the folder if it does not exist.

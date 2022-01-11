@@ -80,7 +80,7 @@ trello_upload <- function(title,
   if (all(is.null(requested_by)) | length(requested_by) == 0) {
     requested_by <- ""
   }
-  # for (i in 1:length(requested_by)) {
+  # for (i in seq_len(length(requested_by))) {
   #   if (requested_by[i] != get_certe_user(requested_by[i])) {
   #     job <- get_certe_user(requested_by[i], 'job')
   #     if (is.na(job)) {
@@ -145,7 +145,7 @@ trello_upload <- function(title,
   
   # add attachment(s)
   if (!all(attachments == "")) {
-    for (i in 1:length(attachments)) {
+    for (i in seq_len(length(attachments))) {
       request_attachment <- POST(url = paste0("https://api.trello.com/1/cards/", card_id, "/attachments"),
                                  body = list(url = attachments[i],
                                              key = key,
@@ -157,7 +157,7 @@ trello_upload <- function(title,
   # add member(s)
   if (!all(member == "")) {
     
-    for (i in 1:length(member)) {
+    for (i in seq_len(length(member))) {
       member_id <- members[which(members$id %like% member[i]
                                  | members$fullName %like% member[i]
                                  | members$username %like% member[i]), 'id']
@@ -206,7 +206,7 @@ trello_upload <- function(title,
   if (all(is.null(checklist)) | length(checklist) == 0) {
     checklist <- ""
   }
-  for (i in 1:length(checklist)) {
+  for (i in seq_len(length(checklist))) {
     checklist[i] <- trimws(checklist[i])
     if (checklist[i] != "") {
       request_checklist_add <- POST(url = paste0("https://api.trello.com/1/checklists/", checklist_id, "/checkItems"),
@@ -333,7 +333,7 @@ trello_searchcard <- function(x,
       left_join(checklists, by = c("id" = "idCard"), suffix = c(".card", ".checklist")) %>%
       mutate(checklistitems = "")
     # add checklist items
-    for (i in 1:nrow(total)) {
+    for (i in seq_len(nrow(total))) {
       if (is.list(total[i, 'checkItems'])) {
         total[i, 'checklistitems'] <- concat(total[i, 'checkItems'][[1]]$name, " ")
       }
@@ -508,7 +508,7 @@ trello_addtask <- function(card_id,
   if (all(is.null(new_items)) | length(new_items) == 0) {
     new_items <- ""
   }
-  for (i in 1:length(new_items)) {
+  for (i in seq_len(length(new_items))) {
     new_items[i] <- trimws(new_items[i])
     if (new_items[i] != "") {
       request_checklist_add <- POST(url = paste0("https://api.trello.com/1/checklists/", checklist_id, "/checkItems"),

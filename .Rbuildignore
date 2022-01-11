@@ -8,3 +8,5 @@
 ^\.DS_Store$
 ^data-raw$
 ^pkgdown$
+^codecov.yml$
+

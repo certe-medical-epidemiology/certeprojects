@@ -30,6 +30,7 @@ test_that("project properties work", {
 
   dir.create(path = project_dir)
   dir.create(path = paste0(project_dir, "Project Something - p123/"))
+  
   expect_true(file.create(paste0(project_dir, "Project Something - p123/Analyse.R")))
   
   expect_identical(project_get_folder_full(123),
@@ -52,6 +53,11 @@ test_that("project properties work", {
   expect_identical(project_set_file("test.csv", 123),
                    gsub("\\", "/",
                         paste0(normalizePath(paste0(project_dir, "Project Something - p123/")), "/test.csv"),
+                        fixed = TRUE))
+  
+  expect_identical(project_set_folder("testdir", 123),
+                   gsub("\\", "/",
+                        paste0(normalizePath(paste0(project_dir, "Project Something - p123/testdir")), "/"),
                         fixed = TRUE))
 })
 

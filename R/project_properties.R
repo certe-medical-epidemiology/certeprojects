@@ -25,6 +25,7 @@
 #' @param filename filename to set or get
 #' @param fixed logical to turn off regular expressions
 #' @name project_properties
+#' @details [project_set_folder()] will create the folder if it does not exist.
 #' @rdname project_properties
 #' @importFrom rstudioapi getSourceEditorContext showPrompt
 #' @export
@@ -164,10 +165,26 @@ project_set_file <- function(filename, card_number = project_get_current_id()) {
   folder <- project_get_folder_full(card_number = card_number)
   filename <- filename[1L]
   if (!is.na(folder)) {
-    paste0(folder, filename)
+    filename <- paste0(folder, filename)
   } else {
-    NA_character_
+    filename <- paste0(tools::file_path_as_absolute(dirname(filename)), "/", filename)
   }
+  gsub("//", "/", filename, fixed = TRUE)
+}
+
+#' @rdname project_properties
+#' @export
+project_set_folder <- function(foldername, card_number = project_get_current_id()) {
+  card_number <- gsub("[^0-9]", "", card_number)
+  folder <- project_get_folder_full(card_number = card_number)
+  foldername <- foldername[1L]
+  if (!is.na(folder)) {
+    foldername <- gsub("//", "/", paste0(folder, "/", foldername), fixed = TRUE)
+  }
+  if (!dir.exists(foldername)) {
+    invisible(dir.create(foldername))
+  }
+  paste0(tools::file_path_as_absolute(foldername), "/")
 }
 
 #' @rdname project_properties

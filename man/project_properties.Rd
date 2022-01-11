@@ -8,6 +8,7 @@
 \alias{project_get_title}
 \alias{project_get_file}
 \alias{project_set_file}
+\alias{project_set_folder}
 \alias{project_open_analysis_file}
 \title{Project Properties}
 \usage{
@@ -27,6 +28,8 @@ project_get_file(
 
 project_set_file(filename, card_number = project_get_current_id())
 
+project_set_folder(foldername, card_number = project_get_current_id())
+
 project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
 }
 \arguments{
@@ -40,4 +43,7 @@ project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
 }
 \description{
 Retrieve project properties, such as the title, folder location and Trello card number.
+}
+\details{
+\code{\link[=project_set_folder]{project_set_folder()}} will create the folder if it does not exist.
 }

@@ -52,7 +52,7 @@ test_that("project properties work", {
   expect_identical(suppressWarnings(project_get_file("does not exist", 123)), NA_character_)
   expect_identical(project_set_file("test.csv", 123),
                    gsub("\\", "/",
-                        paste0(normalizePath(paste0(project_dir, "Project Something - p123/")), "/test.csv"),
+                        paste0(normalizePath(paste0(project_dir, "Project Something - p123")), "/test.csv"),
                         fixed = TRUE))
   
   expect_identical(project_set_folder("testdir", 123),

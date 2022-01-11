@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.0</span>
       </span>
     </div>
 
@@ -92,6 +92,8 @@
 
 <span class="fu">project_set_file</span><span class="op">(</span><span class="va">filename</span>, card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 
+<span class="fu">project_set_folder</span><span class="op">(</span><span class="va">foldername</span>, card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+
 <span class="fu">project_open_analysis_file</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></code></pre></div>
     </div>
 
@@ -106,6 +108,10 @@
 <dt>fixed</dt>
 <dd><p>logical to turn off regular expressions</p></dd>
 </dl></div>
+    <div id="details">
+    <h2>Details</h2>
+    <p><code>project_set_folder()</code> will create the folder if it does not exist.</p>
+    </div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

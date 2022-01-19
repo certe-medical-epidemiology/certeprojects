@@ -39,6 +39,8 @@ project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
 
 \item{filename}{filename to set or get}
 
+\item{foldername}{foldername to set}
+
 \item{fixed}{logical to turn off regular expressions}
 }
 \description{

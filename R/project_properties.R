@@ -191,7 +191,7 @@ project_set_folder <- function(foldername, card_number = project_get_current_id(
 #' @importFrom rstudioapi navigateToFile
 #' @export
 project_open_analysis_file <- function(card_number = project_get_current_id(ask = TRUE)) {
-  if (!missing(card_number) & is.null(card_number)) {
+  if (!missing(card_number) || is.null(card_number)) {
     return(invisible())
   }
   card_number <- gsub("[^0-9]", "", card_number)

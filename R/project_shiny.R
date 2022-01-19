@@ -196,7 +196,7 @@ project_add <- function(board = read_secret("trello.default.board"),
           names(lists) <- trello_getlists(board = board_selected, key = key, token = token)$name
           
           members <- trello_getmembers(board = board_selected, key = key, token = token)$fullName
-          user <- Sys.info()['user']
+          user <- Sys.info()[""]
           if (user %in% c("5595", "Erwin")) {
             active <- "Erwin Hassing"
           } else if (user %in% c("5580", "Matthijs", "msberends")) {
@@ -380,60 +380,64 @@ project_add <- function(board = read_secret("trello.default.board"),
                            ifelse(is.null(trello_card_id), "", paste0(" - p", trello_card_id)))
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
-        header_text <- c(paste0(        '# Titel:            ', input$title),
+        desc <- unlist(strsplit(input$description, "\n", fixed = TRUE))
+        header_text <- c(paste0("# Titel:            ", input$title),
+                         paste0("# Omschrijving:     ", desc[1]),
+                         if_else(length(desc) > 1,
+                                 paste0("#                   ", desc[2:length(desc)], collapse = "\n"),
+                                 NA_character_),
                          if_else(!is.null(trello_card_id),
-                                 paste0('# Projectnummer:    p', trello_card_id),
+                                 paste0("# Projectnummer:    p", trello_card_id),
                                  NA_character_),
                          if_else(requested_by != "",
-                                 paste0('# Aangevraagd door: ', requested_by),
+                                 paste0("# Aangevraagd door: ", requested_by),
                                  NA_character_),
-                         paste0(        '# Aangemaakt op:    ', format2(Sys.time(), "d mmmm yyyy H:MM")))
-        
+                         paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
         incProgress(1 / progress_items, detail = "Creating folder")
         # map maken
         dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
         
         # bestand(en) maken
         if (input$filetype %in% c("R Markdown", "Beide")) {
-          extension <- 'Rmd'
+          extension <- "Rmd"
           filecontent <- c(
-            '---',
+            "---",
             paste0('title: "', input$title, '"'),
             'subtitle:  ""',
             'author: "`r Sys.getenv(\'R_USERNAME\')`"',
             'date: "`r sub(\'  \', \' \', format(Sys.Date(), \'%e %B %Y\'))`"',
-            'output:',
-            '  word_document:',
-            '    toc: true',
-            '    toc_depth: 2',
-            '    fig_width: 6.5',
-            '    fig_height: 5',
-            '    fig_caption: true',
+            "output:",
+            "  word_document:",
+            "    toc: true",
+            "    toc_depth: 2",
+            "    fig_width: 6.5",
+            "    fig_height: 5",
+            "    fig_caption: true",
             paste0('    reference_docx: "', read_secret("refdoc.blauw"), '"'),
-            '---',
+            "---",
             "",
-            '```{r Setup, include = FALSE, message = FALSE}',
+            "```{r Setup, include = FALSE, message = FALSE}",
             header_text,
             "",
-            'knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,',
+            "knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,",
             '                      results = "asis", comment = NA, dpi = 600)',
             "library(certedata)",
             "",
-            "forceer_data_downloaden <- FALSE",
-            paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ')) & !forceer_data_downloaden) {'),
-            paste0('  data_', trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
+            "data_download <- FALSE",
+            paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ")) & !data_download) {"),
+            paste0("  data_", trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, "))"),
             "} else {",
-            paste0('  data_', trello_card_id, ' <- certedb_getmmb(dates = c(start, stop),'),
+            paste0("  data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
             "                             where  = where(db))",
-            paste0('  export.R(data_', trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
+            paste0("  export.R(data_", trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
             "}",
             "```",
             "",
-            '# Inleiding',
+            "# Inleiding",
             "",
-            '```{r}',
+            "```{r}",
             "",
-            '```',
+            "```",
             ""
           )
           filename <- paste0(fullpath, "/Analyse",
@@ -445,14 +449,14 @@ project_add <- function(board = read_secret("trello.default.board"),
                      con = file.path(filename))
         }
         if (input$filetype %in% c("R", "Beide")) {
-          extension <- 'R'
+          extension <- "R"
           filecontent <- c(header_text,
                            "",
                            "library(certedata)",
-                           paste0('data_', trello_card_id, ' <- certedb_getmmb(dates = c(start, stop),'),
-                           paste0(strrep(" ", nchar(trello_card_id)), '                        where = where(db))'),
+                           paste0("data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           paste0(strrep(" ", nchar(trello_card_id)), "                        where = where(db))"),
                            paste0("export.R(data_", trello_card_id, ', "data_', trello_card_id, '.rds", card_number = ', trello_card_id, ")"),
-                           paste0('# data_', trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
+                           paste0("# data_", trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
                            ""
           )
           filename <- paste0(fullpath, "/Analyse",
@@ -579,7 +583,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
     sidebarLayout(
       sidebarPanel(
-        uiOutput('style_tag'),
+        uiOutput("style_tag"),
         tags$label("Titel", style = "font-size: 16px;"),
         HTML(paste0('<p class="last_update">', card_info$name, '</p>')),
         tags$label("Laatste update"),
@@ -596,7 +600,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         br(),
         actionButton("save", "Opslaan (F4)", width = "43%", icon = icon("check"), class = "btn-success"),
         actionButton("cancel", "Annuleren (F8)", width = "43%", icon = icon("ban"), class = "btn-danger"),
-        actionButton('trello_open', NULL, width = "11%", icon = icon("trello"), class = 'btn-primary'),
+        actionButton("trello_open", NULL, width = "11%", icon = icon("trello"), class = "btn-primary"),
         width = 7),
       
       mainPanel(

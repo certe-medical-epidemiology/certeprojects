@@ -31,7 +31,7 @@ trello_upload(
   desc = "",
   requested_by = "",
   project_path = "",
-  member = Sys.getenv("R_USERNAME"),
+  member = trello_credentials("membername"),
   prio = read_secret("trello.default.prio"),
   duedate = "",
   checklist = "",
@@ -45,7 +45,7 @@ trello_upload(
   ...
 )
 
-trello_credentials(x = c("member", "key", "token"))
+trello_credentials(x = c("member", "key", "token", "membername"))
 
 trello_getboards(
   username = trello_credentials("member"),
@@ -231,5 +231,8 @@ trello_movecard(
 \item{list_id}{ID of the Trello board list}
 }
 \description{
-This functions all call the \href{https://api.trello.com}{Trello api}.
+These functions call the \href{https://api.trello.com}{Trello API} and are internally used by \code{\link[=project_add]{project_add()}} and \code{\link[=project_edit]{project_edit()}}.
+}
+\details{
+The \code{\link[=trello_upload]{trello_upload()}} returns the newly created Trello card number if the upload was succesful.
 }

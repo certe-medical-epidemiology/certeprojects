@@ -131,7 +131,7 @@ teams <- function(message = "",
     }
     if (!is.null(images)) {
       if (any(images %unlike% "^http")) {
-        for (i in 1:length(images)) {
+        for (i in seq_len(length(images))) {
           if (images[i] %unlike% "^http") {
             if (!file.exists(images[i])) {
               stop("File not found: ", images[i])

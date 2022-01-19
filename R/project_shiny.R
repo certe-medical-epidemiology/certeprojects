@@ -646,7 +646,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       
       if (NROW(card_checklist) > 0) {
         l <- tagList(l, h4("Taken"))
-        for (i in 1:nrow(card_checklist)) {
+        for (i in seq_len(nrow(card_checklist))) {
           l <- tagList(l,
                        div(checkboxInput(inputId = card_checklist$id[i],
                                          label = card_checklist$name[i],
@@ -669,7 +669,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       
       if (NROW(card_comments) > 0) {
         l <- tagList(l, h4("Opmerkingen"))
-        for (i in 1:nrow(card_comments)) {
+        for (i in seq_len(nrow(card_comments))) {
           # code maken van alle '```' dingen; ondersteunt:
           #
           # ```test```
@@ -764,7 +764,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         
         # checklist
         if (NROW(card_checklist) > 0) {
-          for (i in 1:nrow(card_checklist)) {
+          for (i in seq_len(nrow(card_checklist))) {
             trello_settask_state(card_id = card_info$id,
                                  checkitem_id = card_checklist$id[i],
                                  new_value = input[[card_checklist$id[i]]],

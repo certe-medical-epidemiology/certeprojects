@@ -19,7 +19,7 @@
 
 #' Work with Trello Cards
 #' 
-#' This functions all call the [Trello api](https://api.trello.com).
+#' These functions call the [Trello API](https://api.trello.com) and are internally used by [project_add()] and [project_edit()].
 #' @param title card title
 #' @param desc card description
 #' @param requested_by name of requester
@@ -39,12 +39,13 @@
 #' @rdname trello
 #' @name trello
 #' @importFrom httr POST stop_for_status content
+#' @details The [trello_upload()] returns the newly created Trello card number if the upload was succesful.
 #' @export
 trello_upload <- function(title,
                           desc = "",
                           requested_by = "",
                           project_path = "",
-                          member = Sys.getenv("R_USERNAME"),
+                          member = trello_credentials("membername"),
                           prio = read_secret("trello.default.prio"),
                           duedate = "",
                           checklist = "",
@@ -71,9 +72,9 @@ trello_upload <- function(title,
   } else {
     if (!tolower(list) %in% tolower(lists$name)) {
       warning("List ", list, " does not exist on this Trello board. Adding card to the first available list.", call. = FALSE)
-      list_id <- lists[1, 'id']
+      list_id <- lists[1, "id"]
     }
-    list_id <- lists[which(tolower(lists$name) == tolower(list)), 'id'][1]
+    list_id <- lists[which(tolower(lists$name) == tolower(list)), "id"][1]
   }
   
   description <- ""
@@ -82,16 +83,16 @@ trello_upload <- function(title,
   }
   # for (i in seq_len(length(requested_by))) {
   #   if (requested_by[i] != get_certe_user(requested_by[i])) {
-  #     job <- get_certe_user(requested_by[i], 'job')
+  #     job <- get_certe_user(requested_by[i], "job")
   #     if (is.na(job)) {
-  #       job <- ''
+  #       job <- ""
   #     } else {
-  #       job <- paste0(' (', tolower(job), ')')
+  #       job <- paste0(" (", tolower(job), ")")
   #     }
   #     requested_by[i] <- paste0("[",
-  #                               get_certe_user(requested_by[i], 'name'),
+  #                               get_certe_user(requested_by[i], "name"),
   #                               "](mailto:",
-  #                               get_certe_user(requested_by[i], 'mail'),
+  #                               get_certe_user(requested_by[i], "mail"),
   #                               "?subject=", URLencode(title),
   #                               ")",
   #                               job)
@@ -99,7 +100,7 @@ trello_upload <- function(title,
   # }
   # requested_by <- concat(get_certe_user(requested_by), ", ")
   # if (requested_by != "") {
-  #   description <- paste0("*Aangevraagd door: ", requested_by, '*')
+  #   description <- paste0("*Aangevraagd door: ", requested_by, "*")
   #   title <- paste0(strsplit.select(requested_by, 1, "( |,|/)"), " - ", title)
   #   title <- gsub("^\\[", "", title) # eerste [ verwijderen bij naam met maillink
   # }
@@ -123,7 +124,7 @@ trello_upload <- function(title,
                                    name = title,
                                    # https://stackoverflow.com/a/45218244/4575331:
                                    desc = paste0(description, collapse = "\x0A"),
-                                   pos = 'top',
+                                   pos = "top",
                                    due = duedate,
                                    key = key,
                                    token = token))
@@ -160,9 +161,9 @@ trello_upload <- function(title,
     for (i in seq_len(length(member))) {
       member_id <- members[which(members$id %like% member[i]
                                  | members$fullName %like% member[i]
-                                 | members$username %like% member[i]), 'id']
+                                 | members$username %like% member[i]), "id"]
       if (length(member_id) == 0) {
-        warning('Member ', member[i], ' not found on this Trello board.', call. = FALSE)
+        warning("Member ", member[i], " not found on this Trello board.", call. = FALSE)
       } else {
         request_member <- POST(url = paste0("https://api.trello.com/1/cards/", card_id, "/idMembers"),
                                body = list(value = member_id,
@@ -175,14 +176,14 @@ trello_upload <- function(title,
   
   # add priority label
   if (prio %like% "^(Laag|Lage)") {
-    prio <- labels[which(labels$name %like% 'Prio.*Laa?g.*'), 'id']
+    prio <- labels[which(labels$name %like% "Prio.*Laa?g.*"), "id"]
   } else if (prio %like% "^(Normaal|Normale)") {
-    prio <- labels[which(labels$name %like% 'Prio.*Norma.*'), 'id']
+    prio <- labels[which(labels$name %like% "Prio.*Norma.*"), "id"]
   } else if (prio %like% "^(Hoog|Hoge)") {
-    prio <- labels[which(labels$name %like% 'Prio.*Hoo?g.*'), 'id']
+    prio <- labels[which(labels$name %like% "Prio.*Hoo?g.*"), "id"]
   } else {
     warning('Label like "', prio, '" not found on this Trello board, adding first empty label instead.', call. = FALSE)
-    prio <- labels[which(labels$name == ""), 'id'][1]
+    prio <- labels[which(labels$name == ""), "id"][1]
   }
   if (length(prio) > 0) {
     request_labelPrio <- POST(url = paste0("https://api.trello.com/1/cards/", card_id, "/idLabels"),
@@ -191,7 +192,7 @@ trello_upload <- function(title,
                                           token = token))
     stop_for_status(request_labelPrio, task = paste("add label", prio))
   } else {
-    warning('Label for priority not found on this Trello board.', call. = FALSE)
+    warning("Label for priority not found on this Trello board.", call. = FALSE)
   }
   # add empty checklist
   request_checklist <- POST(url = "https://api.trello.com/1/checklists",
@@ -224,7 +225,7 @@ trello_upload <- function(title,
 
 #' @rdname trello
 #' @export
-trello_credentials <- function(x = c("member", "key", "token")) {
+trello_credentials <- function(x = c("member", "key", "token", "membername")) {
   read_secret(paste0("trello.", Sys.info()["user"], ".", x[1]))
 }
 
@@ -334,8 +335,8 @@ trello_searchcard <- function(x,
       mutate(checklistitems = "")
     # add checklist items
     for (i in seq_len(nrow(total))) {
-      if (is.list(total[i, 'checkItems'])) {
-        total[i, 'checklistitems'] <- concat(total[i, 'checkItems'][[1]]$name, " ")
+      if (is.list(total[i, "checkItems"])) {
+        total[i, "checklistitems"] <- concat(total[i, "checkItems"][[1]]$name, " ")
       }
     }
   } else {
@@ -344,7 +345,7 @@ trello_searchcard <- function(x,
   
   total <- total %>%
     transmute(url = shortUrl,
-              title = paste0(name.card, ' [', name.list, ']'),
+              title = paste0(name.card, " [", name.list, "]"),
               text = paste(name.card, desc, checklistitems, sep = " "))
   
   if (!is.null(x)) {
@@ -489,9 +490,9 @@ trello_addtask <- function(card_id,
                            token = trello_credentials("token")) {
   
   checklist_id <- trello_getchecklists() %>% filter(idCard == card_id)
-  # bestaat checklist al?
+  # does checklist exist?
   if (NROW(checklist_id) == 0 | checklist_id$name[1L] != checklist_name) {
-    # checklist maken
+    # create checklist
     request_checklist <- POST(url = "https://api.trello.com/1/checklists",
                               body = list(idCard = card_id,
                                           name = checklist_name,
@@ -504,7 +505,7 @@ trello_addtask <- function(card_id,
     checklist_id <- checklist_id$id[1L]
   }
   
-  # checklist items toevoegen
+  # add checklist items
   if (all(is.null(new_items)) | length(new_items) == 0) {
     new_items <- ""
   }
@@ -551,7 +552,7 @@ trello_movecard <- function(card_id,
   
   request_comments <- PUT(url = paste0("https://api.trello.com/1/cards/", card_id),
                           body = list(idList = list_id,
-                                      pos = 'top', # always to top
+                                      pos = "top", # always to top
                                       key = key,
                                       token = token),
                           encode = "json") # required for PUT()

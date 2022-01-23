@@ -54,7 +54,8 @@ project_add <- function(board = read_secret("trello.default.board"),
                 var textbox = document.getElementById("title");
                 textbox.focus();
                 });'),
-    tags$style(paste0(".container-fluid { margin-top: 15px; }
+    tags$style(paste0("* { font-family: Calibri; }
+                      .container-fluid { margin-top: 15px; }
                       .well { background-color: ", colourpicker("certeblauw6"), "; }
                       .well label { color: ", colourpicker("certeblauw"), "; }
                       .form-group { margin-bottom: 5px; }
@@ -65,7 +66,9 @@ project_add <- function(board = read_secret("trello.default.board"),
                       .results_count { margin-left: 10px; }
                       label[for=title] { font-size: 16px; }
                       #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #create:hover { background-color: ", colourpicker("certegroen2"), "; border-color: ", colourpicker("certegroen"), "; }
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                      #cancel:hover { background-color: ", colourpicker("certeroze2"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
     
@@ -77,7 +80,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         uiOutput("requested_by"),
         selectInput("priority", "Prioriteit", c("Laag", "Normaal", "Hoog"),
                     ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
-                           "Hoog", # standaard als je op zaterdag of zondag een kaart maakt
+                           "Hoog", # default if card is created on weekend day
                            "Normaal")),
         tags$label("Deadline"),
         checkboxInput("has_deadline", "Deadline instellen", TRUE),
@@ -122,7 +125,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     is_active_project <- !is.null(getActiveProject())
     
     output$requested_by <- renderUI({
-      # gebruikers ophalen uit csv; waarden zijn eigenlijk Certe-ID's, maar je ziet namen met functies
+      # retrieve user list with names and job titles
       users <- users_list()
       if (!is.null(users)) {
         tagList(
@@ -131,11 +134,10 @@ project_add <- function(board = read_secret("trello.default.board"),
                          choices = users,
                          multiple = TRUE,
                          options = list(
-                           # niet-bestaande aanvragers ondersteunen:
+                           # do not support unexisting requesters
                            create = TRUE,
-                           # maakt nieuw item als je veld verlaat zonder op 'Add ...' te drukken:
+                           # creates new item on field leave
                            createOnBlur = TRUE,
-                           # na kiezen dropdown sluiten:
                            closeAfterSelect = TRUE))
         )
       } else {
@@ -196,20 +198,18 @@ project_add <- function(board = read_secret("trello.default.board"),
           names(lists) <- trello_getlists(board = board_selected, key = key, token = token)$name
           
           members <- trello_getmembers(board = board_selected, key = key, token = token)$fullName
-          user <- Sys.info()[""]
-          if (user %in% c("5595", "Erwin")) {
-            active <- "Erwin Hassing"
-          } else if (user %in% c("5580", "Matthijs", "msberends")) {
-            active <- "Matthijs Berends"
-          } else {
+          user <- trello_credentials("membername")
+          if (user == "") {
             active <- NULL
+          } else {
+            active <- user
           }
           
           tagList(
             selectInput("trello_list",
                         label = "Lijst",
                         choices = lists,
-                        selected = lists[3], # 3 = bezig
+                        selected = lists[3], # 3 = 'bezig'
                         multiple = FALSE,
                         width = "100%"),
             selectizeInput("trello_members",
@@ -219,10 +219,9 @@ project_add <- function(board = read_secret("trello.default.board"),
                            multiple = TRUE,
                            width = "100%",
                            options = list(
-                             # niet-bestaande leden niet ondersteunen:
+                             # do not support unexisting members:
                              create = FALSE,
                              createOnBlur = FALSE,
-                             # na kiezen dropdown sluiten:
                              closeAfterSelect = TRUE)),
             textAreaInput("trello_comments",
                           label = "Opmerkingen",
@@ -232,7 +231,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                           resize = "vertical",
                           placeholder = ""),
             searchInput("trello_search",
-                        label = "Gerelateerde kaart(en)",
+                        label = "Gerelateerde project(en)",
                         value = "",
                         placeholder = "Zoeken in titel/beschrijving/taken...",
                         btnSearch = icon("search"),
@@ -248,7 +247,7 @@ project_add <- function(board = read_secret("trello.default.board"),
       if (input$trello_upload == TRUE) {
         board_selected <- input$trello_boards
         searchterm <- input$trello_search
-        if (!is.null(searchterm)) { # niet bij opstarten, dan is het NULL. Wordt hierna "".
+        if (!is.null(searchterm)) { # not at start up, then it's NULL. After this will be "".
           if (!is.null(board_selected)) {
             if (length(board_selected) > 1) {
               board_selected <- board_selected[1]
@@ -264,10 +263,9 @@ project_add <- function(board = read_secret("trello.default.board"),
                                multiple = TRUE,
                                width = "100%",
                                options = list(
-                                 # niet-bestaande kaarten niet ondersteunen:
+                                 # do not support unexisting cards:
                                  create = FALSE,
                                  createOnBlur = FALSE,
-                                 # na kiezen dropdown sluiten:
                                  closeAfterSelect = TRUE)),
                 p(paste(length(found_cards),
                         if_else(length(found_cards) == 1,
@@ -394,10 +392,10 @@ project_add <- function(board = read_secret("trello.default.board"),
                                  NA_character_),
                          paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
         incProgress(1 / progress_items, detail = "Creating folder")
-        # map maken
+        # create folder
         dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
         
-        # bestand(en) maken
+        # create file(s)
         if (input$filetype %in% c("R Markdown", "Beide")) {
           extension <- "Rmd"
           filecontent <- c(
@@ -628,10 +626,10 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
     
     output$tasks_and_comments <- renderUI({
       desc <- unlist(strsplit(card_info$desc,  "\n\n"))
-      desc <- desc[desc %unlike% "[*].*[*]"] # niet die beginnen en eindigen met *, zoals 'Aangevraagd door' en 'Maplocatie'
+      desc <- desc[desc %unlike% "[*].*[*]"] # not those starting and ending with *, such as Aangevraagd door' and 'Maplocatie'
       desc <- paste(gsub("\n", "<br>", desc, fixed = TRUE), collapse = "\n")
       while (desc %like% "\\[.*\\]\\(.*\\)") {
-        # URLs van markdown naar HTML
+        # URLs: markdown -> HTML
         desc <- sub("(.*)\\[(.*?)\\]\\((.*?)\\)(.*)", '\\1<a href="\\3">\\2</a>\\4', desc)
       }
       
@@ -670,11 +668,11 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       if (NROW(card_comments) > 0) {
         l <- tagList(l, h4("Opmerkingen"))
         for (i in seq_len(nrow(card_comments))) {
-          # code maken van alle '```' dingen; ondersteunt:
+          # create code from all '```' parts; which thus supports:
           #
           # ```test```
           #
-          # en
+          # and
           #
           # ```r
           # test

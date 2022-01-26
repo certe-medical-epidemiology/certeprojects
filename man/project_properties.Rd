@@ -47,5 +47,7 @@ project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
 Retrieve project properties, such as the title, folder location and Trello card number.
 }
 \details{
+\code{\link[=project_get_current_id]{project_get_current_id()}} uses \code{\link[=trello_search_card]{trello_search_card()}} to find a specific project based on any search string.
+
 \code{\link[=project_set_folder]{project_set_folder()}} will create the folder if it does not exist.
 }

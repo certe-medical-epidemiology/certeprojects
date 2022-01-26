@@ -26,9 +26,9 @@
 #' @param foldername foldername to set
 #' @param fixed logical to turn off regular expressions
 #' @name project_properties
-#' @details [project_set_folder()] will create the folder if it does not exist.
+#' @details [project_get_current_id()] uses [trello_search_card()] to find a specific project based on any search string. 
 #' @rdname project_properties
-#' @importFrom rstudioapi getSourceEditorContext showPrompt
+#' @importFrom rstudioapi getSourceEditorContext
 #' @export
 project_get_current_id <- function(ask = NULL) {
   # first try project number from full file location:
@@ -46,7 +46,7 @@ project_get_current_id <- function(ask = NULL) {
   if (interactive()) {
     path <- getSourceEditorContext()$path
     if (is.null(path) && is.null(ask)) {
-      id <- showPrompt("Project Number", "Enter Project Number:")
+      id <- trello_search_card()
       return(fix_id(id))
     }
   } else {
@@ -59,12 +59,14 @@ project_get_current_id <- function(ask = NULL) {
   }
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
-    id <- showPrompt("Project Number", "Enter Project Number:")
+    id <- trello_search_card()
     asked <- TRUE
   }
   
   if (identical(ask, TRUE) && asked == FALSE) {
-    id <- showPrompt("Project Number", "Enter Project Number:", ifelse(length(id) > 0, paste0("p", fix_id(id)), ""))
+    id <- trello_search_card(x = ifelse(!is.na(id) & length(id) > 0,
+                                        paste0("p", fix_id(id)),
+                                        ""))
     if (is.null(id) || all(is.na(id))) {
       return(NULL)
     }
@@ -174,6 +176,7 @@ project_set_file <- function(filename, card_number = project_get_current_id()) {
 }
 
 #' @rdname project_properties
+#' @details [project_set_folder()] will create the folder if it does not exist.
 #' @export
 project_set_folder <- function(foldername, card_number = project_get_current_id()) {
   card_number <- gsub("[^0-9]", "", card_number)

@@ -34,7 +34,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                         key = trello_credentials("key"),
                         token = trello_credentials("token")) {
   
-  trello_set <- tryCatch(is.data.frame(trello_getboards(username = username, key = key, token = token)),
+  trello_set <- tryCatch(is.data.frame(trello_get_boards(username = username, key = key, token = token)),
                          error = function(e) FALSE)
   
   # ui ----
@@ -161,7 +161,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     output$trello_boards <- renderUI({
       if (input$trello_upload == TRUE) {
-        boards_df <- trello_getboards(username = username, key = key, token = token) %>%
+        boards_df <- trello_get_boards(username = username, key = key, token = token) %>%
           filter(closed == FALSE) %>%
           select(id, name, shortLink)
         boards_shortLink <- boards_df %>% pull(shortLink)
@@ -194,10 +194,10 @@ project_add <- function(board = read_secret("trello.default.board"),
             board_selected <- board_selected[1]
           }
           
-          lists <- trello_getlists(board = board_selected, key = key, token = token)$id
-          names(lists) <- trello_getlists(board = board_selected, key = key, token = token)$name
+          lists <- trello_get_lists(board = board_selected, key = key, token = token)$id
+          names(lists) <- trello_get_lists(board = board_selected, key = key, token = token)$name
           
-          members <- trello_getmembers(board = board_selected, key = key, token = token)$fullName
+          members <- trello_get_members(board = board_selected, key = key, token = token)$fullName
           user <- trello_credentials("membername")
           if (user == "") {
             active <- NULL
@@ -253,7 +253,11 @@ project_add <- function(board = read_secret("trello.default.board"),
               board_selected <- board_selected[1]
             }
             disable("trello_cards")
-            found_cards <- trello_searchcard(x = searchterm, board = board_selected, key = key, token = token)
+            found_cards <- trello_search_card(x = searchterm,
+                                              return_all = TRUE,
+                                              board = board_selected,
+                                              key = key,
+                                              token = token)
             enable("trello_cards")
             if (length(found_cards) > 0) {
               tagList(
@@ -520,26 +524,26 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
     return(invisible())
   }
   
-  card_info <- trello_getcards(board = board, key = key, token = token) %>%
+  card_info <- trello_get_cards(board = board, key = key, token = token) %>%
     filter(idShort == card_number) %>%
     as.list()
   if (length(card_info$id) == 0) {
     stop(paste0("Project p", card_number, " not found on Trello"), call. = FALSE)
   }
-  lists <- trello_getlists(board = board, key = key, token = token)
+  lists <- trello_get_lists(board = board, key = key, token = token)
   card_status <- lists %>% filter(id == card_info$idList) %>% pull(name)
-  card_comments <- trello_getcomments(card_id = card_info$id, key = key, token = token)
+  card_comments <- trello_get_comments(card_id = card_info$id, key = key, token = token)
   if (NROW(card_comments) > 0) {
     card_comments <- card_comments %>%
       transmute(by = memberCreator.fullName,
                 date = date,
                 text = data.text)
   }
-  card_members <- trello_getmembers(board = board, key = key, token = token) %>%
+  card_members <- trello_get_members(board = board, key = key, token = token) %>%
     filter(id %in% unlist(trello_get_card_property(card_number, "idMembers", board = board, key = key, token = token))) %>%
     pull(fullName) %>%
     paste(collapse = ", ")
-  card_checklist <- trello_getchecklists(board = board, key = key, token = token) %>%
+  card_checklist <- trello_get_checklists(board = board, key = key, token = token) %>%
     filter(idCard == card_info$id) %>%
     pull(checkItems) %>%
     .[[1]]
@@ -724,7 +728,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         
         # status
         if (input$status != card_status) {
-          trello_movecard(card_id = card_info$id,
+          trello_move_card(card_id = card_info$id,
                           list_id = lists %>% filter(name == input$status) %>% pull(id), 
                           key = key,
                           token = token)
@@ -732,13 +736,13 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         
         # deadline
         if (input$has_deadline == FALSE) {
-          trello_setdeadline(card_id = card_info$id,
+          trello_set_deadline(card_id = card_info$id,
                              duedate = NULL,
                              duecomplete = TRUE, 
                              key = key,
                              token = token)
         } else {
-          trello_setdeadline(card_id = card_info$id,
+          trello_set_deadline(card_id = card_info$id,
                              duedate = clean_Date(input$deadline),
                              duecomplete = clean_Date(input$deadline_finished), 
                              key = key,
@@ -747,14 +751,14 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         
         # comment
         if (trimws(input$comment) != "") {
-          trello_setcomment(card_id = card_info$id,
+          trello_set_comment(card_id = card_info$id,
                             comment = input$comment,
                             key = key,
                             token = token)
         }
         
         # members
-        trello_setmembers(card_id = card_info$id,
+        trello_set_members(card_id = card_info$id,
                           member = input$trello_members, 
                           board = board,
                           key = key,
@@ -763,7 +767,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         # checklist
         if (NROW(card_checklist) > 0) {
           for (i in seq_len(nrow(card_checklist))) {
-            trello_settask_state(card_id = card_info$id,
+            trello_set_task_state(card_id = card_info$id,
                                  checkitem_id = card_checklist$id[i],
                                  new_value = input[[card_checklist$id[i]]],
                                  key = key,
@@ -775,7 +779,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
           newtasks <- ""
         }
         if (newtasks != "") {
-          trello_addtask(card_id = card_info$id,
+          trello_add_task(card_id = card_info$id,
                          new_items = newtasks %>% strsplit("\n") %>% unlist(),
                          board = board,
                          key = key,
@@ -808,6 +812,8 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
               viewer = viewer,
               stopOnCancel = FALSE))
 }
+
+
 
 users_list <- function() {
   user_file <- read_secret("users.csv.file")

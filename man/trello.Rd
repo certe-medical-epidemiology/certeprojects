@@ -4,26 +4,27 @@
 \alias{trello}
 \alias{trello_upload}
 \alias{trello_credentials}
-\alias{trello_getboards}
-\alias{trello_getboardname}
-\alias{trello_getlists}
-\alias{trello_getmembers}
-\alias{trello_getcards}
-\alias{trello_getlabels}
-\alias{trello_getcustomfields}
-\alias{trello_getchecklists}
-\alias{trello_getcomments}
-\alias{trello_searchcard}
-\alias{trello_openboard}
-\alias{trello_opencard}
+\alias{trello_get_boards}
+\alias{trello_get_board_name}
+\alias{trello_get_lists}
+\alias{trello_get_members}
+\alias{trello_get_cards}
+\alias{trello_get_labels}
+\alias{trello_get_customfields}
+\alias{trello_get_checklists}
+\alias{trello_get_comments}
+\alias{trello_search_any}
+\alias{trello_search_card}
+\alias{trello_open_board}
+\alias{trello_open_card}
 \alias{trello_get_card_property}
 \alias{trello_get_card_id}
-\alias{trello_setcomment}
-\alias{trello_setmembers}
-\alias{trello_setdeadline}
-\alias{trello_addtask}
-\alias{trello_settask_state}
-\alias{trello_movecard}
+\alias{trello_set_comment}
+\alias{trello_set_members}
+\alias{trello_set_deadline}
+\alias{trello_add_task}
+\alias{trello_set_task_state}
+\alias{trello_move_card}
 \title{Work with Trello Cards}
 \usage{
 trello_upload(
@@ -47,71 +48,78 @@ trello_upload(
 
 trello_credentials(x = c("member", "key", "token", "membername"))
 
-trello_getboards(
+trello_get_boards(
   username = trello_credentials("member"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getboardname(
+trello_get_board_name(
   board = read_secret("trello.default.board"),
   username = trello_credentials("member"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getlists(
+trello_get_lists(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getmembers(
+trello_get_members(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getcards(
+trello_get_cards(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getlabels(
+trello_get_labels(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getcustomfields(
+trello_get_customfields(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getchecklists(
+trello_get_checklists(
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_getcomments(
+trello_get_comments(
   card_id,
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_searchcard(
+trello_search_any(
   x,
+  key = trello_credentials("key"),
+  token = trello_credentials("token")
+)
+
+trello_search_card(
+  x = NULL,
+  return_all = FALSE,
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_openboard(board = read_secret("trello.default.board"))
+trello_open_board(board = read_secret("trello.default.board"))
 
-trello_opencard()
+trello_open_card()
 
 trello_get_card_property(
   card_number,
@@ -128,14 +136,14 @@ trello_get_card_id(
   token = trello_credentials("token")
 )
 
-trello_setcomment(
+trello_set_comment(
   card_id,
   comment,
   key = trello_credentials("key"),
   token = trello_credentials("token")
 )
 
-trello_setmembers(
+trello_set_members(
   card_id,
   member,
   board = read_secret("trello.default.board"),
@@ -143,7 +151,7 @@ trello_setmembers(
   token = trello_credentials("token")
 )
 
-trello_setdeadline(
+trello_set_deadline(
   card_id,
   duedate,
   duecomplete = FALSE,
@@ -151,7 +159,7 @@ trello_setdeadline(
   token = trello_credentials("token")
 )
 
-trello_addtask(
+trello_add_task(
   card_id,
   new_items = NULL,
   checklist_name = "Taken",
@@ -160,7 +168,7 @@ trello_addtask(
   token = trello_credentials("token")
 )
 
-trello_settask_state(
+trello_set_task_state(
   card_id,
   checkitem_id,
   new_value = TRUE,
@@ -168,7 +176,7 @@ trello_settask_state(
   token = trello_credentials("token")
 )
 
-trello_movecard(
+trello_move_card(
   card_id,
   list_id,
   key = trello_credentials("key"),
@@ -231,8 +239,8 @@ trello_movecard(
 \item{list_id}{ID of the Trello board list}
 }
 \description{
-These functions call the \href{https://api.trello.com}{Trello API} and are internally used by \code{\link[=project_add]{project_add()}} and \code{\link[=project_edit]{project_edit()}}.
+These functions call the \href{https://api.trello.com}{Trello API} and are internally used by \code{\link[=project_get_current_id]{project_get_current_id()}} (and its RStudio addin) and the Shiny apps \code{\link[=project_add]{project_add()}} and \code{\link[=project_edit]{project_edit()}}.
 }
 \details{
-The \code{\link[=trello_upload]{trello_upload()}} returns the newly created Trello card number if the upload was succesful.
+The \code{\link[=trello_upload]{trello_upload()}} returns the newly created Trello card number if the upload was successful.
 }

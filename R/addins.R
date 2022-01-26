@@ -27,8 +27,8 @@ addin_projects_open_file <- function() {
   project_open_analysis_file()
 }
 addin_projects_trellocard <- function() {
-  trello_opencard()
+  trello_open_card()
 }
 addin_projects_trelloboard <- function() {
-  trello_openboard()
+  trello_open_board()
 }

@@ -509,7 +509,7 @@ project_add <- function(board = read_secret("trello.default.board"),
 #' @param card_number Trello card number
 #' @inheritParams trello
 #' @importFrom shiny HTML h4 div h5
-#' @importFrom dplyr `%>%` filter pull case_when
+#' @importFrom dplyr `%>%` filter pull case_when transmute
 #' @importFrom shinyjs useShinyjs enable disable hidden
 #' @importFrom rstudioapi showDialog
 #' @importFrom cleaner clean_Date
@@ -539,10 +539,12 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                 date = date,
                 text = data.text)
   }
+  
   card_members <- trello_get_members(board = board, key = key, token = token) %>%
     filter(id %in% unlist(trello_get_card_property(card_number, "idMembers", board = board, key = key, token = token))) %>%
     pull(fullName) %>%
     paste(collapse = ", ")
+  
   card_checklist <- trello_get_checklists(board = board, key = key, token = token) %>%
     filter(idCard == card_info$id) %>%
     pull(checkItems) %>%
@@ -565,7 +567,8 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                 var textbox = document.getElementById("comment");
                 textbox.focus();
                 });'),
-    tags$style(paste0(".container-fluid { margin-top: 15px; }
+    tags$style(paste0("* { font-family: Calibri; }
+                      .container-fluid { margin-top: 15px; }
                       .form-group { margin-bottom: 5px; }
                       .well .form-group { margin-bottom: 14px; }
                       .h2, h2 { color: ", colourpicker("certeblauw"), "; }
@@ -580,7 +583,9 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                       p { cursor: default; }
                       .comment_box { border: 1px solid #dddddd; width: fit-content; border-radius: 10px; padding: 5px; margin-bottom: 10px; background-color: ", colourpicker("certeblauw6"), " }
                       #save { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #save:hover { background-color: ", colourpicker("certegroen2"), "; border-color: ", colourpicker("certegroen"), "; }
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                      #cancel:hover { background-color: ", colourpicker("certeroze2"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
     sidebarLayout(
@@ -619,13 +624,19 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       val <- case_when(isTRUE(input$has_deadline) & !is.na(as.Date(card_info$due)) ~ as.Date(card_info$due),
                        isTRUE(input$has_deadline) ~  Sys.Date() + 14,
                        TRUE ~ as.Date(NA_character_))
-      tagList(
-        dateInput("deadline", NULL,
-                  value = val,
-                  format = "DD d MM yyyy",
-                  language = "nl"),
-        checkboxInput("deadline_finished", "Deadline voltooid", value = card_info$dueComplete & !is.na(card_info$due))
-      )
+      if (is.na(val)) {
+        tagList()
+      } else {
+        tagList(
+          dateInput("deadline", NULL,
+                    value = val,
+                    format = "DD d MM yyyy",
+                    language = "nl"),
+          checkboxInput("deadline_finished",
+                        "Deadline voltooid",
+                        value = card_info$dueComplete & !is.na(card_info$due))
+        )
+      }
     })
     
     output$tasks_and_comments <- renderUI({
@@ -644,7 +655,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                      HTML(paste0("<p>", desc, "</p>")))
       }
       
-      l <- tagList(l, HTML(paste0("<p><b>Data-onderzoeker: </b>", card_members, "</p>")))
+      l <- tagList(l, HTML(paste0("<p><b>Uitgevoerd door: </b>", card_members, "</p>")))
       
       if (NROW(card_checklist) > 0) {
         l <- tagList(l, h4("Taken"))

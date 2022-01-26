@@ -26,6 +26,9 @@ addin_projects_edit <- function() {
 addin_projects_open_file <- function() {
   project_open_analysis_file()
 }
+addin_projects_open_folder <- function() {
+  project_open_folder()
+}
 addin_projects_trellocard <- function() {
   trello_open_card()
 }

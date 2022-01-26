@@ -10,6 +10,7 @@
 \alias{project_set_file}
 \alias{project_set_folder}
 \alias{project_open_analysis_file}
+\alias{project_open_folder}
 \title{Project Properties}
 \usage{
 project_get_current_id(ask = NULL)
@@ -31,6 +32,8 @@ project_set_file(filename, card_number = project_get_current_id())
 project_set_folder(foldername, card_number = project_get_current_id())
 
 project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
+
+project_open_folder(card_number = project_get_current_id(ask = TRUE))
 }
 \arguments{
 \item{ask}{logical to indicate whether the project number should always be asked}

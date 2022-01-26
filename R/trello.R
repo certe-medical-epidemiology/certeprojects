@@ -331,6 +331,7 @@ trello_search_any <- function(x,
 
 #' @rdname trello
 #' @param x search string
+#' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_add()])
 #' @importFrom certestyle font_green font_red font_blue font_bold font_silver
 #' @importFrom rstudioapi showPrompt
 #' @export
@@ -343,7 +344,6 @@ trello_search_card <- function(x = NULL,
     x <- showPrompt(title = "Project",
                     message = "Project (search in title, description, project number, ...):",
                     default = x)
-    
   }
   if (is.null(x) || x %in% c("", NA)) {
     return(NULL)

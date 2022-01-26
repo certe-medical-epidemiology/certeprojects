@@ -45,7 +45,7 @@ project_get_current_id <- function(ask = NULL) {
   asked <- FALSE
   if (interactive()) {
     path <- getSourceEditorContext()$path
-    if (is.null(path) && is.null(ask)) {
+    if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       id <- trello_search_card()
       return(fix_id(id))
     }
@@ -205,4 +205,14 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
   } else {
     navigateToFile(path)
   }
+}
+
+#' @rdname project_properties
+#' @export
+project_open_folder <- function(card_number = project_get_current_id(ask = TRUE)) {
+  if (is.null(card_number)) {
+    return(invisible())
+  }
+  path <- project_get_folder_full(card_number = card_number)
+  utils::browseURL(path)
 }

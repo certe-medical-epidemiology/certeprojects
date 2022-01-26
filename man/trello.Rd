@@ -222,6 +222,8 @@ trello_move_card(
 
 \item{card_id}{Trello card ID (\emph{not} the card number)}
 
+\item{return_all}{a \link{logical} to indicate whether a named vector of short URLs must be returned (internally used by \code{\link[=project_add]{project_add()}})}
+
 \item{card_number}{Trello card number}
 
 \item{property}{property to take from card}

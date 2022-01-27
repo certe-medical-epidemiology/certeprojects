@@ -349,8 +349,13 @@ trello_search_card <- function(x = NULL,
     return(NULL)
   }
   
+  x <- gsub("^p([0-9]+)", "\\1", x)
+  if (x %like% "^[0-9]+$") {
+    return(as.double(x))
+  }
+  
   # search the Trello API, but strip "p" for project identifiers
-  search <- trello_search_any(x = gsub("^p([0-9]+)", "\\1", x), key = key, token = token)
+  search <- trello_search_any(x = x, key = key, token = token)
   # only keep current board
   if (NROW(search) > 0) {
     search <- search[which(search$board.shortLink == board), ]

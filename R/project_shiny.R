@@ -27,6 +27,8 @@
 #' @importFrom shinyWidgets searchInput
 #' @importFrom dplyr `%>%` select pull filter if_else
 #' @importFrom certestyle colourpicker format2
+#  certestyle for R Markdown:
+#' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
 #' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject
 #' @rdname project_shiny
 project_add <- function(board = read_secret("trello.default.board"),
@@ -405,17 +407,31 @@ project_add <- function(board = read_secret("trello.default.board"),
           filecontent <- c(
             "---",
             paste0('title: "', input$title, '"'),
-            'subtitle:  ""',
-            'author: "`r Sys.getenv(\'R_USERNAME\')`"',
-            'date: "`r sub(\'  \', \' \', format(Sys.Date(), \'%e %B %Y\'))`"',
+            'subtitle: ""',
+            'subtitle2: ""',
+            'author: "`r certestyle::rmarkdown_author()`"',
+            'date: "`r certestyle::rmarkdown_date()`"',
             "output:",
             "  word_document:",
-            "    toc: true",
+            "    toc: TRUE",
             "    toc_depth: 2",
             "    fig_width: 6.5",
             "    fig_height: 5",
-            "    fig_caption: true",
-            paste0('    reference_docx: "', read_secret("refdoc.blauw"), '"'),
+            "    fig_caption: TRUE",
+            '    reference_docx: !expr certestyle::rmarkdown_template("word")',
+            "  pdf_document:",
+            "    toc: TRUE",
+            "    toc_depth: 2",
+            "    fig_width: 6.5",
+            "    fig_height: 5",
+            "    fig_caption: TRUE",
+            '    latex_engine: "xelatex"',
+            "    df_print: !expr certestyle::rmarkdown_table",
+            '    template: !expr certestyle::rmarkdown_template("latex")',
+            'logocentre: "`r certestyle::rmarkdown_logo(\'centre\')`"',
+            'logoleft: "" # 38x58 mm',
+            'logoright: "" # 38x58 mm',
+            'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`"',
             "---",
             "",
             "```{r Setup, include = FALSE, message = FALSE}",

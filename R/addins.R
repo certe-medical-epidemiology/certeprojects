@@ -17,21 +17,21 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-addin_projects_new <- function() {
+addin1_projects_new <- function() {
   project_add()
 }
-addin_projects_edit <- function() {
+addin2_projects_edit <- function() {
   project_edit()
 }
-addin_projects_open_file <- function() {
+addin3_projects_open_file <- function() {
   project_open_analysis_file()
 }
-addin_projects_open_folder <- function() {
+addin4_projects_open_folder <- function() {
   project_open_folder()
 }
-addin_projects_trellocard <- function() {
+addin5_projects_trellocard <- function() {
   trello_open_card()
 }
-addin_projects_trelloboard <- function() {
+addin6_projects_trelloboard <- function() {
   trello_open_board()
 }

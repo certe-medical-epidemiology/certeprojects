@@ -226,7 +226,12 @@ trello_upload <- function(title,
 #' @rdname trello
 #' @export
 trello_credentials <- function(x = c("member", "key", "token", "membername")) {
-  read_secret(paste0("trello.", Sys.info()["user"], ".", x[1]))
+  setting <- paste0("trello.", Sys.info()["user"], ".", x[1])
+  out <- suppressWarnings(read_secret(setting))
+  if (out == "") {
+    stop("Secret '", setting, "' not set", call. = FALSE)
+  }
+  out
 }
 
 #' @rdname trello
@@ -405,7 +410,11 @@ trello_open_board <- function(board = read_secret("trello.default.board")) {
 #' @rdname trello
 #' @export
 trello_open_card <- function() {
-  content <- trello_get_card_property(project_get_current_id(ask = TRUE), "url")
+  id <- project_get_current_id(ask = TRUE)
+  if (is.null(id)) {
+    return(invisible())
+  }
+  content <- trello_get_card_property(id, "url")
   utils::browseURL(content)
 }
 

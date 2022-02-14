@@ -141,13 +141,13 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
       if (length(files_found) > 1) {
         if (interactive()) {
           choice <- utils::menu(choices = files_found_base,
-                                title = paste0("Files found with '", filename, "' in ", folder, ":"))
+                                title = paste0("Files found with in ", folder, ":"))
           if (choice == 0) {
             return(NA_character_)
           }
           filename <- files_found[choice]
         } else {
-          message("Files found with '", filename, "':\n  - ", paste(files_found_base, collapse = "\n  - "),
+          message("Files found:\n  - ", paste(files_found_base, collapse = "\n  - "),
                   "\nSelecting first match.")
           filename <- files_found[1L]
         }
@@ -199,7 +199,7 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
     return(invisible())
   }
   card_number <- gsub("[^0-9]", "", card_number)
-  path <- project_get_file(".*[.](R|Rmd)$", card_number = card_number)
+  path <- project_get_file(".*[.](R|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", card_number = card_number)
   if (is.na(path)) {
     stop(paste0("No .R or .Rmd files found for p", card_number))
   } else {

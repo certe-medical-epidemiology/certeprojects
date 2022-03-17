@@ -27,3 +27,8 @@ Name: 🌎 View Board on Trello.com
 Description: View Board on Trello.com
 Binding: addin6_projects_trelloboard
 Interactive: false
+
+Name: 👨 My Current Projects
+Description: My Current Projects
+Binding: addin7_projects_mine
+Interactive: false

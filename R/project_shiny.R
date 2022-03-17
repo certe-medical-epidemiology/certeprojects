@@ -784,10 +784,10 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         
         # members
         trello_set_members(card_id = card_info$id,
-                          member = input$trello_members, 
-                          board = board,
-                          key = key,
-                          token = token)
+                           member = input$trello_members, 
+                           board = board,
+                           key = key,
+                           token = token)
         
         # checklist
         if (NROW(card_checklist) > 0) {

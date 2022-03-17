@@ -317,6 +317,32 @@ trello_get_comments <- function(card_id,
 }
 
 #' @rdname trello
+#' @importFrom dplyr `%>%` filter
+#' @importFrom certestyle font_blue font_bold font_silver
+#' @export
+trello_my_cards <- function(board = read_secret("trello.default.board"),
+                            username = trello_credentials("member"),
+                            key = trello_credentials("key"),
+                            token = trello_credentials("token"),
+                            list = read_secret("trello.current.list")) {
+  cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", username,
+                         "&cards_limit=1000",
+                         "&card_list=true",
+                         "&key=", key,
+                         "&card_fields=idShort,name,dateLastActivity",
+                         "&token=", token)) %>% 
+    .$cards %>%
+    filter(list.name == list)
+  
+  cat("Projects of '", font_blue(username), "' in list '", font_blue(list), "':\n\n", sep = "")
+  cat(paste0(font_bold(paste0("p", cards$idShort), collapse = NULL), " ",
+             gsub("^[A-Za-z-]+ - ", "", cards$name),
+             font_silver(paste0(" (changed: ", format2(cards$dateLastActivity, "ddd d mmm yyyy"), ")"), collapse = NULL),
+             collapse = "\n"))
+  cat("\n")
+}
+
+#' @rdname trello
 #' @param x search string
 #' @export
 trello_search_any <- function(x,
@@ -346,6 +372,8 @@ trello_search_card <- function(x = NULL,
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
   if (interactive() && !isTRUE(return_all)) {
+    trello_my_cards()
+    Sys.sleep(0.25)
     x <- showPrompt(title = "Project",
                     message = "Project (search in title, description, project number, ...):",
                     default = x)
@@ -471,7 +499,8 @@ trello_set_members <- function(card_id,
   members <- trello_get_members(board = board, key = key, token = token)
   members_new <- members %>%
     filter(fullName %in% member | username %in% member) %>%
-    pull(id)
+    pull(id) %>%
+    unlist()
   members_old <- trello_get_cards() %>%
     filter(id == card_id) %>%
     pull(idMembers) %>%
@@ -493,7 +522,7 @@ trello_set_members <- function(card_id,
                                          value = member_id,
                                          key = key,
                                          token = token))
-    stop_for_status(remove_members, task = paste("remove member", members[which(members$id == member_id),]$fullName))
+    # stop_for_status(remove_members, task = paste("remove member", members[which(members$id == member_id),]$fullName))
   }
 }
 

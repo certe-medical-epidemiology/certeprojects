@@ -13,6 +13,7 @@
 \alias{trello_get_customfields}
 \alias{trello_get_checklists}
 \alias{trello_get_comments}
+\alias{trello_my_cards}
 \alias{trello_search_any}
 \alias{trello_search_card}
 \alias{trello_open_board}
@@ -101,6 +102,14 @@ trello_get_comments(
   card_id,
   key = trello_credentials("key"),
   token = trello_credentials("token")
+)
+
+trello_my_cards(
+  board = read_secret("trello.default.board"),
+  username = trello_credentials("member"),
+  key = trello_credentials("key"),
+  token = trello_credentials("token"),
+  list = read_secret("trello.current.list")
 )
 
 trello_search_any(

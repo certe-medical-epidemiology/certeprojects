@@ -35,3 +35,6 @@ addin5_projects_trellocard <- function() {
 addin6_projects_trelloboard <- function() {
   trello_open_board()
 }
+addin7_projects_mine <- function() {
+  trello_my_cards()
+}

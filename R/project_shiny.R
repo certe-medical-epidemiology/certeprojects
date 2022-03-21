@@ -128,9 +128,9 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     output$requested_by <- renderUI({
       # retrieve user list with names and job titles
-      users <- users_list()
+      users <- get_user()
       if (!is.null(users)) {
-        tagList(
+        suppressWarnings(tagList(
           selectizeInput("requested_by",
                          label = "Aanvrager(s)",
                          choices = users,
@@ -141,7 +141,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                            # creates new item on field leave
                            createOnBlur = TRUE,
                            closeAfterSelect = TRUE))
-        )
+        ))
       } else {
         tagList(
           textInput("requested_by", "Aanvrager(s)")
@@ -526,7 +526,7 @@ project_add <- function(board = read_secret("trello.default.board"),
 #' @importFrom dplyr `%>%` filter pull case_when transmute
 #' @importFrom shinyjs useShinyjs enable disable hidden
 #' @importFrom rstudioapi showDialog
-#' @importFrom cleaner clean_Date
+#' @importFrom cleaner clean_Date clean_logical
 #' @export
 project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                          board = read_secret("trello.default.board"),
@@ -769,7 +769,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         } else {
           trello_set_deadline(card_id = card_info$id,
                              duedate = clean_Date(input$deadline),
-                             duecomplete = clean_Date(input$deadline_finished), 
+                             duecomplete = clean_logical(input$deadline_finished), 
                              key = key,
                              token = token)
         }
@@ -839,22 +839,29 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
 }
 
 
-
-users_list <- function() {
+#' @importFrom dplyr `%>%` arrange filter
+get_user <- function(..., property = "shiny") {
   user_file <- read_secret("users.csv.file")
   if (user_file == "") {
     return("")
   }
-  users <- utils::read.csv(user_file)
+  users <- utils::read.csv(user_file, fileEncoding = "UTF-8")
   if (!is.null(users)) {
-    users_id <- users$id
-    if (!all(is.na(users$job))) {
-      users$job[is.na(users$job) | users$job == ""] <- ""
-      names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
+    users <- users %>%
+      filter(...) %>%
+      arrange(name)
+    if (property == "shiny") {
+      users_id <- users$id
+      if (!all(is.na(users$job))) {
+        users$job[is.na(users$job) | users$job == ""] <- ""
+        names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
+      } else {
+        names(users_id) <- users$name
+      }
+      users <- users_id
     } else {
-      names(users_id) <- users$name
+      users <- users[, property, drop = TRUE]
     }
-    users <- users_id
   }
   users
 }

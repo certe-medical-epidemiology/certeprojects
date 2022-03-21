@@ -81,29 +81,31 @@ trello_upload <- function(title,
   if (all(is.null(requested_by)) | length(requested_by) == 0) {
     requested_by <- ""
   }
-  # for (i in seq_len(length(requested_by))) {
-  #   if (requested_by[i] != get_certe_user(requested_by[i])) {
-  #     job <- get_certe_user(requested_by[i], "job")
-  #     if (is.na(job)) {
-  #       job <- ""
-  #     } else {
-  #       job <- paste0(" (", tolower(job), ")")
-  #     }
-  #     requested_by[i] <- paste0("[",
-  #                               get_certe_user(requested_by[i], "name"),
-  #                               "](mailto:",
-  #                               get_certe_user(requested_by[i], "mail"),
-  #                               "?subject=", URLencode(title),
-  #                               ")",
-  #                               job)
-  #   }
-  # }
-  # requested_by <- concat(get_certe_user(requested_by), ", ")
-  # if (requested_by != "") {
-  #   description <- paste0("*Aangevraagd door: ", requested_by, "*")
-  #   title <- paste0(strsplit.select(requested_by, 1, "( |,|/)"), " - ", title)
-  #   title <- gsub("^\\[", "", title) # eerste [ verwijderen bij naam met maillink
-  # }
+  
+  for (i in seq_len(length(requested_by))) {
+    if (requested_by[i] %in% get_user(property = "id")) {
+      job <- get_user(id == requested_by[i], property = "job")
+      if (is.na(job)) {
+        job <- ""
+      } else {
+        job <- paste0(" (", tolower(job), ")")
+      }
+      requested_by[i] <- paste0("[",
+                                get_user(id == requested_by[i], property = "name"),
+                                "](mailto:",
+                                get_user(id == requested_by[i], property = "mail"),
+                                "?subject=", utils::URLencode(title),
+                                ")",
+                                job)
+    }
+  }
+  requested_by <- paste(requested_by, collapse = ", ")
+  if (requested_by != "") {
+    description <- paste0("*Aangevraagd door: ", requested_by, "*")
+    title <- paste0(strsplit(requested_by, "( |,|/)")[[1]][1], " - ", title)
+    title <- gsub("^\\[", "", title) # remove first [
+  }
+  
   if (project_path != "") {
     description <- c(description,
                      paste0("*Project path: [", basename(project_path), "](file://", utils::URLencode(project_path), ")*"))
@@ -115,7 +117,7 @@ trello_upload <- function(title,
   }
   
   if (as.character(duedate) != "") {
-    duedate <- paste(as.Date(duedate), "11:00:00") # Trello add six hours for timezone difference, this will become 5 PM
+    duedate <- paste(as.Date(duedate), "11:00:00") # Trello adds six hours for timezone difference, this will become 5 PM
   }
   
   # create card
@@ -373,7 +375,7 @@ trello_search_card <- function(x = NULL,
                                token = trello_credentials("token")) {
   if (interactive() && !isTRUE(return_all)) {
     trello_my_cards()
-    Sys.sleep(0.25)
+    Sys.sleep(0.5)
     x <- showPrompt(title = "Project",
                     message = "Project (search in title, description, project number, ...):",
                     default = x)

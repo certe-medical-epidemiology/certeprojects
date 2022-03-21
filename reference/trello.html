@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.3.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.3.2</span>
       </span>
     </div>
 
@@ -157,7 +157,8 @@
   username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,
   key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
   token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,
-  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.current.list"</span><span class="op">)</span>
+  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.current.list"</span><span class="op">)</span>,
+  to_console <span class="op">=</span> <span class="cn">TRUE</span>
 <span class="op">)</span>
 
 <span class="fu">trello_search_any</span><span class="op">(</span>
@@ -281,8 +282,10 @@
 <dd><p>Trello username</p></dd>
 <dt>card_id</dt>
 <dd><p>Trello card ID (<em>not</em> the card number)</p></dd>
+<dt>to_console</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether the card data should be printed to the Console</p></dd>
 <dt>return_all</dt>
-<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether a named vector of short URLs must be returned (internally used by <code><a href="project_shiny.html">project_add()</a></code>)</p></dd>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether a named vector of short URLs must be returned (internally used by <code><a href="project_shiny.html">project_add()</a></code>) instead of a <a href="https://rdrr.io/r/base/double.html" class="external-link">double</a> vector</p></dd>
 <dt>card_number</dt>
 <dd><p>Trello card number</p></dd>
 <dt>property</dt>
@@ -303,6 +306,7 @@
     <div id="details">
     <h2>Details</h2>
     <p>The <code>trello_upload()</code> returns the newly created Trello card number if the upload was successful.</p>
+<p>The function <code>trello_search_any()</code> returns all cards data as a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a> and is used internally by <code>trello_search_card()</code>.</p>
     </div>
 
   </div>

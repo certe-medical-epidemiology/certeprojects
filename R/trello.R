@@ -319,6 +319,7 @@ trello_get_comments <- function(card_id,
 }
 
 #' @rdname trello
+#' @param to_console a [logical] to indicate whether the card data should be printed to the Console
 #' @importFrom dplyr `%>%` filter
 #' @importFrom certestyle font_blue font_bold font_silver
 #' @export
@@ -326,7 +327,8 @@ trello_my_cards <- function(board = read_secret("trello.default.board"),
                             username = trello_credentials("member"),
                             key = trello_credentials("key"),
                             token = trello_credentials("token"),
-                            list = read_secret("trello.current.list")) {
+                            list = read_secret("trello.current.list"),
+                            to_console = TRUE) {
   cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", username,
                          "&cards_limit=1000",
                          "&card_list=true",
@@ -336,16 +338,21 @@ trello_my_cards <- function(board = read_secret("trello.default.board"),
     .$cards %>%
     filter(list.name == list)
   
-  cat("Projects of '", font_blue(username), "' in list '", font_blue(list), "':\n\n", sep = "")
-  cat(paste0(font_bold(paste0("p", cards$idShort), collapse = NULL), " ",
-             gsub("^[A-Za-z-]+ - ", "", cards$name),
-             font_silver(paste0(" (changed: ", format2(cards$dateLastActivity, "ddd d mmm yyyy"), ")"), collapse = NULL),
-             collapse = "\n"))
-  cat("\n")
+  if (isTRUE(to_console)) {
+    cat("Projects of '", font_blue(username), "' in list '", font_blue(list), "':\n\n", sep = "")
+    cat(paste0(font_bold(paste0("p", cards$idShort), collapse = NULL), " ",
+               gsub("^[A-Za-z-]+ - ", "", cards$name),
+               font_silver(paste0(" (changed: ", format2(cards$dateLastActivity, "ddd d mmm yyyy"), ")"), collapse = NULL),
+               collapse = "\n"))
+    cat("\n\n\n")
+  } else {
+    paste0("p", cards$idShort, " ", gsub("^[A-Za-z-]+ - ", "", cards$name))
+  }
 }
 
 #' @rdname trello
 #' @param x search string
+#' @details The function [trello_search_any()] returns all cards data as a [data.frame] and is used internally by [trello_search_card()].
 #' @export
 trello_search_any <- function(x,
                               key = trello_credentials("key"),
@@ -353,7 +360,7 @@ trello_search_any <- function(x,
   # this is the actual Trello search API (very fast):
   GET_df(paste0("https://api.trello.com/1/search",
                 "?key=", key, "&token=", token,
-                "&query=", x,
+                "&query=", gsub("( | and | AND | ?& ?)", "+", x),
                 "&partial=true",
                 "&card_board=true",
                 "&board_organization=true", # this requires card_board=true
@@ -364,9 +371,10 @@ trello_search_any <- function(x,
 
 #' @rdname trello
 #' @param x search string
-#' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_add()])
-#' @importFrom certestyle font_green font_red font_blue font_bold font_silver
+#' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_add()]) instead of a [double] vector
+#' @importFrom certestyle font_green font_blue font_bold font_silver font_red
 #' @importFrom rstudioapi showPrompt
+#' @importFrom dplyr `%>%` filter
 #' @export
 trello_search_card <- function(x = NULL,
                                return_all = FALSE,
@@ -374,22 +382,35 @@ trello_search_card <- function(x = NULL,
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
   if (interactive() && !isTRUE(return_all)) {
-    trello_my_cards()
-    Sys.sleep(0.5)
-    x <- showPrompt(title = "Project",
-                    message = "Project (search in title, description, project number, ...):",
+    max_n <- 10
+    cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", username,
+                           "&cards_limit=100",
+                           "&card_list=true",
+                           "&key=", key,
+                           "&token=", token)) %>% 
+      .$cards %>%
+      filter(list.name != "Voltooid") %>% 
+      .[seq_len(min(nrow(.), max_n)), , drop = FALSE]
+    x <- showPrompt(title = "Search Project",
+                    message = paste0("Last ", max_n, " Open Projects:\n\n",
+                                     paste0("p", cards$idShort, " ", cards$name, collapse = "\n"),
+                                     "\n\n",
+                                     "-----------------------------\n",
+                                     "\n",
+                                     "Search for Project (search in title, description, project number, ...):"),
                     default = x)
   }
   if (is.null(x) || x %in% c("", NA)) {
     return(NULL)
   }
   
+  # strip "p" for project identifiers
   x <- gsub("^p([0-9]+)", "\\1", x)
   if (x %like% "^[0-9]+$") {
     return(as.double(x))
   }
   
-  # search the Trello API, but strip "p" for project identifiers
+  # search using the Trello API 
   search <- trello_search_any(x = x, key = key, token = token)
   # only keep current board
   if (NROW(search) > 0) {
@@ -416,9 +437,9 @@ trello_search_card <- function(x = NULL,
   titles <- gsub("^[A-Z][a-z]+ - ", "", titles)
   lists <- search$list.name
   lists[lists == "Voltooid"] <- font_green("Voltooid")
-  lists[lists == "Wachten op een ander"] <- font_blue("Wachten op een ander")
-  lists[lists == "Bezig"] <- font_red("Bezig")
-  lists[!lists %in% c("Voltooid", "Wachten op een ander", "Bezig")] <- font_silver(lists[!lists %in% c("Voltooid", "achten op een ander", "Bezig")], collapse = NULL)
+  lists[lists == "Wachten op een ander"] <- font_red("Wachten op een ander")
+  lists[lists == "Bezig"] <- font_blue("Bezig")
+  lists[!lists %in% c("Voltooid", "Wachten op een ander", "Bezig")] <- font_silver(lists[!lists %in% c("Voltooid", "Wachten op een ander", "Bezig")], collapse = NULL)
   card_id <- utils::menu(title = paste0("Projects found with text \"", x, "\" (0 for Cancel):"),
                          graphics = FALSE,
                          choices = paste0(titles, " - ",
@@ -427,7 +448,7 @@ trello_search_card <- function(x = NULL,
   if (is.null(card_id)) {
     return(NULL)
   } else {
-    return(search$idShort[card_id])
+    return(as.double(search$idShort[card_id]))
   }
 }
 

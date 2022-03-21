@@ -109,7 +109,8 @@ trello_my_cards(
   username = trello_credentials("member"),
   key = trello_credentials("key"),
   token = trello_credentials("token"),
-  list = read_secret("trello.current.list")
+  list = read_secret("trello.current.list"),
+  to_console = TRUE
 )
 
 trello_search_any(
@@ -231,7 +232,9 @@ trello_move_card(
 
 \item{card_id}{Trello card ID (\emph{not} the card number)}
 
-\item{return_all}{a \link{logical} to indicate whether a named vector of short URLs must be returned (internally used by \code{\link[=project_add]{project_add()}})}
+\item{to_console}{a \link{logical} to indicate whether the card data should be printed to the Console}
+
+\item{return_all}{a \link{logical} to indicate whether a named vector of short URLs must be returned (internally used by \code{\link[=project_add]{project_add()}}) instead of a \link{double} vector}
 
 \item{card_number}{Trello card number}
 
@@ -254,4 +257,6 @@ These functions call the \href{https://api.trello.com}{Trello API} and are inter
 }
 \details{
 The \code{\link[=trello_upload]{trello_upload()}} returns the newly created Trello card number if the upload was successful.
+
+The function \code{\link[=trello_search_any]{trello_search_any()}} returns all cards data as a \link{data.frame} and is used internally by \code{\link[=trello_search_card]{trello_search_card()}}.
 }

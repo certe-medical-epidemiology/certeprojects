@@ -382,22 +382,31 @@ trello_search_card <- function(x = NULL,
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
   if (interactive() && !isTRUE(return_all)) {
-    max_n <- 10
-    cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", username,
-                           "&cards_limit=100",
-                           "&card_list=true",
-                           "&key=", key,
-                           "&token=", token)) %>% 
-      .$cards %>%
-      filter(list.name != "Voltooid") %>% 
-      .[seq_len(min(nrow(.), max_n)), , drop = FALSE]
+    txt <- ""
+    if (tryCatch(trello_credentials("member"), error = function(e) "") != "") {
+      max_n <- 10
+      cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", trello_credentials("member"),
+                             "&cards_limit=100",
+                             "&card_list=true",
+                             "&key=", key,
+                             "&token=", token)) %>% 
+        .$cards %>%
+        filter(list.name != "Voltooid") %>% 
+        .[seq_len(min(nrow(.), max_n)), , drop = FALSE]
+      cards$name[cards$name %like% "^[a-zA-Z-]+ - "] <- gsub("^([a-zA-Z-]+) - (.*)", "\\2 (\\1)", cards$name[cards$name %like% "^[a-zA-Z-]+ - "])
+      cards$name <- gsub("[äéàâ]", "a", cards$name)
+      cards$name <- gsub("[ëéèê]", "e", cards$name)
+      cards$name <- gsub("[ïíìî]", "i", cards$name)
+      cards$name <- gsub("[öóòô]", "o", cards$name)
+      cards$name <- gsub("[üúùû]", "u", cards$name)
+      txt <- paste0("My Last ", max_n, " Open Projects:\n\n",
+                    paste0("p", cards$idShort, " ", cards$name, collapse = "\n"),
+                    "\n\n",
+                    "-----------------------------\n",
+                    "\n")
+    }
     x <- showPrompt(title = "Search Project",
-                    message = paste0("Last ", max_n, " Open Projects:\n\n",
-                                     paste0("p", cards$idShort, " ", cards$name, collapse = "\n"),
-                                     "\n\n",
-                                     "-----------------------------\n",
-                                     "\n",
-                                     "Search for Project (search in title, description, project number, ...):"),
+                    message = paste0(txt, "Search for Project (search in title, description, project number, ...):"),
                     default = x)
   }
   if (is.null(x) || x %in% c("", NA)) {

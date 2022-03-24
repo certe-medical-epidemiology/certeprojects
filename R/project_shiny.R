@@ -287,7 +287,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     # SAVE ----
     observeEvent(input$create, {
-      
+
       empty_field <- function(field, value) {
         if (all(is.null(value)) || length(value) == 0 || value == "") {
           rstudioapi::showDialog(title = field,
@@ -394,7 +394,12 @@ project_add <- function(board = read_secret("trello.default.board"),
                                  paste0("# Projectnummer:    p", trello_card_id),
                                  NA_character_),
                          if_else(requested_by != "",
-                                 paste0("# Aangevraagd door: ", requested_by),
+                                 paste0("# Aangevraagd door: ", get_user(id == requested_by, property = "name")),
+                                 NA_character_),
+                         if_else(!identical(trello_cards, ""),
+                                 paste0("# Gerelateerd:      ", paste0("p",
+                                                                       trello_get_cards()$idShort[trello_get_cards()$shortUrl %in% trello_cards],
+                                                                       collapse = ", ")),
                                  NA_character_),
                          paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
         incProgress(1 / progress_items, detail = "Creating folder")
@@ -836,34 +841,6 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
               server = server,
               viewer = viewer,
               stopOnCancel = FALSE))
-}
-
-
-#' @importFrom dplyr `%>%` arrange filter
-get_user <- function(..., property = "shiny") {
-  user_file <- read_secret("users.csv.file")
-  if (user_file == "") {
-    return("")
-  }
-  users <- utils::read.csv(user_file, fileEncoding = "UTF-8")
-  if (!is.null(users)) {
-    users <- users %>%
-      filter(...) %>%
-      arrange(name)
-    if (property == "shiny") {
-      users_id <- users$id
-      if (!all(is.na(users$job))) {
-        users$job[is.na(users$job) | users$job == ""] <- ""
-        names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
-      } else {
-        names(users_id) <- users$name
-      }
-      users <- users_id
-    } else {
-      users <- users[, property, drop = TRUE]
-    }
-  }
-  users
 }
 
 img_rstudio <- function() {

@@ -394,11 +394,8 @@ trello_search_card <- function(x = NULL,
         filter(list.name != "Voltooid") %>% 
         .[seq_len(min(nrow(.), max_n)), , drop = FALSE]
       cards$name[cards$name %like% "^[a-zA-Z-]+ - "] <- gsub("^([a-zA-Z-]+) - (.*)", "\\2 (\\1)", cards$name[cards$name %like% "^[a-zA-Z-]+ - "])
-      cards$name <- gsub("[äéàâ]", "a", cards$name)
-      cards$name <- gsub("[ëéèê]", "e", cards$name)
-      cards$name <- gsub("[ïíìî]", "i", cards$name)
-      cards$name <- gsub("[öóòô]", "o", cards$name)
-      cards$name <- gsub("[üúùû]", "u", cards$name)
+      # replace accents in vowels etc.:
+      cards$name <- iconv(cards$name, from = "Latin1", to = "ASCII//TRANSLIT")
       txt <- paste0("My Last ", max_n, " Open Projects:\n\n",
                     paste0("p", cards$idShort, " ", cards$name, collapse = "\n"),
                     "\n\n",

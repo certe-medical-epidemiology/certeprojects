@@ -37,3 +37,30 @@ globalVariables(c(".",
                   "text",
                   "title",
                   "username"))
+
+#' @importFrom dplyr `%>%` arrange filter
+get_user <- function(..., property = "shiny") {
+  user_file <- read_secret("users.csv.file")
+  if (user_file == "") {
+    return("")
+  }
+  users <- utils::read.csv(user_file, fileEncoding = "UTF-8")
+  if (!is.null(users)) {
+    users <- users %>%
+      filter(...) %>%
+      arrange(name)
+    if (property == "shiny") {
+      users_id <- users$id
+      if (!all(is.na(users$job))) {
+        users$job[is.na(users$job) | users$job == ""] <- ""
+        names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
+      } else {
+        names(users_id) <- users$name
+      }
+      users <- users_id
+    } else {
+      users <- users[, property, drop = TRUE]
+    }
+  }
+  users
+}

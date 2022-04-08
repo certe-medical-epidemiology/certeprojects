@@ -1,6 +1,6 @@
 # The `certeprojects` package for R
 
-This is a Certe R Package with functions to automate department projects using Shiny, MS Teams and Trello. This package is part of the 'certedata' universe.
+This is a Certe R Package with functions to automate department projects using Shiny, R Markdown, Quarto, MS Teams and Trello. This package is part of the 'certedata' universe.
 
 
 You can read the [manual with explanation about its functions here](https://certe-medical-epidemiology.github.io/certeprojects/reference).

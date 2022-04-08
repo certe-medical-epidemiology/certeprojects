@@ -31,5 +31,5 @@ project_edit(
 \item{card_number}{Trello card number}
 }
 \description{
-This is a Shiny app to add a new project: it creates a project folder, generates the required R files and uploads a new card to Trello. They come with RStudio addins to quickly access existing projects.
+This is a Shiny app to add a new project: it creates a project folder, generates the required R Markdown, Quarto or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
 }

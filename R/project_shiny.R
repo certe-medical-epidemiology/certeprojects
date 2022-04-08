@@ -19,17 +19,17 @@
 
 #' Add Project Using Shiny
 #' 
-#' This is a Shiny app to add a new project: it creates a project folder, generates the required R files and uploads a new card to Trello. They come with RStudio addins to quickly access existing projects.
+#' This is a Shiny app to add a new project: it creates a project folder, generates the required R Markdown, Quarto or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
 #' @inheritParams trello
 #' @export
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
 #' @importFrom shinyjs useShinyjs enable disable
-#' @importFrom shinyWidgets searchInput
+#' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
 #' @importFrom dplyr `%>%` select pull filter if_else
 #' @importFrom certestyle colourpicker format2
 #  certestyle for R Markdown:
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
-#' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject
+#' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject showDialog showQuestion
 #' @rdname project_shiny
 project_add <- function(board = read_secret("trello.default.board"),
                         username = trello_credentials("member"),
@@ -72,7 +72,11 @@ project_add <- function(board = read_secret("trello.default.board"),
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
                       #cancel:hover { background-color: ", colourpicker("certeroze2"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
-                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
+                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }",
+                      '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), " ;}",
+                      '.radio-primary input[type="radio"]:checked+label::before { border-color: ', colourpicker("certeblauw"), ";}",
+                      '.radio-primary input[type="radio"]:checked+label::after { background-color: ', colourpicker("certeblauw"), ";}",
+                      '.awesome-radio input[type="radio"]:focus+label::before, .awesome-checkbox input[type="checkbox"]:focus+label::before { outline: none; }')),
     
     sidebarLayout(
       sidebarPanel(
@@ -85,7 +89,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                            "Hoog", # default if card is created on weekend day
                            "Normaal")),
         tags$label("Deadline"),
-        checkboxInput("has_deadline", "Deadline instellen", TRUE),
+        awesomeCheckbox("has_deadline", "Deadline instellen", TRUE),
         uiOutput("deadline"),
         textInput("topdesk", "Meldingsnummer TOPDesk", placeholder = ""),
         br(),
@@ -95,8 +99,8 @@ project_add <- function(board = read_secret("trello.default.board"),
         width = 6),
       
       mainPanel(
-        if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px"),
-        if (isTRUE(trello_set)) checkboxInput("trello_upload", "Uploaden naar Trello.com", TRUE),
+        if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px; margin-bottom: 10px"),
+        if (isTRUE(trello_set)) awesomeCheckbox("trello_upload", "Uploaden naar Trello.com", TRUE),
         if (isTRUE(trello_set)) uiOutput("trello_boards"),
         if (isTRUE(trello_set)) uiOutput("trello_settings"),
         if (isTRUE(trello_set)) uiOutput("trello_search_select"),
@@ -104,16 +108,20 @@ project_add <- function(board = read_secret("trello.default.board"),
         img(src = img_rstudio(), height = "45px"),
         br(),
         br(),
-        radioButtons("filetype",
-                     label =  "Bestandstype",
-                     choices =  c("R Markdown", "R", "Beide"),
+        awesomeRadio("filetype",
+                     label = "Bestandstype",
+                     status = "primary",
+                     choices = c(".Rmd (R Markdown)" = ".Rmd",
+                                 ".qmd (Quarto)" = ".qmd",
+                                 ".R" = ".R"),
                      selected = "",
                      inline = TRUE,
                      width = "100%"),
-        checkboxInput("rstudio_projectfile",
-                      label = "RStudio-projectbestand aanmaken en openen",
-                      value = FALSE,
-                      width = "100%"),
+        awesomeCheckbox("rstudio_projectfile",
+                        label = "RStudio-projectbestand aanmaken en openen",
+                        status = "primary",
+                        value = FALSE,
+                        width = "100%"),
         
         hr(),
         width = 6
@@ -287,11 +295,11 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     # SAVE ----
     observeEvent(input$create, {
-
+      
       empty_field <- function(field, value) {
         if (all(is.null(value)) || length(value) == 0 || value == "") {
-          rstudioapi::showDialog(title = field,
-                                 message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
+          showDialog(title = field,
+                     message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
           TRUE
         } else {
           FALSE
@@ -299,10 +307,10 @@ project_add <- function(board = read_secret("trello.default.board"),
       }
       invalid_title <- function(title) {
         if (title %like% "[/\\><*|?\"]") {
-          q <- rstudioapi::showQuestion(title = " Titel",
-                                        message = paste("De titel mag de volgende tekens niet bevatten: / \\ | < > * ? \". Vervangen door een streepje (-)?"),
-                                        ok = "OK",
-                                        cancel = "Annuleren")
+          q <- showQuestion(title = " Titel",
+                            message = paste("De titel mag de volgende tekens niet bevatten: / \\ | < > * ? \". Vervangen door een streepje (-)?"),
+                            ok = "OK",
+                            cancel = "Annuleren")
           if (q == TRUE) {
             title <<- gsub("[/\\><*|?\"]+", "-", title)
             # is invalid?
@@ -365,7 +373,7 @@ project_add <- function(board = read_secret("trello.default.board"),
             deadline <- input$deadline
           }
           trello_card_id <- trello_upload(board = input$trello_boards,
-                                          title = input$title,
+                                          title = title,
                                           member = input$trello_members,
                                           requested_by = requested_by,
                                           project_path = "",
@@ -379,14 +387,21 @@ project_add <- function(board = read_secret("trello.default.board"),
                                           key = key,
                                           token = token)
         }
-        fullpath <- paste0(read_secret("projects.path"), "/",
-                           trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", input$title)),
+        projects_path <- read_secret("projects.path")
+        if (projects_path == "") {
+          warning("NOTE: Projects path not set, using current working directory: ", getwd(), call. = FALSE)
+          projects_path <- getwd()
+        }
+        fullpath <- paste0(projects_path, "/",
+                           trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", title)),
                            ifelse(is.null(trello_card_id), "", paste0(" - p", trello_card_id)))
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
         desc <- unlist(strsplit(input$description, "\n", fixed = TRUE))
-        header_text <- c(paste0("# Titel:            ", input$title),
-                         paste0("# Omschrijving:     ", desc[1]),
+        header_text <- c(paste0("# Titel:            ", title),
+                         if_else(!is.na(desc[1]), 
+                                 paste0("# Omschrijving:     ", desc[1]),
+                                 NA_character_),
                          if_else(length(desc) > 1,
                                  paste0("#                   ", desc[2:length(desc)], collapse = "\n"),
                                  NA_character_),
@@ -407,87 +422,107 @@ project_add <- function(board = read_secret("trello.default.board"),
         dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
         
         # create file(s)
-        if (input$filetype %in% c("R Markdown", "Beide")) {
-          extension <- "Rmd"
+        if (filetype %in% c(".Rmd", ".qmd")) {
           filecontent <- c(
             "---",
-            paste0('title: "', input$title, '" # laat leeg voor geen voorblad bij PDF'),
+            paste0('title: "', title, '" # laat leeg voor geen voorblad bij PDF'),
             'subtitle: ""',
             'subtitle2: ""',
             'author: "`r certestyle::rmarkdown_author()`"',
             'date: "`r certestyle::rmarkdown_date()`"',
             "output:",
-            "  word_document:",
-            "    toc: TRUE",
-            "    toc_depth: 2",
-            "    fig_width: 6.5",
-            "    fig_height: 5",
-            "    fig_caption: TRUE",
-            '    reference_docx: !expr certestyle::rmarkdown_template("word")',
+            "  # word_document:",
+            "  #   toc: true",
+            "  #   toc_depth: 2",
+            "  #   fig_width: 6.5",
+            "  #   fig_height: 5",
+            ifelse(filetype == ".qmd",
+                   paste0("  #   reference-doc: \"", rmarkdown_template("word"), "\""),
+                   '  #   reference_docx: !expr certestyle::rmarkdown_template("word")'),
+            ifelse(filetype == ".qmd", "  #   dpi: 600", NA_character_),
             "  pdf_document:",
-            "    toc: TRUE",
+            "    toc: true",
             "    toc_depth: 2",
+            ifelse(filetype == ".qmd", "    toc-title: \"Inhoudsopgave\"", NA_character_),
             "    fig_width: 6.5",
             "    fig_height: 5",
-            "    fig_caption: TRUE",
             '    latex_engine: "xelatex"',
             "    df_print: !expr certestyle::rmarkdown_table",
             '    template: !expr certestyle::rmarkdown_template("latex")',
             'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
             'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
+            "editor: visual",
             "---",
-            "",
-            "```{r Setup, include = FALSE, message = FALSE}",
-            header_text,
-            "",
-            "knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,",
-            '                      results = "asis", comment = NA, dpi = 600)',
-            "library(certedata)",
-            "",
-            "data_download <- FALSE",
-            paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ")) & !data_download) {"),
-            paste0("  data_", trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, "))"),
-            "} else {",
-            paste0("  data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
-            "                             where  = where(db))",
-            paste0("  export.R(data_", trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
-            "}",
-            "```",
-            "",
-            "# Inleiding",
-            "",
-            "```{r}",
-            "",
-            "```",
-            ""
-          )
-          filename <- paste0(fullpath, "/Analyse",
-                             ifelse(!is.null(trello_card_id),
-                                    paste0(" p", trello_card_id, "."),
-                                    "."),
-                             extension)
-          writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
-                     con = file.path(filename))
+            "")
+          if (filetype == ".Rmd") {
+            # R Markdown
+            filecontent <- c(filecontent,
+                             "```{r Setup, include = FALSE, message = FALSE}",
+                             header_text,
+                             "",
+                             "knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,",
+                             '                      results = "asis", comment = NA, dpi = 600)')
+          } else if (filetype == ".qmd") {
+            # Quarto
+            filecontent <- c(filecontent,
+                             "```{r}",
+                             "#| label: Setup",
+                             "#| include: false",
+                             "#| message: false",
+                             "",
+                             header_text)
+          }
+          filecontent <- c(filecontent,
+                           "",
+                           "library(certedata)",
+                           "",
+                           "data_download <- FALSE",
+                           paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ")) & !data_download) {"),
+                           paste0("  data_", trello_card_id, ' <- import_rds(project_get_file(".*rds$", ', trello_card_id, "))"),
+                           "} else {",
+                           paste0("  data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           "                             where  = where(db))",
+                           paste0("  export_rds(data_", trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
+                           "}",
+                           "```",
+                           "",
+                           "# Inleiding",
+                           "",
+                           "```{r}",
+                           "",
+                           "```",
+                           "")
+          if (filetype == ".qmd") {
+            # conversion for R Markdown -> Quarto
+            filecontent <- gsub("output:", "format:", filecontent, fixed = TRUE)
+            filecontent <- gsub("_document", "", filecontent, fixed = TRUE)
+            filecontent <- gsub("(toc|fig)_", "\\1-", filecontent)
+            filecontent <- gsub("latex_engine", "pdf-engine", filecontent, fixed = TRUE)
+            filecontent <- gsub("template: .*",
+                                paste0("template: \"", rmarkdown_template("latex"), "\""),
+                                filecontent)
+            filecontent[filecontent %like% "df_print: "] <- NA_character_
+            filecontent <- gsub("reference-docx", "reference-doc", filecontent, fixed = TRUE)
+          }
         }
-        if (input$filetype %in% c("R", "Beide")) {
-          extension <- "R"
+        if (filetype == ".R") {
           filecontent <- c(header_text,
                            "",
                            "library(certedata)",
                            paste0("data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
                            paste0(strrep(" ", nchar(trello_card_id)), "                        where = where(db))"),
-                           paste0("export.R(data_", trello_card_id, ', "data_', trello_card_id, '.rds", card_number = ', trello_card_id, ")"),
-                           paste0("# data_", trello_card_id, ' <- import.R(project_get_file(".*rds$", ', trello_card_id, '))'),
+                           paste0("export_rds(data_", trello_card_id, ', "data_', trello_card_id, '.rds", card_number = ', trello_card_id, ")"),
+                           paste0("# data_", trello_card_id, ' <- import_rds(project_get_file(".*rds$", ', trello_card_id, '))'),
                            ""
           )
-          filename <- paste0(fullpath, "/Analyse",
-                             ifelse(!is.null(trello_card_id),
-                                    paste0(" p", trello_card_id, "."),
-                                    "."),
-                             extension)
-          writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
-                     con = file.path(filename))
         }
+        filename <- paste0(fullpath, "/Analyse",
+                           ifelse(!is.null(trello_card_id),
+                                  paste0(" p", trello_card_id),
+                                  ""),
+                           filetype)
+        writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
+                   con = file.path(filename))
         
         incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "Writing R files", ""))
         Sys.sleep(0.1)
@@ -528,6 +563,7 @@ project_add <- function(board = read_secret("trello.default.board"),
 #' @param card_number Trello card number
 #' @inheritParams trello
 #' @importFrom shiny HTML h4 div h5
+#' @importFrom shinyWidgets awesomeCheckbox
 #' @importFrom dplyr `%>%` filter pull case_when transmute
 #' @importFrom shinyjs useShinyjs enable disable hidden
 #' @importFrom rstudioapi showDialog
@@ -538,7 +574,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                          key = trello_credentials("key"),
                          token = trello_credentials("token")) {
   card_number <- gsub("[^0-9]", "", card_number)
-
+  
   if (is.null(card_number) | all(is.na(card_number))) {
     return(invisible())
   }
@@ -606,7 +642,11 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                       #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
                       #cancel:hover { background-color: ", colourpicker("certeroze2"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
-                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }")),
+                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }",
+                      '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), " ;}",
+                      '.radio-primary input[type="radio"]:checked+label::before { border-color: ', colourpicker("certeblauw"), ";}",
+                      '.radio-primary input[type="radio"]:checked+label::after { background-color: ', colourpicker("certeblauw"), ";}",
+                      '.awesome-radio input[type="radio"]:focus+label::before, .awesome-checkbox input[type="checkbox"]:focus+label::before { outline: none; }')),
     sidebarLayout(
       sidebarPanel(
         uiOutput("style_tag"),
@@ -620,7 +660,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                     " wkn geleden)</p>")),
         selectInput("status", "Status", choices = lists$name, selected = card_status),
         tags$label("Deadline"),
-        checkboxInput("has_deadline", "Deadline instellen", value = ifelse(is.na(card_info$due), FALSE, TRUE)),
+        awesomeCheckbox("has_deadline", "Deadline instellen", value = ifelse(is.na(card_info$due), FALSE, TRUE)),
         uiOutput("deadline"),
         textAreaInput("comment", "Nieuwe opmerking", cols = 1, rows = 3, resize = "vertical"),
         br(),
@@ -651,9 +691,9 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                     value = val,
                     format = "DD d MM yyyy",
                     language = "nl"),
-          checkboxInput("deadline_finished",
-                        "Deadline voltooid",
-                        value = card_info$dueComplete & !is.na(card_info$due))
+          awesomeCheckbox("deadline_finished",
+                          "Deadline voltooid",
+                          value = card_info$dueComplete & !is.na(card_info$due))
         )
       }
     })
@@ -680,10 +720,10 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         l <- tagList(l, h4("Taken"))
         for (i in seq_len(nrow(card_checklist))) {
           l <- tagList(l,
-                       div(checkboxInput(inputId = card_checklist$id[i],
-                                         label = card_checklist$name[i],
-                                         value = isTRUE(card_checklist$state[i] == "complete"),
-                                         width = "100%"),
+                       div(awesomeCheckbox(inputId = card_checklist$id[i],
+                                           label = card_checklist$name[i],
+                                           value = isTRUE(card_checklist$state[i] == "complete"),
+                                           width = "100%"),
                            class = "task"))
         }
       } else {
@@ -759,32 +799,32 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         # status
         if (input$status != card_status) {
           trello_move_card(card_id = card_info$id,
-                          list_id = lists %>% filter(name == input$status) %>% pull(id), 
-                          key = key,
-                          token = token)
+                           list_id = lists %>% filter(name == input$status) %>% pull(id), 
+                           key = key,
+                           token = token)
         }
         
         # deadline
         if (input$has_deadline == FALSE) {
           trello_set_deadline(card_id = card_info$id,
-                             duedate = NULL,
-                             duecomplete = TRUE, 
-                             key = key,
-                             token = token)
+                              duedate = NULL,
+                              duecomplete = TRUE, 
+                              key = key,
+                              token = token)
         } else {
           trello_set_deadline(card_id = card_info$id,
-                             duedate = clean_Date(input$deadline),
-                             duecomplete = clean_logical(input$deadline_finished), 
-                             key = key,
-                             token = token)
+                              duedate = clean_Date(input$deadline),
+                              duecomplete = clean_logical(input$deadline_finished), 
+                              key = key,
+                              token = token)
         }
         
         # comment
         if (trimws(input$comment) != "") {
           trello_set_comment(card_id = card_info$id,
-                            comment = input$comment,
-                            key = key,
-                            token = token)
+                             comment = input$comment,
+                             key = key,
+                             token = token)
         }
         
         # members
@@ -798,10 +838,10 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         if (NROW(card_checklist) > 0) {
           for (i in seq_len(nrow(card_checklist))) {
             trello_set_task_state(card_id = card_info$id,
-                                 checkitem_id = card_checklist$id[i],
-                                 new_value = input[[card_checklist$id[i]]],
-                                 key = key,
-                                 token = token)
+                                  checkitem_id = card_checklist$id[i],
+                                  new_value = input[[card_checklist$id[i]]],
+                                  key = key,
+                                  token = token)
           }
         }
         newtasks <- input$newtasks
@@ -810,10 +850,10 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         }
         if (newtasks != "") {
           trello_add_task(card_id = card_info$id,
-                         new_items = newtasks %>% strsplit("\n") %>% unlist(),
-                         board = board,
-                         key = key,
-                         token = token)
+                          new_items = newtasks %>% strsplit("\n") %>% unlist(),
+                          board = board,
+                          key = key,
+                          token = token)
         }
         
         stopApp()

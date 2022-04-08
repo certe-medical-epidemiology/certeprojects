@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.3.4
+Version: 1.3.5
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -17,7 +17,7 @@ Authors@R: c(
   person(given = "Certe Medical Diagnostics & Advice Foundation",
          role = c("cph", "fnd")))
 Description: A Certe R Package with functions to automate department projects
-  using Shiny, MS Teams and Trello.
+  using Shiny, R Markdown, Quarto, MS Teams and Trello.
   This package is part of the 'certedata' universe.
 URL: https://certe-medical-epidemiology.github.io/certeprojects, https://github.com/certe-medical-epidemiology/certeprojects
 Depends: 

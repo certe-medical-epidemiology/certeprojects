@@ -436,10 +436,10 @@ project_add <- function(board = read_secret("trello.default.board"),
             "  #   toc_depth: 2",
             "  #   fig_width: 6.5",
             "  #   fig_height: 5",
+            ifelse(filetype == ".qmd", "  #   fig-dpi: 600", NA_character_),
             ifelse(filetype == ".qmd",
                    paste0("  #   reference-doc: \"", rmarkdown_template("word"), "\""),
                    '  #   reference_docx: !expr certestyle::rmarkdown_template("word")'),
-            ifelse(filetype == ".qmd", "  #   dpi: 600", NA_character_),
             "  pdf_document:",
             "    toc: true",
             "    toc_depth: 2",
@@ -495,6 +495,7 @@ project_add <- function(board = read_secret("trello.default.board"),
           if (filetype == ".qmd") {
             # conversion for R Markdown -> Quarto
             filecontent <- gsub("output:", "format:", filecontent, fixed = TRUE)
+            filecontent <- gsub("word_document", "docx", filecontent, fixed = TRUE)
             filecontent <- gsub("_document", "", filecontent, fixed = TRUE)
             filecontent <- gsub("(toc|fig)_", "\\1-", filecontent)
             filecontent <- gsub("latex_engine", "pdf-engine", filecontent, fixed = TRUE)

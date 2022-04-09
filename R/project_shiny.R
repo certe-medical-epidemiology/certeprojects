@@ -443,15 +443,22 @@ project_add <- function(board = read_secret("trello.default.board"),
             "  pdf_document:",
             "    toc: true",
             "    toc_depth: 2",
-            ifelse(filetype == ".qmd", "    toc-title: \"Inhoudsopgave\"", NA_character_),
             "    fig_width: 6.5",
             "    fig_height: 5",
+            ifelse(filetype == ".qmd", "    execute:", NA_character_),
+            ifelse(filetype == ".qmd", "      echo: false", NA_character_),
+            ifelse(filetype == ".qmd", "      warning: false", NA_character_),
             '    latex_engine: "xelatex"',
             "    df_print: !expr certestyle::rmarkdown_table",
-            '    template: !expr certestyle::rmarkdown_template("latex")',
+            ifelse(filetype == ".qmd",
+                   paste0("    template: \"", rmarkdown_template("latex"), "\""),
+                   '    template: !expr certestyle::rmarkdown_template("latex")'),
             'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
             'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
             "editor: visual",
+            ifelse(filetype == ".qmd", "crossref:", NA_character_),
+            ifelse(filetype == ".qmd", '  fig-prefix: "figuur"', NA_character_),
+            ifelse(filetype == ".qmd", '  tbl-prefix: "tabel"', NA_character_),
             "---",
             "")
           if (filetype == ".Rmd") {
@@ -499,9 +506,6 @@ project_add <- function(board = read_secret("trello.default.board"),
             filecontent <- gsub("_document", "", filecontent, fixed = TRUE)
             filecontent <- gsub("(toc|fig)_", "\\1-", filecontent)
             filecontent <- gsub("latex_engine", "pdf-engine", filecontent, fixed = TRUE)
-            filecontent <- gsub("template: .*",
-                                paste0("template: \"", rmarkdown_template("latex"), "\""),
-                                filecontent)
             filecontent[filecontent %like% "df_print: "] <- NA_character_
             filecontent <- gsub("reference-docx", "reference-doc", filecontent, fixed = TRUE)
           }

@@ -2,9 +2,40 @@
 % Please edit documentation in R/teams.R
 \name{teams}
 \alias{teams}
+\alias{teams_connect}
+\alias{teams_name}
+\alias{teams_open_sharepoint}
+\alias{teams_send_message}
+\alias{teams_upload}
+\alias{teams_download}
+\alias{teams_open}
 \alias{teams_webhooks}
-\title{Send Teams Messages}
+\title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
+teams_connect(
+  team_name = read_secret("teams.name"),
+  tenant = read_secret("mail.tenant"),
+  error_on_fail = FALSE
+)
+
+teams_name(account = teams_connect())
+
+teams_open_sharepoint(channel, account = teams_connect())
+
+teams_send_message(
+  body,
+  content_type = c("text", "html"),
+  attachments = NULL,
+  channel,
+  account = teams_connect()
+)
+
+teams_upload(file_path, teams_path, channel, account = teams_connect())
+
+teams_download(teams_path, file_path, channel, account = teams_connect())
+
+teams_open(file, channel, account = teams_connect())
+
 teams(
   message = "",
   channel,
@@ -24,9 +55,15 @@ teams(
 teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 }
 \arguments{
-\item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[certestyle:plain_html_table]{certestyle::plain_html_table()}}.}
+\item{tenant}{the tenant to use for \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}}
+
+\item{error_on_fail}{a \link{logical} to indicate whether an error must be thrown if no connection can be made}
+
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
 \item{channel}{channel to send message to, run \code{\link[=teams_webhooks]{teams_webhooks()}} for list of valid channels}
+
+\item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[certestyle:plain_html_table]{certestyle::plain_html_table()}}.}
 
 \item{title}{title for message}
 
@@ -49,8 +86,12 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 \item{webhooks_file}{the file locations of a YAML file with MS Teams webhooks in the form \code{channel: "URL"}}
 
 \item{...}{not used at the moment}
+
+\item{teams_name}{Name of the team}
 }
 \description{
+These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.
+
 Send messages to Microsoft Teams from R. This function relies on the \code{httr} package and only requires \href{https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel}{Incoming Webhooks} to be set in Teams.
 }
 \details{

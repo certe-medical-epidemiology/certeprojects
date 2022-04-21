@@ -4,7 +4,8 @@
 \alias{teams}
 \alias{teams_connect}
 \alias{teams_name}
-\alias{teams_open_sharepoint}
+\alias{teams_channels}
+\alias{teams_view_sharepoint}
 \alias{teams_send_message}
 \alias{teams_upload}
 \alias{teams_download}
@@ -20,7 +21,9 @@ teams_connect(
 
 teams_name(account = teams_connect())
 
-teams_open_sharepoint(channel, account = teams_connect())
+teams_channels(account = teams_connect())
+
+teams_view_sharepoint(channel, account = teams_connect())
 
 teams_send_message(
   body,
@@ -30,11 +33,22 @@ teams_send_message(
   account = teams_connect()
 )
 
-teams_upload(file_path, teams_path, channel, account = teams_connect())
+teams_upload(
+  local_path,
+  teams_path = basename(local_path),
+  channel = NULL,
+  account = teams_connect()
+)
 
-teams_download(teams_path, file_path, channel, account = teams_connect())
+teams_download(
+  teams_path,
+  local_path = basename(teams_path),
+  card_number = project_get_current_id(ask = FALSE),
+  channel = NULL,
+  account = teams_connect()
+)
 
-teams_open(file, channel, account = teams_connect())
+teams_open(teams_path, channel = NULL, account = teams_connect())
 
 teams(
   message = "",
@@ -55,6 +69,8 @@ teams(
 teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 }
 \arguments{
+\item{team_name}{name of the team}
+
 \item{tenant}{the tenant to use for \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}}
 
 \item{error_on_fail}{a \link{logical} to indicate whether an error must be thrown if no connection can be made}
@@ -62,6 +78,18 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
 \item{channel}{channel to send message to, run \code{\link[=teams_webhooks]{teams_webhooks()}} for list of valid channels}
+
+\item{body}{text of the message}
+
+\item{content_type}{type of content, must be "text" or "html"}
+
+\item{attachments}{vector of file locations of attachments to add to the message}
+
+\item{local_path}{file location on the local system, can also be a \link{data.frame} which will then be saved locally to the temp folder first}
+
+\item{teams_path}{file location in Microsoft Teams, may also contain the channel name if \code{channel} is \code{NULL}, e.g., \code{teams_path = "channel name/test.xlsx"}}
+
+\item{card_number}{Trello card number}
 
 \item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[certestyle:plain_html_table]{certestyle::plain_html_table()}}.}
 
@@ -86,17 +114,34 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 \item{webhooks_file}{the file locations of a YAML file with MS Teams webhooks in the form \code{channel: "URL"}}
 
 \item{...}{not used at the moment}
-
-\item{teams_name}{Name of the team}
 }
 \description{
 These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.
-
-Send messages to Microsoft Teams from R. This function relies on the \code{httr} package and only requires \href{https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel}{Incoming Webhooks} to be set in Teams.
 }
 \details{
-\if{html}{
-\out{<div style="text-align: center">}\figure{teams.png}{options: style="width:1422px;max-width:55\%;"}\out{</div>}
-\out{<div style="text-align: center">}\figure{teams2.png}{options: style="width:1372px;max-width:55\%;"}\out{</div>}
+The older \code{\link[=teams]{teams()}} function relies on the \code{httr} package and requires \href{https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel}{Incoming Webhooks} to be set in Teams.
+}
+\examples{
+\dontrun{
+
+teams_upload("myfile.docx", channel = "My Channel")
+teams_upload("myfile.docx", "my channel/my folder/test.docx")
+
+# also supports data frames, they will be saved locally in a temp folder
+teams_upload(mtcars, channel = "My Channel")
+mtcars \%>\%
+  teams_upload(channel = "My Channel")
+
+# open a file in Excel Online
+teams_open("test.xlsx", "My Channel")
+teams_open("my channel/test.xlsx") # shorter version, tries to find channel
+
+}
+\dontrun{
+
+# send message using Webhooks
+teams("test message", channel = "My Channel")
+# send message using Microsoft 365 login
+teams_send_message("test message", channel = "My Channel")
 }
 }

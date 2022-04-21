@@ -26,5 +26,6 @@ coverage:
 ignore:
   - "R/addins.R"
   - "R/project_shiny.R"
+  - "R/teams.R"
   - "R/trello.R"
   - "R/universal.R"

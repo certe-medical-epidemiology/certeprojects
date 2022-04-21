@@ -20,14 +20,31 @@
 #' Connect to Microsoft Teams via Microsoft 365
 #'
 #' These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `teams_*()` functions allow to work with this connection.
-#' @param teams_name Name of the team
+#' @param team_name name of the team
 #' @param tenant the tenant to use for [Microsoft365R::get_team()]
 #' @param error_on_fail a [logical] to indicate whether an error must be thrown if no connection can be made
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [teams_connect()] or [Microsoft365R::get_team()].
+#' @param channel name of the Teams channel, such as "General"
 #' @rdname teams
 #' @name teams
-#' @export
 #' @importFrom Microsoft365R get_team
+#' @export
+#' @examples 
+#' \dontrun{
+#' 
+#' teams_upload("myfile.docx", channel = "My Channel")
+#' teams_upload("myfile.docx", "my channel/my folder/test.docx")
+#' 
+#' # also supports data frames, they will be saved locally in a temp folder
+#' teams_upload(mtcars, channel = "My Channel")
+#' mtcars %>%
+#'   teams_upload(channel = "My Channel")
+#' 
+#' # open a file in Excel Online
+#' teams_open("test.xlsx", "My Channel")
+#' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
+#' 
+#' }
 teams_connect <- function(team_name = read_secret("teams.name"), 
                           tenant = read_secret("mail.tenant"),
                           error_on_fail = FALSE) {
@@ -36,14 +53,10 @@ teams_connect <- function(team_name = read_secret("teams.name"),
               "ChannelMessage.Send",
               "Chat.ReadWrite",
               "ChatMessage.Send",
-              "OnlineMeetings.ReadWrite",
-              "Sites.Manage.All",
+              "Files.ReadWrite.All",
               "Sites.ReadWrite.All",
-              "Tasks.ReadWrite",
               "Team.ReadBasic.All",
-              "TeamsActivity.Read",
-              "TeamsActivity.Send",
-              "User.ReadWrite")
+              "User.Read")
   if (tenant == "") {
     tenant <- NULL
   }
@@ -77,7 +90,6 @@ teams_connect <- function(team_name = read_secret("teams.name"),
   return(invisible(pkg_env$teams))
 }
 
-#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [teams_connect()] or [Microsoft365R::get_team()].
 #' @rdname teams
 #' @export
 teams_name <- function(account = teams_connect()) {
@@ -86,13 +98,32 @@ teams_name <- function(account = teams_connect()) {
 
 #' @rdname teams
 #' @export
-teams_open_sharepoint <- function(channel, account = teams_connect()) {
+teams_channels <- function(account = teams_connect()) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
-  account$get_sharepoint_site()$get_drive()$get_item(channel)$open()
+  sort(vapply(FUN.VALUE = character(1),
+              account$list_channels(), 
+              function(ch) ch$properties$displayName))
 }
 
+#' @rdname teams
+#' @export
+teams_view_sharepoint <- function(channel, account = teams_connect()) {
+  if (!is_valid_teams(account)) {
+    return(NA_character_)
+  }
+  channel <- retrieve_channel(path = channel, account = account)
+  if (is.na(channel)) {
+    return(NA_character_)
+  } else {
+    account$get_channel(channel)$get_folder()$open()
+  }
+}
+
+#' @param body text of the message
+#' @param content_type type of content, must be "text" or "html"
+#' @param attachments vector of file locations of attachments to add to the message
 #' @rdname teams
 #' @export
 teams_send_message <- function(body,
@@ -106,31 +137,96 @@ teams_send_message <- function(body,
   account$get_channel(channel)$send_message(body = body, content_type = content_type[1], attachments = attachments)
 }
 
+#' @param local_path file location on the local system, can also be a [data.frame] which will then be saved locally to the temp folder first
+#' @param teams_path file location in Microsoft Teams, may also contain the channel name if `channel` is `NULL`, e.g., `teams_path = "channel name/test.xlsx"`
 #' @rdname teams
 #' @export
-teams_upload <- function(file_path, teams_path, channel, account = teams_connect()) {
+teams_upload <- function(local_path, teams_path = basename(local_path), channel = NULL, account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
-  account$get_channel(channel)$upload_file(src = file_path, dest = teams_path)
+  if (is.data.frame(local_path)) {
+    message("Saving data set as RDS file to temporary location...", appendLF = FALSE)
+    filename <- deparse(substitute(local_path))
+    if (filename == ".") {
+      filename <- paste0("data_", concat(sample(c(letters[seq_len(6)], 0:9), size = 8, replace = TRUE)))
+    }
+    tmp <- paste0(tempdir(), "/", filename, ".rds")
+    saveRDS(object = local_path, file = tmp, version = 2, compress = "xz")
+    local_path <- tmp
+    teams_path <- paste0(filename, ".rds")
+    message("OK.")
+  }
+  if (!file.exists(local_path)) {
+    stop("Path not found: ", local_path)
+  }
+  if (is.null(channel)) {
+    # find channel based on teams path
+    channel <- retrieve_channel(path = teams_path, account = account)
+    if (!is.na(channel) && teams_path %like% "[/]") {
+      # a channel was found, so remove first part of name from teams_path
+      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+    } else if (is.na(channel)) {
+      stop("No valid channel set")
+    }
+  }
+  message("Uploading '", local_path,
+          "' to Teams channel '", channel,
+          "' as '", teams_path, "'...", appendLF = FALSE)
+  tryCatch({
+    account$get_channel(channel)$upload_file(src = local_path, dest = teams_path)
+    message("OK.")
+  }, error = function(e) message("ERROR.\n", e$message))
+}
+
+#' @inheritParams project_properties
+#' @rdname teams 
+#' @export
+teams_download <- function(teams_path, local_path = basename(teams_path), card_number = project_get_current_id(ask = FALSE), channel = NULL, account = teams_connect()) {
+  if (!is_valid_teams(account)) {
+    stop("No valid Teams account")
+  }
+  if (is.null(channel)) {
+    # find channel based on teams path
+    channel <- retrieve_channel(path = teams_path, account = account)
+    if (!is.na(channel) && teams_path %like% "[/]") {
+      # a channel was found, so remove first part of name from teams_path
+      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+    } else if (is.na(channel)) {
+      stop("No valid channel set")
+    }
+  }
+  if (!is.null(card_number)) {
+    local_path <- project_set_file(filename = local_path, card_number = card_number)
+  }
+  message("Downloading Teams file '", teams_path,
+          "' from channel '", channel,
+          "' as '", local_path, "'...", appendLF = FALSE)
+  tryCatch({
+    account$get_channel(channel)$download_file(src = teams_path, dest = local_path, overwrite = TRUE)
+    if (file.exists(local_path)) {
+      message("OK.")
+    }
+  }, error = function(e) message("ERROR.\n", e$message))
 }
 
 #' @rdname teams
 #' @export
-teams_download <- function(teams_path, file_path, channel, account = teams_connect()) {
+teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
-  account$get_channel(channel)$download_file(src = teams_path, dest = file_path)
-}
-
-#' @rdname teams
-#' @export
-teams_open <- function(file, channel, account = teams_connect()) {
-  if (!is_valid_teams(account)) {
-    stop("No valid Teams account")
+  if (is.null(channel)) {
+    # find channel based on teams path
+    channel <- retrieve_channel(path = teams_path, account = account)
+    if (!is.na(channel) && teams_path %like% "[/]") {
+      # a channel was found, so remove first part of name from teams_path
+      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+    } else if (is.na(channel)) {
+      stop("No valid channel set")
+    }
   }
-  account$get_sharepoint_site()$get_drive()$get_item(channel)$get_item(file)$open()
+  account$get_channel(channel)$get_folder()$get_item(teams_path)$open()
 }
 
 is_valid_teams <- function(account) {
@@ -155,17 +251,28 @@ get_teams_property <- function(account, property_names, account_fn = NULL) {
   return(out)
 }
 
+retrieve_channel <- function(path, account = teams_connect()) {
+  channels <- teams_channels(account = account)
+  if (path %in% channels) {
+    return(path)
+  }
+  channels_plain <- trimws(gsub("[^a-zA-Z0-9 ]", "", channels))
+  path_plain <- gsub("[^a-zA-Z0-9 /]", "", gsub("\\\\", "/", path, fixed = TRUE))
+  out <- channels[path_plain %like% channels_plain][1L]
+  if (is.na(out)) {
+    out <- channels[channels_plain %like% path_plain][1L]
+  }
+  if (is.na(out)) {
+    # still hard to find, then try first part of path
+    path_plain <- gsub("^(.*?)/(.*)", "\\1", path_plain)
+    out <- channels[channels_plain %like% path_plain][1L]
+  }
+  out
+}
 
-
-
-
-
-
-
-
-#' Send Teams Messages
-#'
-#' Send messages to Microsoft Teams from R. This function relies on the `httr` package and only requires [Incoming Webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel) to be set in Teams.
+#' @rdname teams
+#' @export
+#' @details The older [teams()] function relies on the `httr` package and requires [Incoming Webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel) to be set in Teams.
 #' @param message message to send, supports markdown. Can also be a [data.frame], which will be transformed using [certestyle::plain_html_table()].
 #' @param channel channel to send message to, run [teams_webhooks()] for list of valid channels
 #' @param title title for message
@@ -179,17 +286,19 @@ get_teams_property <- function(account, property_names, account_fn = NULL) {
 #' @param markdown turn markdown support on/off
 #' @param webhooks_file the file locations of a YAML file with MS Teams webhooks in the form `channel: "URL"`
 #' @param ... not used at the moment
-#' @details
-#' \if{html}{
-#' \out{<div style="text-align: center">}\figure{teams.png}{options: style="width:1422px;max-width:55\%;"}\out{</div>}
-#' \out{<div style="text-align: center">}\figure{teams2.png}{options: style="width:1372px;max-width:55\%;"}\out{</div>}
-#' }
 #' @importFrom yaml read_yaml
 #' @importFrom httr POST warn_for_status add_headers upload_file content
 #' @importFrom xml2 as_list read_xml
 #' @importFrom base64enc base64encode
 #' @importFrom certestyle colourpicker plain_html_table
-#' @export
+#' @examples 
+#' \dontrun{
+#' 
+#' # send message using Webhooks
+#' teams("test message", channel = "My Channel")
+#' # send message using Microsoft 365 login
+#' teams_send_message("test message", channel = "My Channel")
+#' }
 teams <- function(message = "",
                   channel,
                   title = NULL,

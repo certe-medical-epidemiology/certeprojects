@@ -40,6 +40,16 @@
 #' mtcars %>%
 #'   teams_upload(channel = "My Channel")
 #' 
+#'   
+#' # integrates with department projects:
+#' 
+#' # upload "myfile.docx" from the project folder of p123 to "My Channel":
+#' teams_upload("myfile.docx", channel = "My Channel", card_number = 123)
+#' # download "myfile.docx" from "My Channel" to the project folder of p123:
+#' teams_download("myfile.docx", channel = "My Channel", card_number = 123)
+#' teams_download("mychannel/myfile.docx", card_number = 123)
+#' 
+#' 
 #' # open a file in Excel Online
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
@@ -141,7 +151,11 @@ teams_send_message <- function(body,
 #' @param teams_path file location in Microsoft Teams, may also contain the channel name if `channel` is `NULL`, e.g., `teams_path = "channel name/test.xlsx"`
 #' @rdname teams
 #' @export
-teams_upload <- function(local_path, teams_path = basename(local_path), channel = NULL, account = teams_connect()) {
+teams_upload <- function(local_path,
+                         teams_path = basename(local_path),
+                         card_number = project_get_current_id(ask = FALSE),
+                         channel = NULL,
+                         account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -156,6 +170,9 @@ teams_upload <- function(local_path, teams_path = basename(local_path), channel 
     local_path <- tmp
     teams_path <- paste0(filename, ".rds")
     message("OK.")
+  }
+  if (!is.null(card_number)) {
+    local_path <- project_set_file(filename = local_path, card_number = card_number)
   }
   if (!file.exists(local_path)) {
     stop("Path not found: ", local_path)
@@ -182,7 +199,11 @@ teams_upload <- function(local_path, teams_path = basename(local_path), channel 
 #' @inheritParams project_properties
 #' @rdname teams 
 #' @export
-teams_download <- function(teams_path, local_path = basename(teams_path), card_number = project_get_current_id(ask = FALSE), channel = NULL, account = teams_connect()) {
+teams_download <- function(teams_path,
+                           local_path = basename(teams_path),
+                           card_number = project_get_current_id(ask = FALSE),
+                           channel = NULL,
+                           account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -227,6 +248,33 @@ teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
     }
   }
   account$get_channel(channel)$get_folder()$get_item(teams_path)$open()
+}
+
+#' @rdname teams
+#' @param share_type type of share, must be `"view"` (default) or `"edit"`
+#' @param expire_after time span after which the share link expires, defaults to `"1 month"`, can also be e.g. `"7 days"`
+#' @param password password to set for share link, defaults to blank
+#' @export
+teams_get_share_link <- function(teams_path,
+                                 share_type = c("view", "edit"),
+                                 expire_after = "1 month",
+                                 password = NULL,
+                                 channel = NULL,
+                                 account = teams_connect()) {
+  if (!is_valid_teams(account)) {
+    stop("No valid Teams account")
+  }
+  if (is.null(channel)) {
+    # find channel based on teams path
+    channel <- retrieve_channel(path = teams_path, account = account)
+    if (!is.na(channel) && teams_path %like% "[/]") {
+      # a channel was found, so remove first part of name from teams_path
+      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+    } else if (is.na(channel)) {
+      stop("No valid channel set")
+    }
+  }
+  account$get_channel(channel)$get_folder()$get_item(teams_path)$create_share_link(type = share_type[1L], expiry = expire_after, password = password)
 }
 
 is_valid_teams <- function(account) {

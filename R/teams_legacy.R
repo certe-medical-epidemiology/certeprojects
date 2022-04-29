@@ -19,7 +19,7 @@
 
 #' @rdname teams
 #' @export
-#' @details The older [teams()] function relies on the `httr` package and requires [Incoming Webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel) to be set in Teams.
+#' @description The older [teams()] function relies on the `httr` package and requires [Incoming Webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel) to be set in Teams.
 #' @param message message to send, supports markdown. Can also be a [data.frame], which will be transformed using [certestyle::plain_html_table()].
 #' @param channel channel to send message to, run [teams_webhooks()] for list of valid channels
 #' @param title title for message

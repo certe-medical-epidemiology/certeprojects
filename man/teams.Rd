@@ -10,6 +10,7 @@
 \alias{teams_upload}
 \alias{teams_download}
 \alias{teams_open}
+\alias{teams_get_share_link}
 \alias{teams_webhooks}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
@@ -36,6 +37,7 @@ teams_send_message(
 teams_upload(
   local_path,
   teams_path = basename(local_path),
+  card_number = project_get_current_id(ask = FALSE),
   channel = NULL,
   account = teams_connect()
 )
@@ -49,6 +51,15 @@ teams_download(
 )
 
 teams_open(teams_path, channel = NULL, account = teams_connect())
+
+teams_get_share_link(
+  teams_path,
+  share_type = c("view", "edit"),
+  expire_after = "1 month",
+  password = NULL,
+  channel = NULL,
+  account = teams_connect()
+)
 
 teams(
   message = "",
@@ -91,6 +102,12 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 
 \item{card_number}{Trello card number}
 
+\item{share_type}{type of share, must be \code{"view"} (default) or \code{"edit"}}
+
+\item{expire_after}{time span after which the share link expires, defaults to \code{"1 month"}, can also be e.g. \code{"7 days"}}
+
+\item{password}{password to set for share link, defaults to blank}
+
 \item{message}{message to send, supports markdown. Can also be a \link{data.frame}, which will be transformed using \code{\link[certestyle:plain_html_table]{certestyle::plain_html_table()}}.}
 
 \item{title}{title for message}
@@ -117,8 +134,7 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 }
 \description{
 These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.
-}
-\details{
+
 The older \code{\link[=teams]{teams()}} function relies on the \code{httr} package and requires \href{https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook#add-an-incoming-webhook-to-a-teams-channel}{Incoming Webhooks} to be set in Teams.
 }
 \examples{
@@ -131,6 +147,16 @@ teams_upload("myfile.docx", "my channel/my folder/test.docx")
 teams_upload(mtcars, channel = "My Channel")
 mtcars \%>\%
   teams_upload(channel = "My Channel")
+
+  
+# integrates with department projects:
+
+# upload "myfile.docx" from the project folder of p123 to "My Channel":
+teams_upload("myfile.docx", channel = "My Channel", card_number = 123)
+# download "myfile.docx" from "My Channel" to the project folder of p123:
+teams_download("myfile.docx", channel = "My Channel", card_number = 123)
+teams_download("mychannel/myfile.docx", card_number = 123)
+
 
 # open a file in Excel Online
 teams_open("test.xlsx", "My Channel")

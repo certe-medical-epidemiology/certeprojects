@@ -59,12 +59,12 @@ teams_connect <- function(team_name = read_secret("teams.name"),
                           tenant = read_secret("mail.tenant"),
                           error_on_fail = FALSE) {
   # see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scopes <- c("Channel.ReadBasic.All",
-              "ChannelMessage.Send",
+  scopes <- c(#"Channel.ReadBasic.All",
+              #"ChannelMessage.Send",
               "Chat.ReadWrite",
-              "ChatMessage.Send",
-              "Files.ReadWrite.All",
-              "Sites.ReadWrite.All",
+              #"ChatMessage.Send",
+              #"Files.ReadWrite.All",
+              #"Sites.ReadWrite.All",
               "Team.ReadBasic.All",
               "User.Read")
   if (tenant == "") {
@@ -255,12 +255,12 @@ teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
 #' @param expire_after time span after which the share link expires, defaults to `"1 month"`, can also be e.g. `"7 days"`
 #' @param password password to set for share link, defaults to blank
 #' @export
-teams_get_share_link <- function(teams_path,
-                                 share_type = c("view", "edit"),
-                                 expire_after = "1 month",
-                                 password = NULL,
-                                 channel = NULL,
-                                 account = teams_connect()) {
+teams_get_link <- function(teams_path,
+                           share_type = c("view", "edit"),
+                           expire_after = "1 month",
+                           password = NULL,
+                           channel = NULL,
+                           account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }

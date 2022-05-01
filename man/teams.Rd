@@ -10,7 +10,7 @@
 \alias{teams_upload}
 \alias{teams_download}
 \alias{teams_open}
-\alias{teams_get_share_link}
+\alias{teams_get_link}
 \alias{teams_webhooks}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
@@ -52,7 +52,7 @@ teams_download(
 
 teams_open(teams_path, channel = NULL, account = teams_connect())
 
-teams_get_share_link(
+teams_get_link(
   teams_path,
   share_type = c("view", "edit"),
   expire_after = "1 month",

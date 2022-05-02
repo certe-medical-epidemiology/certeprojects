@@ -61,7 +61,7 @@ test_that("project properties work", {
                         fixed = TRUE))
 })
 
-test_that("teams works", {
+test_that("teams legacy works", {
   expect_warning(teams("test"))
   expect_identical(suppressWarnings(teams("test")), "test")
   expect_warning(teams("test", title = "Title", subtitle = "Subtitle"))

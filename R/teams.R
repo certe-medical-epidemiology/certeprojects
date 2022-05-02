@@ -59,14 +59,20 @@ teams_connect <- function(team_name = read_secret("teams.name"),
                           tenant = read_secret("mail.tenant"),
                           error_on_fail = FALSE) {
   # see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scopes <- c(#"Channel.ReadBasic.All",
-              #"ChannelMessage.Send",
+  scopes <- c("Channel.ReadBasic.All",
+              "ChannelMessage.Send",
               "Chat.ReadWrite",
-              #"ChatMessage.Send",
-              #"Files.ReadWrite.All",
-              #"Sites.ReadWrite.All",
+              "ChatMessage.Send",
+              "Files.ReadWrite.All",
+              "MailboxSettings.ReadWrite",
+              "OnlineMeetings.ReadWrite",
+              "Sites.Manage.All",
+              "Sites.ReadWrite.All",
+              "Tasks.ReadWrite",
               "Team.ReadBasic.All",
-              "User.Read")
+              "TeamsActivity.Read",
+              "TeamsActivity.Send",
+              "User.ReadWrite")
   if (tenant == "") {
     tenant <- NULL
   }
@@ -81,7 +87,7 @@ teams_connect <- function(team_name = read_secret("teams.name"),
                                                                     scopes = scopes,
                                                                     tenant = tenant)))
       }
-      message("Connected to Teams '", teams_name(account = pkg_env$teams), "' through Microsoft 365.")
+      message("Connected to team '", teams_name(account = pkg_env$teams), "' through Microsoft 365.")
     }, warning = function(w) {
       return(invisible())
     }, error = function(e, fail = error_on_fail) {
@@ -127,7 +133,10 @@ teams_view_sharepoint <- function(channel, account = teams_connect()) {
   if (is.na(channel)) {
     return(NA_character_)
   } else {
-    account$get_channel(channel)$get_folder()$open()
+    account$
+      get_channel(channel)$
+      get_folder()$
+      open()
   }
 }
 
@@ -137,14 +146,19 @@ teams_view_sharepoint <- function(channel, account = teams_connect()) {
 #' @rdname teams
 #' @export
 teams_send_message <- function(body,
+                               channel,
                                content_type = c("text", "html"),
                                attachments = NULL,
-                               channel,
                                account = teams_connect()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
-  account$get_channel(channel)$send_message(body = body, content_type = content_type[1], attachments = attachments)
+  out <- account$
+    get_channel(channel)$
+    send_message(body = body,
+                 content_type = content_type[1],
+                 attachments = attachments)
+  invisible(out)
 }
 
 #' @param local_path file location on the local system, can also be a [data.frame] which will then be saved locally to the temp folder first
@@ -166,7 +180,7 @@ teams_upload <- function(local_path,
       filename <- paste0("data_", concat(sample(c(letters[seq_len(6)], 0:9), size = 8, replace = TRUE)))
     }
     tmp <- paste0(tempdir(), "/", filename, ".rds")
-    saveRDS(object = local_path, file = tmp, version = 2, compress = "xz")
+    saveRDS(object = local_path, file = tmp, compress = "xz")
     local_path <- tmp
     teams_path <- paste0(filename, ".rds")
     message("OK.")
@@ -188,12 +202,18 @@ teams_upload <- function(local_path,
     }
   }
   message("Uploading '", local_path,
-          "' to Teams channel '", channel,
+          "' to channel '", channel,
           "' as '", teams_path, "'...", appendLF = FALSE)
   tryCatch({
-    account$get_channel(channel)$upload_file(src = local_path, dest = teams_path)
+    account$
+      get_channel(channel)$
+      upload_file(src = local_path,
+                  dest = teams_path)
     message("OK.")
   }, error = function(e) message("ERROR.\n", e$message))
+  
+  # remove temp file
+  try(unlink(tmp), silent = TRUE)
 }
 
 #' @inheritParams project_properties
@@ -224,7 +244,11 @@ teams_download <- function(teams_path,
           "' from channel '", channel,
           "' as '", local_path, "'...", appendLF = FALSE)
   tryCatch({
-    account$get_channel(channel)$download_file(src = teams_path, dest = local_path, overwrite = TRUE)
+    account$
+      get_channel(channel)$
+      download_file(src = teams_path,
+                    dest = local_path,
+                    overwrite = TRUE)
     if (file.exists(local_path)) {
       message("OK.")
     }
@@ -247,7 +271,11 @@ teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
       stop("No valid channel set")
     }
   }
-  account$get_channel(channel)$get_folder()$get_item(teams_path)$open()
+  account$
+    get_channel(channel)$
+    get_folder()$
+    get_item(teams_path)$
+    open()
 }
 
 #' @rdname teams
@@ -274,7 +302,13 @@ teams_get_link <- function(teams_path,
       stop("No valid channel set")
     }
   }
-  account$get_channel(channel)$get_folder()$get_item(teams_path)$create_share_link(type = share_type[1L], expiry = expire_after, password = password)
+  account$
+    get_channel(channel)$
+    get_folder()$
+    get_item(teams_path)$
+    create_share_link(type = share_type[1L],
+                      expiry = expire_after,
+                      password = password)
 }
 
 is_valid_teams <- function(account) {

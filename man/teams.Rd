@@ -28,9 +28,9 @@ teams_view_sharepoint(channel, account = teams_connect())
 
 teams_send_message(
   body,
+  channel,
   content_type = c("text", "html"),
   attachments = NULL,
-  channel,
   account = teams_connect()
 )
 

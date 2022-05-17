@@ -25,7 +25,7 @@
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
 #' @importFrom shinyjs useShinyjs enable disable
 #' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
-#' @importFrom dplyr `%>%` select pull filter if_else
+#' @importFrom dplyr select pull filter if_else
 #' @importFrom certestyle colourpicker format2
 #  certestyle for R Markdown:
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
@@ -171,11 +171,11 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     output$trello_boards <- renderUI({
       if (input$trello_upload == TRUE) {
-        boards_df <- trello_get_boards(username = username, key = key, token = token) %>%
-          filter(closed == FALSE) %>%
+        boards_df <- trello_get_boards(username = username, key = key, token = token) |>
+          filter(closed == FALSE) |>
           select(id, name, shortLink)
-        boards_shortLink <- boards_df %>% pull(shortLink)
-        names(boards_shortLink) <- boards_df %>% pull(name)
+        boards_shortLink <- boards_df |> pull(shortLink)
+        names(boards_shortLink) <- boards_df |> pull(name)
         
         slct <- selectInput("trello_boards",
                             label = "Bord",
@@ -381,7 +381,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                                           prio = input$priority,
                                           duedate = deadline,
                                           attachments = trello_cards,
-                                          checklist = checklist %>% strsplit("\n") %>% unlist(),
+                                          checklist = checklist |> strsplit("\n") |> unlist(),
                                           desc = description,
                                           comments = input$trello_comments,
                                           key = key,
@@ -569,7 +569,7 @@ project_add <- function(board = read_secret("trello.default.board"),
 #' @inheritParams trello
 #' @importFrom shiny HTML h4 div h5
 #' @importFrom shinyWidgets awesomeCheckbox
-#' @importFrom dplyr `%>%` filter pull case_when transmute
+#' @importFrom dplyr filter pull case_when transmute
 #' @importFrom shinyjs useShinyjs enable disable hidden
 #' @importFrom rstudioapi showDialog
 #' @importFrom cleaner clean_Date clean_logical
@@ -584,31 +584,31 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
     return(invisible())
   }
   
-  card_info <- trello_get_cards(board = board, key = key, token = token) %>%
-    filter(idShort == card_number) %>%
+  card_info <- trello_get_cards(board = board, key = key, token = token) |>
+    filter(idShort == card_number) |>
     as.list()
   if (length(card_info$id) == 0) {
     stop(paste0("Project p", card_number, " not found on Trello"), call. = FALSE)
   }
   lists <- trello_get_lists(board = board, key = key, token = token)
-  card_status <- lists %>% filter(id == card_info$idList) %>% pull(name)
+  card_status <- lists |> filter(id == card_info$idList) |> pull(name)
   card_comments <- trello_get_comments(card_id = card_info$id, key = key, token = token)
   if (NROW(card_comments) > 0) {
-    card_comments <- card_comments %>%
+    card_comments <- card_comments |>
       transmute(by = memberCreator.fullName,
                 date = date,
                 text = data.text)
   }
   
-  card_members <- trello_get_members(board = board, key = key, token = token) %>%
-    filter(id %in% unlist(trello_get_card_property(card_number, "idMembers", board = board, key = key, token = token))) %>%
-    pull(fullName) %>%
+  card_members <- trello_get_members(board = board, key = key, token = token) |>
+    filter(id %in% unlist(trello_get_card_property(card_number, "idMembers", board = board, key = key, token = token))) |>
+    pull(fullName) |>
     paste(collapse = ", ")
   
-  card_checklist <- trello_get_checklists(board = board, key = key, token = token) %>%
-    filter(idCard == card_info$id) %>%
-    pull(checkItems) %>%
-    .[[1]]
+  card_checklist <- trello_get_checklists(board = board, key = key, token = token) |>
+    filter(idCard == card_info$id) |>
+    pull(checkItems)
+  card_checklist <- card_checklist[[1]]
   
   # ui ----
   ui <- fluidPage(
@@ -804,7 +804,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         # status
         if (input$status != card_status) {
           trello_move_card(card_id = card_info$id,
-                           list_id = lists %>% filter(name == input$status) %>% pull(id), 
+                           list_id = lists |> filter(name == input$status) |> pull(id), 
                            key = key,
                            token = token)
         }
@@ -855,7 +855,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         }
         if (newtasks != "") {
           trello_add_task(card_id = card_info$id,
-                          new_items = newtasks %>% strsplit("\n") %>% unlist(),
+                          new_items = newtasks |> strsplit("\n") |> unlist(),
                           board = board,
                           key = key,
                           token = token)

@@ -248,9 +248,9 @@ trello_get_boards <- function(username = trello_credentials("member"),
 #' @rdname trello
 #' @export
 trello_get_board_name <- function(board = read_secret("trello.default.board"),
-                                 username = trello_credentials("member"),
-                                 key = trello_credentials("key"),
-                                 token = trello_credentials("token")) {
+                                  username = trello_credentials("member"),
+                                  key = trello_credentials("key"),
+                                  token = trello_credentials("token")) {
   boards <- trello_get_boards(username = username, key = key, token = token)
   boards$name[which(boards$id == board | boards$shortLink == board)][1]
 }
@@ -320,7 +320,7 @@ trello_get_comments <- function(card_id,
 
 #' @rdname trello
 #' @param to_console a [logical] to indicate whether the card data should be printed to the Console
-#' @importFrom dplyr `%>%` filter
+#' @importFrom dplyr filter
 #' @importFrom certestyle font_blue font_bold font_silver
 #' @export
 trello_my_cards <- function(board = read_secret("trello.default.board"),
@@ -334,8 +334,8 @@ trello_my_cards <- function(board = read_secret("trello.default.board"),
                          "&card_list=true",
                          "&key=", key,
                          "&card_fields=idShort,name,dateLastActivity",
-                         "&token=", token)) %>% 
-    .$cards %>%
+                         "&token=", token))
+  cards <- cards$cards |> 
     filter(list.name == list)
   
   if (isTRUE(to_console)) {
@@ -374,7 +374,7 @@ trello_search_any <- function(x,
 #' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_add()]) instead of a [double] vector
 #' @importFrom certestyle font_green font_blue font_bold font_silver font_red
 #' @importFrom rstudioapi showPrompt
-#' @importFrom dplyr `%>%` filter
+#' @importFrom dplyr filter
 #' @export
 trello_search_card <- function(x = NULL,
                                return_all = FALSE,
@@ -389,10 +389,10 @@ trello_search_card <- function(x = NULL,
                              "&cards_limit=100",
                              "&card_list=true",
                              "&key=", key,
-                             "&token=", token)) %>% 
-        .$cards %>%
-        filter(list.name != "Voltooid") %>% 
-        .[seq_len(min(nrow(.), max_n)), , drop = FALSE]
+                             "&token=", token))
+      cards <- cards$cards |>
+        filter(list.name != "Voltooid")
+      cards <- cards[seq_len(min(nrow(.), max_n)), , drop = FALSE]
       cards$name[cards$name %like% "^[a-zA-Z-]+ - "] <- gsub("^([a-zA-Z-]+) - (.*)", "\\2 (\\1)", cards$name[cards$name %like% "^[a-zA-Z-]+ - "])
       # replace accents in vowels etc.:
       cards$name <- iconv(cards$name, from = "Latin1", to = "ASCII//TRANSLIT")
@@ -477,25 +477,25 @@ trello_open_card <- function() {
 
 #' @rdname trello
 #' @param property property to take from card
-#' @importFrom dplyr `%>%` filter pull
+#' @importFrom dplyr filter pull
 #' @export
 trello_get_card_property <- function(card_number,
                                      property,
                                      board = read_secret("trello.default.board"),
                                      key = trello_credentials("key"),
                                      token = trello_credentials("token")) {
-  trello_get_cards(board, key, token) %>% filter(idShort == card_number) %>% pull(property)
+  trello_get_cards(board, key, token) |> filter(idShort == card_number) |> pull(property)
 }
 
 #' @rdname trello
 #' @param card_number Trello card number
-#' @importFrom dplyr `%>%` filter pull
+#' @importFrom dplyr filter pull
 #' @export
 trello_get_card_id <- function(card_number,
                                board = read_secret("trello.default.board"),
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
-  trello_get_cards(board, key, token) %>% filter(idShort == card_number) %>% pull(id)
+  trello_get_cards(board, key, token) |> filter(idShort == card_number) |> pull(id)
 }
 
 #' @rdname trello
@@ -516,7 +516,7 @@ trello_set_comment <- function(card_id,
 }
 
 #' @rdname trello
-#' @importFrom dplyr `%>%` filter pull 
+#' @importFrom dplyr filter pull 
 #' @importFrom httr POST stop_for_status DELETE
 #' @export
 trello_set_members <- function(card_id,
@@ -526,13 +526,13 @@ trello_set_members <- function(card_id,
                                token = trello_credentials("token")) {
   
   members <- trello_get_members(board = board, key = key, token = token)
-  members_new <- members %>%
-    filter(fullName %in% member | username %in% member) %>%
-    pull(id) %>%
+  members_new <- members |>
+    filter(fullName %in% member | username %in% member) |>
+    pull(id) |>
     unlist()
-  members_old <- trello_get_cards() %>%
-    filter(id == card_id) %>%
-    pull(idMembers) %>%
+  members_old <- trello_get_cards() |>
+    filter(id == card_id) |>
+    pull(idMembers) |>
     unlist()
   
   members_to_add <- members_new[!members_new %in% members_old]
@@ -585,7 +585,7 @@ trello_set_deadline <- function(card_id,
 #' @param new_items character vector of checklist items
 #' @param checklist_name name of the checklist
 #' @importFrom httr POST stop_for_status
-#' @importFrom dplyr `%>%` filter
+#' @importFrom dplyr filter
 #' @export
 trello_add_task <- function(card_id,
                             new_items = NULL,
@@ -594,7 +594,7 @@ trello_add_task <- function(card_id,
                             key = trello_credentials("key"),
                             token = trello_credentials("token")) {
   
-  checklist_id <- trello_get_checklists() %>% filter(idCard == card_id)
+  checklist_id <- trello_get_checklists() |> filter(idCard == card_id)
   # does checklist exist?
   if (NROW(checklist_id) == 0 | checklist_id$name[1L] != checklist_name) {
     # create checklist
@@ -666,11 +666,10 @@ trello_move_card <- function(card_id,
 
 #' @importFrom jsonlite fromJSON
 #' @importFrom httr GET stop_for_status
-#' @importFrom dplyr `%>%`
 GET_df <- function(x) {
   result <- GET(x)
   stop_for_status(result)
-  result %>%
-    content(type = "text", encoding = "UTF-8") %>%
+  result |>
+    content(type = "text", encoding = "UTF-8") |>
     fromJSON(flatten = TRUE)
 }

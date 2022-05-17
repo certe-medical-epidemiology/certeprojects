@@ -145,7 +145,7 @@ teams_upload("myfile.docx", "my channel/my folder/test.docx")
 
 # also supports data frames, they will be saved locally in a temp folder
 teams_upload(mtcars, channel = "My Channel")
-mtcars \%>\%
+mtcars |> 
   teams_upload(channel = "My Channel")
 
   

@@ -412,7 +412,7 @@ trello_search_card <- function(x = NULL,
   
   # strip "p" for project identifiers
   x <- gsub("^p([0-9]+)", "\\1", x)
-  if (x %like% "^[0-9]+$") {
+  if (x %like% "^[0-9]+$" & !isTRUE(return_all)) {
     return(as.double(x))
   }
   
@@ -420,21 +420,26 @@ trello_search_card <- function(x = NULL,
   search <- trello_search_any(x = x, key = key, token = token)
   # only keep current board
   if (NROW(search) > 0) {
-    search <- search[which(search$board.shortLink == board), ]
+    search <- search[which(search$board.shortLink == board), , drop = FALSE]
   }
   
-  if (NROW(search) == 1) {
-    return(search$idShort) # also in non-interactive mode
-  } else if (!interactive()) {
-    return(NULL)
-  } else if (NROW(search) == 0) {
-    message("No projects found.")
-    return(NULL)
+  if (!isTRUE(return_all)) {
+    if (NROW(search) == 1) {
+      return(search$idShort) # also in non-interactive mode
+    } else if (!interactive()) {
+      return(NULL)
+    } else if (NROW(search) == 0) {
+      message("No projects found.")
+      return(NULL)
+    }
   }
   
   # return named vector with shortUrls
   if (isTRUE(return_all)) {
     # used by Shiny app in project_add()
+    if (NROW(search) == 0) {
+      return(character(0))
+    }
     urls <- search$shortUrl
     names(urls) <- paste0(trimws(search$name), " [p", search$idShort, ", ", search$list.name, "]")
     return(urls)

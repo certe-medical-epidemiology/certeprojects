@@ -144,7 +144,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                          choices = users,
                          multiple = TRUE,
                          options = list(
-                           # do not support unexisting requesters
+                           # support non-existing requesters
                            create = TRUE,
                            # creates new item on field leave
                            createOnBlur = TRUE,
@@ -229,7 +229,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                            multiple = TRUE,
                            width = "100%",
                            options = list(
-                             # do not support unexisting members:
+                             # do not support non-existing members:
                              create = FALSE,
                              createOnBlur = FALSE,
                              closeAfterSelect = TRUE)),
@@ -243,7 +243,7 @@ project_add <- function(board = read_secret("trello.default.board"),
             searchInput("trello_search",
                         label = "Gerelateerde project(en)",
                         value = "",
-                        placeholder = "Zoeken in titel/beschrijving/taken...",
+                        placeholder = "Zoeken in titel/beschrijving/taken/namen...",
                         btnSearch = icon("search"),
                         btnReset = icon("remove"),
                         width = "100%")
@@ -277,7 +277,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                                multiple = TRUE,
                                width = "100%",
                                options = list(
-                                 # do not support unexisting cards:
+                                 # do not support non-existing cards:
                                  create = FALSE,
                                  createOnBlur = FALSE,
                                  closeAfterSelect = TRUE)),
@@ -286,6 +286,11 @@ project_add <- function(board = read_secret("trello.default.board"),
                                 "resultaat",
                                 "resultaten.")),
                   class = "certeblauw results_count")
+              )
+            } else if (!identical(searchterm, "")) {
+              tagList(
+                p("Geen resultaten.",
+                  class = "certeroze results_count")
               )
             }
           }

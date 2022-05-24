@@ -23,8 +23,6 @@
 on:
   push:
     branches: '**' # matches every branch
-  pull_request:
-    branches: '**' # matches every branch
   schedule:
     # run a schedule every day at 1 AM.
     # this is to check that all dependencies are still available
@@ -42,11 +40,9 @@ jobs:
       matrix:
         config:
           - {os: ubuntu-20.04,   r: 'devel',   allowfail: true}
-          - {os: ubuntu-20.04,   r: '4.1',     allowfail: false}
-          - {os: macOS-latest,   r: '4.1',     allowfail: false}
-          - {os: windows-latest, r: '4.1',     allowfail: false}
-          # - {os: windows-latest, r: '3.6',     allowfail: false}
-
+          - {os: ubuntu-20.04,   r: '4.2',     allowfail: false}
+          - {os: macOS-latest,   r: '4.2',     allowfail: false}
+          - {os: windows-latest, r: '4.2',     allowfail: false}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes

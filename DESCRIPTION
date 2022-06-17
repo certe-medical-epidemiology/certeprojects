@@ -37,6 +37,7 @@ Imports:
   xml2 (>= 1.3.2),
   yaml (>= 2.2.0)
 Suggests: 
+  certetoolbox, 
   testthat (>= 2.0.0)
 License: GPL-2
 Encoding: UTF-8

@@ -39,7 +39,7 @@
 #' teams_upload(mtcars, channel = "My Channel")
 #' mtcars |> 
 #'   teams_upload(channel = "My Channel")
-#' 
+#'   
 #'   
 #' # integrates with department projects:
 #' 
@@ -49,11 +49,14 @@
 #' teams_download("myfile.docx", channel = "My Channel", card_number = 123)
 #' teams_download("mychannel/myfile.docx", card_number = 123)
 #' 
+#' # direct import from Teams requires the 'certetoolbox' package
+#' x <- teams_import("mychannel/myfile.docx")
+#' x <- teams_import("mychannel/myfile.docx", card_number = 123)
+#' x <- teams_import("myfile.docx", channel = "My Channel", card_number = 123)
 #' 
 #' # open a file in Excel Online
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
-#' 
 #' }
 teams_connect <- function(team_name = read_secret("teams.name"), 
                           tenant = read_secret("mail.tenant"),
@@ -243,16 +246,36 @@ teams_download <- function(teams_path,
   message("Downloading Teams file '", teams_path,
           "' from channel '", channel,
           "' as '", local_path, "'...", appendLF = FALSE)
-  tryCatch({
+  tryCatch(
     account$
       get_channel(channel)$
       download_file(src = teams_path,
                     dest = local_path,
-                    overwrite = TRUE)
-    if (file.exists(local_path)) {
-      message("OK.")
-    }
-  }, error = function(e) message("ERROR.\n", e$message))
+                    overwrite = TRUE),
+    error = function(e) message("ERROR.\n", e$message))
+  if (file.exists(local_path)) {
+    message("OK.")
+    return(invisible(local_path))
+  } else {
+    return(NULL)
+  }
+}
+
+#' @inheritParams project_properties
+#' @rdname teams 
+#' @export
+teams_import <- function(teams_path,
+                         card_number = project_get_current_id(ask = FALSE),
+                         channel = NULL,
+                         account = teams_connect()) {
+  suppressMessages(
+    tempfile <- teams_download(teams_path = teams_path,
+                               local_path = paste0(tempdir(), "/", basename(teams_path)),
+                               card_number = card_number,
+                               channel = channel,
+                               account = account)
+  )
+  certetoolbox::import(tempfile)
 }
 
 #' @rdname teams

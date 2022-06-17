@@ -9,6 +9,7 @@
 \alias{teams_send_message}
 \alias{teams_upload}
 \alias{teams_download}
+\alias{teams_import}
 \alias{teams_open}
 \alias{teams_get_link}
 \alias{teams_webhooks}
@@ -45,6 +46,13 @@ teams_upload(
 teams_download(
   teams_path,
   local_path = basename(teams_path),
+  card_number = project_get_current_id(ask = FALSE),
+  channel = NULL,
+  account = teams_connect()
+)
+
+teams_import(
+  teams_path,
   card_number = project_get_current_id(ask = FALSE),
   channel = NULL,
   account = teams_connect()
@@ -147,7 +155,7 @@ teams_upload("myfile.docx", "my channel/my folder/test.docx")
 teams_upload(mtcars, channel = "My Channel")
 mtcars |> 
   teams_upload(channel = "My Channel")
-
+  
   
 # integrates with department projects:
 
@@ -157,11 +165,14 @@ teams_upload("myfile.docx", channel = "My Channel", card_number = 123)
 teams_download("myfile.docx", channel = "My Channel", card_number = 123)
 teams_download("mychannel/myfile.docx", card_number = 123)
 
+# direct import from Teams requires the 'certetoolbox' package
+x <- teams_import("mychannel/myfile.docx")
+x <- teams_import("mychannel/myfile.docx", card_number = 123)
+x <- teams_import("myfile.docx", channel = "My Channel", card_number = 123)
 
 # open a file in Excel Online
 teams_open("test.xlsx", "My Channel")
 teams_open("my channel/test.xlsx") # shorter version, tries to find channel
-
 }
 \dontrun{
 

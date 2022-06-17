@@ -18,7 +18,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.4.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.5.0</span>
       </span>
     </div>
 
@@ -114,6 +114,13 @@ The older teams() function relies on the httr package and requires Incoming Webh
   account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
 <span class="op">)</span>
 
+<span class="fu">teams_import</span><span class="op">(</span>
+  <span class="va">teams_path</span>,
+  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,
+  channel <span class="op">=</span> <span class="cn">NULL</span>,
+  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
+<span class="op">)</span>
+
 <span class="fu">teams_open</span><span class="op">(</span><span class="va">teams_path</span>, channel <span class="op">=</span> <span class="cn">NULL</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 
 <span class="fu">teams_get_link</span><span class="op">(</span>
@@ -148,56 +155,107 @@ The older teams() function relies on the httr package and requires Incoming Webh
     <h2>Arguments</h2>
     <dl><dt>team_name</dt>
 <dd><p>name of the team</p></dd>
+
+
 <dt>tenant</dt>
 <dd><p>the tenant to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code></p></dd>
+
+
 <dt>error_on_fail</dt>
 <dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether an error must be thrown if no connection can be made</p></dd>
+
+
 <dt>account</dt>
 <dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code>teams_connect()</code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
+
+
 <dt>channel</dt>
 <dd><p>channel to send message to, run <code>teams_webhooks()</code> for list of valid channels</p></dd>
+
+
 <dt>body</dt>
 <dd><p>text of the message</p></dd>
+
+
 <dt>content_type</dt>
 <dd><p>type of content, must be "text" or "html"</p></dd>
+
+
 <dt>attachments</dt>
 <dd><p>vector of file locations of attachments to add to the message</p></dd>
+
+
 <dt>local_path</dt>
 <dd><p>file location on the local system, can also be a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a> which will then be saved locally to the temp folder first</p></dd>
+
+
 <dt>teams_path</dt>
 <dd><p>file location in Microsoft Teams, may also contain the channel name if <code>channel</code> is <code>NULL</code>, e.g., <code>teams_path = "channel name/test.xlsx"</code></p></dd>
+
+
 <dt>card_number</dt>
 <dd><p>Trello card number</p></dd>
+
+
 <dt>share_type</dt>
 <dd><p>type of share, must be <code>"view"</code> (default) or <code>"edit"</code></p></dd>
+
+
 <dt>expire_after</dt>
 <dd><p>time span after which the share link expires, defaults to <code>"1 month"</code>, can also be e.g. <code>"7 days"</code></p></dd>
+
+
 <dt>password</dt>
 <dd><p>password to set for share link, defaults to blank</p></dd>
+
+
 <dt>message</dt>
 <dd><p>message to send, supports markdown. Can also be a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>, which will be transformed using <code><a href="https://certe-medical-epidemiology.github.io/certestyle/reference/plain_html_table.html" class="external-link">certestyle::plain_html_table()</a></code>.</p></dd>
+
+
 <dt>title</dt>
 <dd><p>title for message</p></dd>
+
+
 <dt>subtitle</dt>
 <dd><p>subtitle for message</p></dd>
+
+
 <dt>items</dt>
 <dd><p>text items for in message, a named vector</p></dd>
+
+
 <dt>items_title</dt>
 <dd><p>title to show above items</p></dd>
+
+
 <dt>images</dt>
 <dd><p>URLs of images to add to card. Local images will be uploaded to Imgur.com, or will will be transformed using <code><a href="https://rdrr.io/pkg/base64enc/man/base64.html" class="external-link">base64enc::base64encode()</a></code> if that fails.</p></dd>
+
+
 <dt>images_title</dt>
 <dd><p>title to show above images</p></dd>
+
+
 <dt>buttons</dt>
 <dd><p>buttons to show on card. Like <code>items</code>, this should be a named vector where the values are URLs (starting with <code>http://</code> or <code>https://</code>) or mail links (starting with <code>mailto:</code>)</p></dd>
+
+
 <dt>message_thumbnail</dt>
 <dd><p>image to show on card</p></dd>
+
+
 <dt>markdown</dt>
 <dd><p>turn markdown support on/off</p></dd>
+
+
 <dt>webhooks_file</dt>
 <dd><p>the file locations of a YAML file with MS Teams webhooks in the form <code>channel: "URL"</code></p></dd>
+
+
 <dt>...</dt>
 <dd><p>not used at the moment</p></dd>
+
 </dl></div>
 
     <div id="ref-examples">
@@ -211,7 +269,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
 <span class="r-in"><span class="fu">teams_upload</span><span class="op">(</span><span class="va">mtcars</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
 <span class="r-in"><span class="va">mtcars</span> |&gt; </span>
 <span class="r-in">  <span class="fu">teams_upload</span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"></span>
+<span class="r-in">  </span>
 <span class="r-in">  </span>
 <span class="r-in"><span class="co"># integrates with department projects:</span></span>
 <span class="r-in"></span>
@@ -221,11 +279,14 @@ The older teams() function relies on the httr package and requires Incoming Webh
 <span class="r-in"><span class="fu">teams_download</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">teams_download</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
 <span class="r-in"></span>
+<span class="r-in"><span class="co"># direct import from Teams requires the 'certetoolbox' package</span></span>
+<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span><span class="op">)</span></span>
+<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
 <span class="r-in"></span>
 <span class="r-in"><span class="co"># open a file in Excel Online</span></span>
 <span class="r-in"><span class="fu">teams_open</span><span class="op">(</span><span class="st">"test.xlsx"</span>, <span class="st">"My Channel"</span><span class="op">)</span></span>
 <span class="r-in"><span class="fu">teams_open</span><span class="op">(</span><span class="st">"my channel/test.xlsx"</span><span class="op">)</span> <span class="co"># shorter version, tries to find channel</span></span>
-<span class="r-in"></span>
 <span class="r-in"><span class="op">}</span></span>
 <span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
 <span class="r-in"></span>
@@ -248,7 +309,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

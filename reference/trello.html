@@ -76,170 +76,170 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">trello_upload</span><span class="op">(</span>
-  <span class="va">title</span>,
-  desc <span class="op">=</span> <span class="st">""</span>,
-  requested_by <span class="op">=</span> <span class="st">""</span>,
-  project_path <span class="op">=</span> <span class="st">""</span>,
-  member <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"membername"</span><span class="op">)</span>,
-  prio <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.prio"</span><span class="op">)</span>,
-  duedate <span class="op">=</span> <span class="st">""</span>,
-  checklist <span class="op">=</span> <span class="st">""</span>,
-  checklist_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.checklist"</span><span class="op">)</span>,
-  comments <span class="op">=</span> <span class="st">""</span>,
-  attachments <span class="op">=</span> <span class="st">""</span>,
-  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.list"</span><span class="op">)</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,
-  <span class="va">...</span>
-<span class="op">)</span>
-
-<span class="fu">trello_credentials</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"member"</span>, <span class="st">"key"</span>, <span class="st">"token"</span>, <span class="st">"membername"</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">trello_get_boards</span><span class="op">(</span>
-  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_board_name</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_lists</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_members</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_cards</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_labels</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_customfields</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_checklists</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_comments</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_my_cards</span><span class="op">(</span>
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,
-  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.current.list"</span><span class="op">)</span>,
-  to_console <span class="op">=</span> <span class="cn">TRUE</span>
-<span class="op">)</span>
-
-<span class="fu">trello_search_any</span><span class="op">(</span>
-  <span class="va">x</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_search_card</span><span class="op">(</span>
-  x <span class="op">=</span> <span class="cn">NULL</span>,
-  return_all <span class="op">=</span> <span class="cn">FALSE</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_open_board</span><span class="op">(</span>board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">trello_open_card</span><span class="op">(</span><span class="op">)</span>
-
-<span class="fu">trello_get_card_property</span><span class="op">(</span>
-  <span class="va">card_number</span>,
-  <span class="va">property</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_get_card_id</span><span class="op">(</span>
-  <span class="va">card_number</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_set_comment</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  <span class="va">comment</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_set_members</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  <span class="va">member</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_set_deadline</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  <span class="va">duedate</span>,
-  duecomplete <span class="op">=</span> <span class="cn">FALSE</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_add_task</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  new_items <span class="op">=</span> <span class="cn">NULL</span>,
-  checklist_name <span class="op">=</span> <span class="st">"Taken"</span>,
-  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_set_task_state</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  <span class="va">checkitem_id</span>,
-  new_value <span class="op">=</span> <span class="cn">TRUE</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">trello_move_card</span><span class="op">(</span>
-  <span class="va">card_id</span>,
-  <span class="va">list_id</span>,
-  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,
-  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">trello_upload</span><span class="op">(</span></span>
+<span>  <span class="va">title</span>,</span>
+<span>  desc <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  requested_by <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  project_path <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  member <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"membername"</span><span class="op">)</span>,</span>
+<span>  prio <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.prio"</span><span class="op">)</span>,</span>
+<span>  duedate <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  checklist <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  checklist_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.checklist"</span><span class="op">)</span>,</span>
+<span>  comments <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  attachments <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.list"</span><span class="op">)</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_credentials</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"member"</span>, <span class="st">"key"</span>, <span class="st">"token"</span>, <span class="st">"membername"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_boards</span><span class="op">(</span></span>
+<span>  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_board_name</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_lists</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_members</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_cards</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_labels</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_customfields</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_checklists</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_comments</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_my_cards</span><span class="op">(</span></span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  username <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"member"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,</span>
+<span>  list <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.current.list"</span><span class="op">)</span>,</span>
+<span>  to_console <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_search_any</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_search_card</span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  return_all <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_open_board</span><span class="op">(</span>board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_open_card</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_card_property</span><span class="op">(</span></span>
+<span>  <span class="va">card_number</span>,</span>
+<span>  <span class="va">property</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_get_card_id</span><span class="op">(</span></span>
+<span>  <span class="va">card_number</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_set_comment</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  <span class="va">comment</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_set_members</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  <span class="va">member</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_set_deadline</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  <span class="va">duedate</span>,</span>
+<span>  duecomplete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_add_task</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  new_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checklist_name <span class="op">=</span> <span class="st">"Taken"</span>,</span>
+<span>  board <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"trello.default.board"</span><span class="op">)</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_set_task_state</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  <span class="va">checkitem_id</span>,</span>
+<span>  new_value <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">trello_move_card</span><span class="op">(</span></span>
+<span>  <span class="va">card_id</span>,</span>
+<span>  <span class="va">list_id</span>,</span>
+<span>  key <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
+<span>  token <span class="op">=</span> <span class="fu">trello_credentials</span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -378,7 +378,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

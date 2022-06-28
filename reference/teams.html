@@ -78,77 +78,77 @@ The older teams() function relies on the httr package and requires Incoming Webh
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">teams_connect</span><span class="op">(</span>
-  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.name"</span><span class="op">)</span>,
-  tenant <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.tenant"</span><span class="op">)</span>,
-  error_on_fail <span class="op">=</span> <span class="cn">FALSE</span>
-<span class="op">)</span>
-
-<span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">teams_channels</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">teams_view_sharepoint</span><span class="op">(</span><span class="va">channel</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">teams_send_message</span><span class="op">(</span>
-  <span class="va">body</span>,
-  <span class="va">channel</span>,
-  content_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text"</span>, <span class="st">"html"</span><span class="op">)</span>,
-  attachments <span class="op">=</span> <span class="cn">NULL</span>,
-  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">teams_upload</span><span class="op">(</span>
-  <span class="va">local_path</span>,
-  teams_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">local_path</span><span class="op">)</span>,
-  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,
-  channel <span class="op">=</span> <span class="cn">NULL</span>,
-  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">teams_download</span><span class="op">(</span>
-  <span class="va">teams_path</span>,
-  local_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">teams_path</span><span class="op">)</span>,
-  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,
-  channel <span class="op">=</span> <span class="cn">NULL</span>,
-  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">teams_import</span><span class="op">(</span>
-  <span class="va">teams_path</span>,
-  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,
-  channel <span class="op">=</span> <span class="cn">NULL</span>,
-  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">teams_open</span><span class="op">(</span><span class="va">teams_path</span>, channel <span class="op">=</span> <span class="cn">NULL</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">teams_get_link</span><span class="op">(</span>
-  <span class="va">teams_path</span>,
-  share_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"view"</span>, <span class="st">"edit"</span><span class="op">)</span>,
-  expire_after <span class="op">=</span> <span class="st">"1 month"</span>,
-  password <span class="op">=</span> <span class="cn">NULL</span>,
-  channel <span class="op">=</span> <span class="cn">NULL</span>,
-  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">teams</span><span class="op">(</span>
-  message <span class="op">=</span> <span class="st">""</span>,
-  <span class="va">channel</span>,
-  title <span class="op">=</span> <span class="cn">NULL</span>,
-  subtitle <span class="op">=</span> <span class="cn">NULL</span>,
-  items <span class="op">=</span> <span class="cn">NULL</span>,
-  items_title <span class="op">=</span> <span class="cn">NULL</span>,
-  images <span class="op">=</span> <span class="cn">NULL</span>,
-  images_title <span class="op">=</span> <span class="cn">NULL</span>,
-  buttons <span class="op">=</span> <span class="cn">NULL</span>,
-  message_thumbnail <span class="op">=</span> <span class="cn">NULL</span>,
-  markdown <span class="op">=</span> <span class="cn">TRUE</span>,
-  webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span>,
-  <span class="va">...</span>
-<span class="op">)</span>
-
-<span class="fu">teams_webhooks</span><span class="op">(</span>webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span></span>
+<span>  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.name"</span><span class="op">)</span>,</span>
+<span>  tenant <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.tenant"</span><span class="op">)</span>,</span>
+<span>  error_on_fail <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_channels</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_view_sharepoint</span><span class="op">(</span><span class="va">channel</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_send_message</span><span class="op">(</span></span>
+<span>  <span class="va">body</span>,</span>
+<span>  <span class="va">channel</span>,</span>
+<span>  content_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text"</span>, <span class="st">"html"</span><span class="op">)</span>,</span>
+<span>  attachments <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_upload</span><span class="op">(</span></span>
+<span>  <span class="va">local_path</span>,</span>
+<span>  teams_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">local_path</span><span class="op">)</span>,</span>
+<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_download</span><span class="op">(</span></span>
+<span>  <span class="va">teams_path</span>,</span>
+<span>  local_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">teams_path</span><span class="op">)</span>,</span>
+<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_import</span><span class="op">(</span></span>
+<span>  <span class="va">teams_path</span>,</span>
+<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_open</span><span class="op">(</span><span class="va">teams_path</span>, channel <span class="op">=</span> <span class="cn">NULL</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_get_link</span><span class="op">(</span></span>
+<span>  <span class="va">teams_path</span>,</span>
+<span>  share_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"view"</span>, <span class="st">"edit"</span><span class="op">)</span>,</span>
+<span>  expire_after <span class="op">=</span> <span class="st">"1 month"</span>,</span>
+<span>  password <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams</span><span class="op">(</span></span>
+<span>  message <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  <span class="va">channel</span>,</span>
+<span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  items <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  items_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  images <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  images_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  buttons <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  message_thumbnail <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  markdown <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_webhooks</span><span class="op">(</span>webhooks_file <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.webhooks.file"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -260,41 +260,41 @@ The older teams() function relies on the httr package and requires Incoming Webh
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, <span class="st">"my channel/my folder/test.docx"</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># also supports data frames, they will be saved locally in a temp folder</span></span>
-<span class="r-in"><span class="fu">teams_upload</span><span class="op">(</span><span class="va">mtcars</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">mtcars</span> |&gt; </span>
-<span class="r-in">  <span class="fu">teams_upload</span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in">  </span>
-<span class="r-in">  </span>
-<span class="r-in"><span class="co"># integrates with department projects:</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># upload "myfile.docx" from the project folder of p123 to "My Channel":</span></span>
-<span class="r-in"><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span class="r-in"><span class="co"># download "myfile.docx" from "My Channel" to the project folder of p123:</span></span>
-<span class="r-in"><span class="fu">teams_download</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">teams_download</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># direct import from Teams requires the 'certetoolbox' package</span></span>
-<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># open a file in Excel Online</span></span>
-<span class="r-in"><span class="fu">teams_open</span><span class="op">(</span><span class="st">"test.xlsx"</span>, <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">teams_open</span><span class="op">(</span><span class="st">"my channel/test.xlsx"</span><span class="op">)</span> <span class="co"># shorter version, tries to find channel</span></span>
-<span class="r-in"><span class="op">}</span></span>
-<span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># send message using Webhooks</span></span>
-<span class="r-in"><span class="fu">teams</span><span class="op">(</span><span class="st">"test message"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"><span class="co"># send message using Microsoft 365 login</span></span>
-<span class="r-in"><span class="fu">teams_send_message</span><span class="op">(</span><span class="st">"test message"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, <span class="st">"my channel/my folder/test.docx"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># also supports data frames, they will be saved locally in a temp folder</span></span></span>
+<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="va">mtcars</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">mtcars</span> <span class="op">|&gt;</span> </span></span>
+<span class="r-in"><span>  <span class="fu">teams_upload</span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  </span></span>
+<span class="r-in"><span>  </span></span>
+<span class="r-in"><span><span class="co"># integrates with department projects:</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># upload "myfile.docx" from the project folder of p123 to "My Channel":</span></span></span>
+<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># download "myfile.docx" from "My Channel" to the project folder of p123:</span></span></span>
+<span class="r-in"><span><span class="fu">teams_download</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">teams_download</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># direct import from Teams requires the 'certetoolbox' package</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># open a file in Excel Online</span></span></span>
+<span class="r-in"><span><span class="fu">teams_open</span><span class="op">(</span><span class="st">"test.xlsx"</span>, <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">teams_open</span><span class="op">(</span><span class="st">"my channel/test.xlsx"</span><span class="op">)</span> <span class="co"># shorter version, tries to find channel</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># send message using Webhooks</span></span></span>
+<span class="r-in"><span><span class="fu">teams</span><span class="op">(</span><span class="st">"test message"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># send message using Microsoft 365 login</span></span></span>
+<span class="r-in"><span><span class="fu">teams_send_message</span><span class="op">(</span><span class="st">"test message"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -309,7 +309,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

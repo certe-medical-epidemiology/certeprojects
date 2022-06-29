@@ -42,6 +42,12 @@ globalVariables(c(".",
                   "title",
                   "username"))
 
+count_lines <- function(x) {
+  vapply(FUN.VALUE = integer(1),
+         x,
+         function(f) length(readLines(f, ok = TRUE, warn = FALSE)))
+}
+
 #' @importFrom dplyr arrange filter
 get_user <- function(..., property = "shiny") {
   user_file <- read_secret("users.csv.file")

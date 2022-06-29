@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.5.0
+Version: 1.5.1
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",

@@ -111,6 +111,7 @@ project_get_title <- function(card_number = project_get_current_id()) {
 }
 
 #' @rdname project_properties
+#' @importFrom certestyle format2 font_bold font_blue
 #' @export
 project_get_file <- function(filename, card_number = project_get_current_id(), fixed = FALSE) {
   card_number <- gsub("[^0-9]", "", card_number)
@@ -129,9 +130,9 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
                                    include.dirs = FALSE,
                                    ignore.case = TRUE))
     files_found_base <- basename(files_found)
-    # sort on length:
-    files_found_base <- files_found_base[order(nchar(files_found), files_found)]
-    files_found <- files_found[order(nchar(files_found), files_found)]
+    # sort on last changed (desc):
+    files_found_base <- files_found_base[order(file.mtime(files_found), files_found, decreasing = TRUE)]
+    files_found <- files_found[order(file.mtime(files_found), files_found, decreasing = TRUE)]
     
     if (length(files_found) == 0) {
       warning("No files found")
@@ -140,8 +141,13 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
     if (length(files_found) > 0) {
       if (length(files_found) > 1) {
         if (interactive()) {
-          choice <- utils::menu(choices = files_found_base,
-                                title = paste0("Files found with in ", folder, ":"))
+          choice <- utils::menu(choices = paste0(font_bold(files_found_base, collapse = NULL),
+                                                 " (",
+                                                 count_lines(files_found), 
+                                                 " lines, last changed: ",
+                                                 font_blue(format2(file.mtime(files_found), "yyyy-mm-dd HH:MM"), collapse = NULL),
+                                                 ")"),
+                                title = paste0("Files found in ", folder, " (0 to cancel):\n(sorted on last changed)"))
           if (choice == 0) {
             return(NA_character_)
           }

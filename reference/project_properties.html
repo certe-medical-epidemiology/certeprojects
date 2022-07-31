@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.6.0</span>
       </span>
     </div>
 
@@ -78,6 +78,8 @@
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">project_identifier</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">project_get_folder</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">project_get_folder_full</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -124,6 +126,7 @@
     <div id="details">
     <h2>Details</h2>
     <p><code>project_get_current_id()</code> uses <code><a href="trello.html">trello_search_card()</a></code> to find a specific project based on any search string.</p>
+<p><code>project_identifier()</code> generates the project identifier for print on reports and in mails: a combination of the project number, the project creation date/time (format: YYMMDDHHMM) and the current date/time (format: YYMMDDHHMM). If the project number is not available, it will only return the current date/time (format: YYMMDDHHMM).</p>
 <p><code>project_set_folder()</code> will create the folder if it does not exist.</p>
     </div>
 
@@ -139,7 +142,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

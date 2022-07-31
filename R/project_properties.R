@@ -48,9 +48,12 @@ project_get_current_id <- function(ask = NULL) {
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       id <- trello_search_card()
       return(fix_id(id))
+    } else if (is.null(path)) {
+      # for when ask == FALSE
+      path <- getwd()
     }
   } else {
-    # for markdown
+    # for Quarto and R Markdown
     path <- getwd()
   }
   parts <- tryCatch(unlist(strsplit(path, "[^a-zA-Z0-9]")), error = function(e) NULL)

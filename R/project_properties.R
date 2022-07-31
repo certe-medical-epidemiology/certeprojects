@@ -75,6 +75,25 @@ project_get_current_id <- function(ask = NULL) {
 }
 
 #' @rdname project_properties
+#' @details [project_identifier()] generates the project identifier for print on reports and in mails: a combination of the project number, the project creation date/time (format: YYMMDDHHMM) and the current date/time (format: YYMMDDHHMM). If the project number is not available, it will only return the current date/time (format: YYMMDDHHMM).
+#' @importFrom certestyle format2
+#' @export
+project_identifier <- function(card_number = project_get_current_id()) {
+  if (is.null(card_number) || all(card_number %in% c("", NA, FALSE))) {
+    return(format2(Sys.time(), "yymmddHHMM"))
+  }
+  creation_date <- trello_get_creation_datetime(card_number)
+  if (is.na(creation_date)) {
+    paste0("p", card_number,
+           "-", format2(Sys.time(), "yymmddHHMM"))
+  } else {
+    paste0("p", card_number,
+           "-", format2(creation_date, "yymmddHHMM"),
+           "-", format2(Sys.time(), "yymmddHHMM"))
+  }
+}
+
+#' @rdname project_properties
 #' @export
 project_get_folder <- function(card_number = project_get_current_id()) {
   card_number <- gsub("[^0-9]", "", card_number)

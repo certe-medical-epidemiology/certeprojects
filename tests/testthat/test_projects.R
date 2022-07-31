@@ -59,6 +59,9 @@ test_that("project properties work", {
                    gsub("\\", "/",
                         paste0(normalizePath(paste0(project_dir, "Project Something - p123/testdir")), "/"),
                         fixed = TRUE))
+  
+  expect_identical(project_identifier(NULL),
+                   certestyle::format2(Sys.time(), "yymmddHHMM"))
 })
 
 test_that("teams legacy works", {

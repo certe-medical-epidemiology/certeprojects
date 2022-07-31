@@ -19,7 +19,7 @@
 
 #' Add Project Using Shiny
 #' 
-#' This is a Shiny app to add a new project: it creates a project folder, generates the required R Markdown, Quarto or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
+#' This is a Shiny app to add a new project: it creates a project folder, generates the required Quarto or R Markdown or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
 #' @inheritParams trello
 #' @export
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
@@ -111,9 +111,9 @@ project_add <- function(board = read_secret("trello.default.board"),
         awesomeRadio("filetype",
                      label = "Bestandstype",
                      status = "primary",
-                     choices = c(".Rmd (R Markdown)" = ".Rmd",
-                                 ".qmd (Quarto)" = ".qmd",
-                                 ".R" = ".R"),
+                     choices = c(".qmd (Quarto)" = ".qmd",
+                                 ".R" = ".R",
+                                 ".Rmd (R Markdown)" = ".Rmd"),
                      selected = "",
                      inline = TRUE,
                      width = "100%"),
@@ -372,7 +372,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         trello_card_id <- NULL
         if (input$trello_upload == TRUE) {
           incProgress(1 / progress_items, detail = "Uploading to Trello")
-          if (is.null(input$deadline) | input$has_deadline == FALSE) {
+          if (is.null(input$deadline) || input$has_deadline == FALSE) {
             deadline <- ""
           } else {
             deadline <- input$deadline
@@ -403,6 +403,16 @@ project_add <- function(board = read_secret("trello.default.board"),
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
         desc <- unlist(strsplit(input$description, "\n", fixed = TRUE))
+        if (requested_by != "") {
+          request <- get_user(id == requested_by, property = "name")
+          if (request == "") {
+            request <- requested_by
+          }
+          request <- paste0("# Aangevraagd door: ", request)
+        } else {
+          request <- NA_character_
+        }
+        
         header_text <- c(paste0("# Titel:            ", title),
                          if_else(!is.na(desc[1]), 
                                  paste0("# Omschrijving:     ", desc[1]),
@@ -413,9 +423,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                          if_else(!is.null(trello_card_id),
                                  paste0("# Projectnummer:    p", trello_card_id),
                                  NA_character_),
-                         if_else(requested_by != "",
-                                 paste0("# Aangevraagd door: ", get_user(id == requested_by, property = "name")),
-                                 NA_character_),
+                         request,
                          if_else(!identical(trello_cards, ""),
                                  paste0("# Gerelateerd:      ", paste0("p",
                                                                        trello_get_cards()$idShort[trello_get_cards()$shortUrl %in% trello_cards],
@@ -435,6 +443,7 @@ project_add <- function(board = read_secret("trello.default.board"),
             'subtitle2: ""',
             'author: "`r certestyle::rmarkdown_author()`"',
             'date: "`r certestyle::rmarkdown_date()`"',
+            'identifier: "`r certeprojects::project_identifier()`"',
             "output:",
             "  # word_document:",
             "  #   toc: true",

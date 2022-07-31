@@ -384,7 +384,7 @@ trello_search_card <- function(x = NULL,
   if (interactive() && !isTRUE(return_all)) {
     txt <- ""
     if (tryCatch(trello_credentials("member"), error = function(e) "") != "") {
-      max_n <- 10
+      max_n <- 5
       cards <- GET_df(paste0("https://api.trello.com/1/search?query=member:", trello_credentials("member"),
                              "&cards_limit=100",
                              "&card_list=true",
@@ -500,7 +500,35 @@ trello_get_card_id <- function(card_number,
                                board = read_secret("trello.default.board"),
                                key = trello_credentials("key"),
                                token = trello_credentials("token")) {
-  trello_get_cards(board, key, token) |> filter(idShort == card_number) |> pull(id)
+  GET_df(paste0("https://api.trello.com/1/search",
+                "?key=", key, "&token=", token,
+                "&query=", card_number,
+                "&partial=false",
+                "&card_board=false",
+                "&cards_limit=1"))$cards$id
+}
+
+#' @rdname trello
+#' @export
+trello_get_creation_datetime <- function(card_number,
+                                         board = read_secret("trello.default.board"),
+                                         key = trello_credentials("key"),
+                                         token = trello_credentials("token")) {
+  card_number <- as.double(card_number)
+  if (card_number %in% seq_len(9999)) {
+    id <- trello_get_card_id(card_number = card_number,
+                             board = board,
+                             key = key,
+                             token = token)
+    if (is.null(id)) {
+      return(as.POSIXct(NA))
+    }
+    # first 8 hexadecimal characters of Trello card ID are the creation date
+    as.POSIXct(as.double(paste0("0x", substr(id, 1, 8))),
+               origin = "1970-01-01")
+  } else {
+    as.POSIXct(NA)
+  }
 }
 
 #' @rdname trello

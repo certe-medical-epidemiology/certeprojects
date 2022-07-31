@@ -3,6 +3,7 @@
 \name{project_properties}
 \alias{project_properties}
 \alias{project_get_current_id}
+\alias{project_identifier}
 \alias{project_get_folder}
 \alias{project_get_folder_full}
 \alias{project_get_title}
@@ -14,6 +15,8 @@
 \title{Project Properties}
 \usage{
 project_get_current_id(ask = NULL)
+
+project_identifier(card_number = project_get_current_id())
 
 project_get_folder(card_number = project_get_current_id())
 
@@ -51,6 +54,8 @@ Retrieve project properties, such as the title, folder location and Trello card 
 }
 \details{
 \code{\link[=project_get_current_id]{project_get_current_id()}} uses \code{\link[=trello_search_card]{trello_search_card()}} to find a specific project based on any search string.
+
+\code{\link[=project_identifier]{project_identifier()}} generates the project identifier for print on reports and in mails: a combination of the project number, the project creation date/time (format: YYMMDDHHMM) and the current date/time (format: YYMMDDHHMM). If the project number is not available, it will only return the current date/time (format: YYMMDDHHMM).
 
 \code{\link[=project_set_folder]{project_set_folder()}} will create the folder if it does not exist.
 }

@@ -20,6 +20,7 @@
 \alias{trello_open_card}
 \alias{trello_get_card_property}
 \alias{trello_get_card_id}
+\alias{trello_get_creation_datetime}
 \alias{trello_set_comment}
 \alias{trello_set_members}
 \alias{trello_set_deadline}
@@ -140,6 +141,13 @@ trello_get_card_property(
 )
 
 trello_get_card_id(
+  card_number,
+  board = read_secret("trello.default.board"),
+  key = trello_credentials("key"),
+  token = trello_credentials("token")
+)
+
+trello_get_creation_datetime(
   card_number,
   board = read_secret("trello.default.board"),
   key = trello_credentials("key"),

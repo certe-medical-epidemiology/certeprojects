@@ -20,11 +20,11 @@
 #' Project Properties
 #' 
 #' Retrieve project properties, such as the title, folder location and Trello card number.
-#' @param ask logical to indicate whether the project number should always be asked
+#' @param ask logical to indicate whether the project number should always be asked. The default, `NULL`, will show a popup in [interactive][interactive()] \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current [working directory][getwd()] to determine the project number.
 #' @param card_number Trello card number
 #' @param filename filename to set or get
 #' @param foldername foldername to set
-#' @param fixed logical to turn off regular expressions
+#' @param fixed [logical] to turn off regular expressions
 #' @name project_properties
 #' @details [project_get_current_id()] uses [trello_search_card()] to find a specific project based on any search string. 
 #' @rdname project_properties
@@ -78,21 +78,17 @@ project_get_current_id <- function(ask = NULL) {
 }
 
 #' @rdname project_properties
-#' @details [project_identifier()] generates the project identifier for print on reports and in mails: a combination of the project number, the project creation date/time (format: YYMMDDHHMM) and the current date/time (format: YYMMDDHHMM). If the project number is not available, it will only return the current date/time (format: YYMMDDHHMM).
+#' @details [project_identifier()] generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: '\Sexpr{Sys.info()\["user"\]}'), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).
 #' @importFrom certestyle format2
 #' @export
+#' @examples
+#' project_identifier(123)
 project_identifier <- function(card_number = project_get_current_id()) {
+  user_datetime <- paste0(Sys.info()["user"], "-", format2(Sys.time(), "yymmddHHMM"))
   if (is.null(card_number) || all(card_number %in% c("", NA, FALSE))) {
-    return(format2(Sys.time(), "yymmddHHMM"))
-  }
-  creation_date <- trello_get_creation_datetime(card_number)
-  if (is.na(creation_date)) {
-    paste0("p", card_number,
-           "-", format2(Sys.time(), "yymmddHHMM"))
+    user_datetime
   } else {
-    paste0("p", card_number,
-           "-", format2(creation_date, "yymmddHHMM"),
-           "-", format2(Sys.time(), "yymmddHHMM"))
+    paste0(user_datetime, "-", card_number)
   }
 }
 

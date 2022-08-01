@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.6.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.6.2</span>
       </span>
     </div>
 
@@ -104,7 +104,7 @@
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>ask</dt>
-<dd><p>logical to indicate whether the project number should always be asked</p></dd>
+<dd><p>logical to indicate whether the project number should always be asked. The default, <code>NULL</code>, will show a popup in <a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a> <span style="R">R</span> sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current <a href="https://rdrr.io/r/base/getwd.html" class="external-link">working directory</a> to determine the project number.</p></dd>
 
 
 <dt>card_number</dt>
@@ -116,7 +116,7 @@
 
 
 <dt>fixed</dt>
-<dd><p>logical to turn off regular expressions</p></dd>
+<dd><p><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to turn off regular expressions</p></dd>
 
 
 <dt>foldername</dt>
@@ -126,10 +126,17 @@
     <div id="details">
     <h2>Details</h2>
     <p><code>project_get_current_id()</code> uses <code><a href="trello.html">trello_search_card()</a></code> to find a specific project based on any search string.</p>
-<p><code>project_identifier()</code> generates the project identifier for print on reports and in mails: a combination of the project number, the project creation date/time (format: YYMMDDHHMM) and the current date/time (format: YYMMDDHHMM). If the project number is not available, it will only return the current date/time (format: YYMMDDHHMM).</p>
+<p><code>project_identifier()</code> generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: 'runner
+'), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).</p>
 <p><code>project_set_folder()</code> will create the folder if it does not exist.</p>
     </div>
 
+    <div id="ref-examples">
+    <h2>Examples</h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">project_identifier</span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2208011243-123"</span>
+</code></pre></div>
+    </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top"><h2 data-toc-skip>Contents</h2>

@@ -61,9 +61,9 @@ test_that("project properties work", {
                         fixed = TRUE))
 
   expect_identical(project_identifier(123),
-                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM"), "-123")
+                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM"), "-123"))
   expect_identical(project_identifier(NULL),
-                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM"))
+                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM")))
 })
 
 test_that("teams legacy works", {

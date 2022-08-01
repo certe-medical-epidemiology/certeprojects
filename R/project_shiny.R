@@ -432,7 +432,10 @@ project_add <- function(board = read_secret("trello.default.board"),
                          paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
         incProgress(1 / progress_items, detail = "Creating folder")
         # create folder
-        dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
+        if (!dir.exists(fullpath)) {
+          dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
+          message("NOTE: created directory '", fullpath, "'")
+        }
         
         # create file(s)
         if (filetype %in% c(".Rmd", ".qmd")) {
@@ -441,8 +444,8 @@ project_add <- function(board = read_secret("trello.default.board"),
             paste0('title: "', title, '" # laat leeg voor geen voorblad bij PDF'),
             'subtitle: ""',
             'subtitle2: ""',
-            'author: "`r certestyle::rmarkdown_author()`"',
-            'date: "`r certestyle::rmarkdown_date()`"',
+            'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
+            'date: "" # vervang evt. door certestyle::rmarkdown_date()',
             'identifier: "`r certeprojects::project_identifier()`"',
             "toc: true",
             "toc_depth: 2",

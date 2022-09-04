@@ -43,7 +43,7 @@ project_get_current_id <- function(ask = NULL) {
     }
   }
   asked <- FALSE
-  if (interactive()) {
+  if (interactive() && rstudioapi::isAvailable()) {
     path <- getSourceEditorContext()$path
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       id <- trello_search_card()

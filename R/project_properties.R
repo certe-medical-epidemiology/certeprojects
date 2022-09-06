@@ -43,7 +43,8 @@ project_get_current_id <- function(ask = NULL) {
     }
   }
   asked <- FALSE
-  if (interactive() && rstudioapi::isAvailable()) {
+  path <- full_path_to_currently_sourced_script()
+  if (is.null(path) && interactive() && rstudioapi::isAvailable()) {
     path <- getSourceEditorContext()$path
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       id <- trello_search_card()
@@ -52,7 +53,7 @@ project_get_current_id <- function(ask = NULL) {
       # for when ask == FALSE
       path <- getwd()
     }
-  } else {
+  } else if (is.null(path)) {
     # for Quarto and R Markdown
     path <- getwd()
   }

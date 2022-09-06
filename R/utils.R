@@ -74,3 +74,15 @@ get_user <- function(..., property = "shiny") {
   }
   users
 }
+
+# helper function for paths and source() calls
+full_path_to_currently_sourced_script <- function() {
+  out <- NULL
+  for (i in sys.nframe():1) {  # go through all the call frames, in *reverse* order
+    x <- sys.frame(i)$ofile
+    if (!is.null(x) & is.null(out)) {
+      out <- normalizePath(x)
+    }
+  }
+  out
+}

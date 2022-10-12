@@ -8,27 +8,32 @@ Description: Update Project Progress...
 Binding: addin2_projects_edit
 Interactive: true
 
+Name: 💾 Save to Project Folder...
+Description: Save to Project Folder...
+Binding: addin3_projects_save
+Interactive: true
+
 Name: 📊 Open Project File...
 Description: Open Project File...
-Binding: addin3_projects_open_file
+Binding: addin4_projects_open_file
 Interactive: true
 
 Name: 📂 Open Project Folder...
 Description: Open Project Folder...
-Binding: addin4_projects_open_folder
+Binding: addin5_projects_open_folder
 Interactive: true
 
 Name: 🌎 View Project Card in Trello...
 Description: View Project Card in Trello...
-Binding: addin5_projects_trellocard
+Binding: addin6_projects_trellocard
 Interactive: true
 
 Name: 🌎 View Board on Trello.com
 Description: View Board on Trello.com
-Binding: addin6_projects_trelloboard
+Binding: addin7_projects_trelloboard
 Interactive: false
 
 Name: 👨 My Current Projects
 Description: My Current Projects
-Binding: addin7_projects_mine
+Binding: addin8_projects_mine
 Interactive: false

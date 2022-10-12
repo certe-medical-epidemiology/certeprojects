@@ -228,7 +228,7 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
   if (is.na(path)) {
     stop(paste0("No .R or .Rmd files found for p", card_number))
   } else {
-    navigateToFile(path)
+    invisible(navigateToFile(path))
   }
 }
 
@@ -240,4 +240,43 @@ project_open_folder <- function(card_number = project_get_current_id(ask = TRUE)
   }
   path <- project_get_folder_full(card_number = card_number)
   utils::browseURL(path)
+}
+
+#' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile
+project_save_file <- function(card_number = project_get_current_id(ask = TRUE)) {
+  current <- getSourceEditorContext()
+  if (is.null(current)) {
+    showDialog(title = "No file to be saved", message = "Open a (text) file first to save.")
+    return(invisible(FALSE))
+  }
+  
+  if (is.null(card_number)) {
+    path <- getwd()
+    
+  } else {
+    path <- project_get_folder_full(card_number = card_number)
+  }
+  
+  new_file <- showPrompt(title = "Save File",
+                         message = ifelse(is.null(card_number),
+                                          paste0("In ", path, ":"),
+                                          paste0("Project p", card_number, " in ", path, ":")),
+                         default = ifelse(current$path != "",
+                                          basename(current$path),
+                                          "Analyse.R"))
+  if (is.null(new_file)) {
+    return(invisible(FALSE))
+  }
+  new_file <- paste0(path, "/", new_file)
+  if (!file.exists(new_file) || isTRUE(showQuestion(title = "File exists", message = paste0("Overwrite ", new_file, "?")))) {
+    # write to file
+    fileConn <- file(new_file)
+    writeLines(current$contents, fileConn)
+    close(fileConn)
+    invisible(navigateToFile(new_file,
+                             line = current$selection[[1]]$range$start[[1]],
+                             column = current$selection[[1]]$range$start[[2]]))
+  } else {
+    message("File save cancelled.")
+  }
 }

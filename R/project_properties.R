@@ -125,6 +125,9 @@ project_get_folder_full <- function(card_number = project_get_current_id()) {
 #' @rdname project_properties
 #' @export
 project_get_title <- function(card_number = project_get_current_id()) {
+  if (is.null(card_number)) {
+    return(NA_character_)
+  }
   card_number <- gsub("[^0-9]", "", card_number)
   trimws(gsub("-? ?p[0-9]+/?$", "", project_get_folder(card_number = card_number)))
 }
@@ -240,6 +243,95 @@ project_open_folder <- function(card_number = project_get_current_id(ask = TRUE)
   }
   path <- project_get_folder_full(card_number = card_number)
   utils::browseURL(path)
+}
+
+#' @importFrom rstudioapi showPrompt navigateToFile
+#' @importFrom certestyle rmarkdown_template
+project_new_qmd <- function(card_number = project_get_current_id(ask = TRUE)) {
+  if (is.null(card_number)) {
+    path <- getwd()
+    trello_card_id <- "xxx"
+  } else {
+    path <- project_get_folder_full(card_number = card_number)
+    trello_card_id <- card_number
+  }
+  new_file <- showPrompt(title = "Create Quarto Document",
+                         message = ifelse(is.null(card_number),
+                                          paste0("In ", path, ":"),
+                                          paste0("Project p", card_number, " in ", path, ":")),
+                         default = ifelse(is.null(card_number),
+                                          "Analyse.qmd",
+                                          paste0("Analyse p", card_number, ".qmd")))
+  if (is.null(new_file)) {
+    return(invisible(FALSE))
+  }
+  
+  if (new_file %unlike% "[.]qmd$") {
+    new_file <- paste0(new_file, ".qmd")
+  }
+  
+  filename <- paste0(path, "/", new_file)
+  
+  
+  filecontent <- c(
+    "---",
+    paste0('title: "', ifelse(is.null(card_number), "Titel", project_get_title(card_number)), '" # laat leeg voor geen voorblad bij PDF'),
+    'subtitle: ""',
+    'subtitle2: ""',
+    'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
+    'date: "" # vervang evt. door certestyle::rmarkdown_date()',
+    'identifier: "`r certeprojects::project_identifier()`"',
+    "toc: true",
+    "toc-depth: 2",
+    "fig-width: 6.5 # in inch",
+    "fig-height: 5  # in inch",
+    "format:",
+    "  # docx:",
+    "  #   fig-dpi: 600",
+    paste0("  #   reference-doc: \"", rmarkdown_template("word"), "\""),
+    "  pdf:",
+    "    execute:",
+    "      echo: false",
+    "      warning: false",
+    '    pdf-engine: "xelatex"',
+    paste0("    template: \"", rmarkdown_template("latex"), "\""),
+    'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
+    'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
+    "editor: visual",
+    "crossref:",
+    '  fig-prefix: "figuur"',
+    '  tbl-prefix: "tabel"',
+    "---",
+    "",
+    "```{r}",
+    "#| label: Setup",
+    "#| include: false",
+    "#| message: false",
+    "",
+    "",
+    "library(certedata)",
+    "",
+    "data_download <- FALSE",
+    paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ")) & !data_download) {"),
+    paste0("  data_", trello_card_id, ' <- import_rds(project_get_file(".*rds$", ', trello_card_id, "))"),
+    "} else {",
+    paste0("  data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+    "                             where  = where(db))",
+    paste0("  export_rds(data_", trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
+    "}",
+    "```",
+    "",
+    "# Inleiding",
+    "",
+    "```{r}",
+    "",
+    "```",
+    "")
+
+  writeLines(text = paste(filecontent, collapse = "\n"),
+             con = file.path(filename))
+  
+  invisible(navigateToFile(filename))
 }
 
 #' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile

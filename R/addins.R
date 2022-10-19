@@ -20,24 +20,27 @@
 addin1_projects_new <- function() {
   project_add()
 }
-addin2_projects_edit <- function() {
+addin2_qmd_new <- function() {
+  project_new_qmd()
+}
+addin3_projects_edit <- function() {
   project_edit()
 }
-addin3_projects_save <- function() {
+addin4_projects_save <- function() {
   project_save_file()
 }
-addin4_projects_open_file <- function() {
+addin5_projects_open_file <- function() {
   project_open_analysis_file()
 }
-addin5_projects_open_folder <- function() {
+addin6_projects_open_folder <- function() {
   project_open_folder()
 }
-addin6_projects_trellocard <- function() {
+addin7_projects_trellocard <- function() {
   trello_open_card()
 }
-addin7_projects_trelloboard <- function() {
+addin8_projects_trelloboard <- function() {
   trello_open_board()
 }
-addin8_projects_mine <- function() {
+addin9_projects_mine <- function() {
   trello_my_cards()
 }

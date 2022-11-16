@@ -78,7 +78,7 @@ trello_upload <- function(title,
   }
   
   description <- ""
-  if (all(is.null(requested_by)) | length(requested_by) == 0) {
+  if (is_empty(requested_by)) {
     requested_by <- ""
   }
   
@@ -206,7 +206,7 @@ trello_upload <- function(title,
   checklist_id <- content(request_checklist, "parsed", "application/json")$id
   stop_for_status(request_checklist, task = "add checklist")
   # add items
-  if (all(is.null(checklist)) | length(checklist) == 0) {
+  if (is_empty(checklist)) {
     checklist <- ""
   }
   for (i in seq_len(length(checklist))) {
@@ -644,7 +644,7 @@ trello_add_task <- function(card_id,
   }
   
   # add checklist items
-  if (all(is.null(new_items)) | length(new_items) == 0) {
+  if (is_empty(new_items)) {
     new_items <- ""
   }
   for (i in seq_len(length(new_items))) {

@@ -48,6 +48,10 @@ count_lines <- function(x) {
          function(f) length(readLines(f, ok = TRUE, warn = FALSE)))
 }
 
+is_empty <- function(x) {
+  is.null(x) || isFALSE(x) || identical(x, "") || all(is.na(as.character(x)))
+}
+
 #' @importFrom dplyr arrange filter
 get_user <- function(..., property = "shiny") {
   user_file <- read_secret("users.csv.file")

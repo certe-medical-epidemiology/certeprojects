@@ -42,3 +42,8 @@ Name: 👨 My Current Projects
 Description: My Current Projects
 Binding: addin9_projects_mine
 Interactive: false
+
+Name: 📁 Set Working Directory...
+Description: Set Working Directory...
+Binding: set_wd
+Interactive: true

@@ -44,3 +44,24 @@ addin8_projects_trelloboard <- function() {
 addin9_projects_mine <- function() {
   trello_my_cards()
 }
+
+#' @importFrom rstudioapi showPrompt filesPaneNavigate
+set_wd <- function() {
+  if ("clipr" %in% rownames(utils::installed.packages())) {
+    default <- clipr::read_clip()
+    if (!is.character(default) || length(default) != 1 || !dir.exists(as.character(default)[1L])) {
+      default <- ""
+    }
+  } else {
+    default <- ""
+  }
+  new_dir <- showPrompt(title = "Set Working Directory",
+                        message = "New Working Directory:",
+                        default = default)
+  if (is.null(new_dir) || !dir.exists(new_dir)) {
+    return(invisible())
+  }
+  setwd(new_dir)
+  rstudioapi::filesPaneNavigate(new_dir)
+}
+

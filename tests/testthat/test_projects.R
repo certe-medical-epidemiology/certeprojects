@@ -80,3 +80,8 @@ test_that("teams legacy works", {
                                    "Open link" = "https://duckduckgo.com")))
   expect_error(teams_webhooks())
 })
+
+test_that("teams legacy works", {
+  expect_message(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1))
+  expect_equal(suppressMessages(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1)), 2)
+})

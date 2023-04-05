@@ -15,11 +15,7 @@
 \alias{teams_webhooks}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
-teams_connect(
-  team_name = read_secret("teams.name"),
-  tenant = read_secret("mail.tenant"),
-  error_on_fail = FALSE
-)
+teams_connect(team_name = read_secret("teams.name"), ...)
 
 teams_name(account = teams_connect())
 
@@ -90,9 +86,7 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 \arguments{
 \item{team_name}{name of the team}
 
-\item{tenant}{the tenant to use for \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}}
-
-\item{error_on_fail}{a \link{logical} to indicate whether an error must be thrown if no connection can be made}
+\item{...}{not used at the moment}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
@@ -137,8 +131,6 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 \item{markdown}{turn markdown support on/off}
 
 \item{webhooks_file}{the file locations of a YAML file with MS Teams webhooks in the form \code{channel: "URL"}}
-
-\item{...}{not used at the moment}
 }
 \description{
 These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.

@@ -21,8 +21,7 @@
 #'
 #' These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `teams_*()` functions allow to work with this connection.
 #' @param team_name name of the team
-#' @param tenant the tenant to use for [Microsoft365R::get_team()]
-#' @param error_on_fail a [logical] to indicate whether an error must be thrown if no connection can be made
+#' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [teams_connect()] or [Microsoft365R::get_team()].
 #' @param channel name of the Teams channel, such as "General"
 #' @rdname teams
@@ -58,55 +57,15 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_connect <- function(team_name = read_secret("teams.name"), 
-                          tenant = read_secret("mail.tenant"),
-                          error_on_fail = FALSE) {
-  # see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scopes <- c("Channel.ReadBasic.All",
-              "ChannelMessage.Send",
-              "Chat.ReadWrite",
-              "ChatMessage.Send",
-              "Files.ReadWrite.All",
-              "MailboxSettings.ReadWrite",
-              "OnlineMeetings.ReadWrite",
-              "Sites.Manage.All",
-              "Sites.ReadWrite.All",
-              "Tasks.ReadWrite",
-              "Team.ReadBasic.All",
-              "TeamsActivity.Read",
-              "TeamsActivity.Send",
-              "User.ReadWrite")
-  if (tenant == "") {
-    tenant <- NULL
-  }
-  if (is.null(pkg_env$teams)) {
-    # not yet connected to Microsoft 365, so set it up
-    tryCatch({
-      if (is.null(tenant)) {
-        pkg_env$teams <- suppressWarnings(suppressMessages(get_team(team_name = team_name, 
-                                                                    scopes = scopes)))
-      } else {
-        pkg_env$teams <- suppressWarnings(suppressMessages(get_team(team_name = team_name, 
-                                                                    scopes = scopes,
-                                                                    tenant = tenant)))
-      }
-      message("Connected to team '", teams_name(account = pkg_env$teams), "' through Microsoft 365.")
-    }, warning = function(w) {
-      return(invisible())
-    }, error = function(e, fail = error_on_fail) {
-      if (isTRUE(fail)) {
-        stop("Could not connect to Microsoft 365: ", paste0(e$message, collapse = ", "), call. = FALSE)
-      } else {
-        warning("Could not connect to Microsoft 365: ", paste0(e$message, collapse = ", "), call. = FALSE)
-      }
-      return(NULL)
-    })
-  }
-  if (isTRUE(error_on_fail) && is.null(pkg_env$teams)) {
-    stop("Could not connect to Microsoft 365.", call. = FALSE)
+teams_connect <- function(team_name = read_secret("teams.name"), ...) {
+  
+  if (is.null(pkg_env$microsoft365_teams)) {
+    # not yet connected to Teams in Microsoft 365, so set it up
+     pkg_env$microsoft365_teams <- get_team(team_name = team_name,
+                                            token = get_microsoft365_token(...))
   }
   # this will auto-renew authorisation when due
-  return(invisible(pkg_env$teams))
+  return(invisible(pkg_env$microsoft365_teams))
 }
 
 #' @rdname teams

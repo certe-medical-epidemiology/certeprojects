@@ -18,7 +18,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.8.0</span>
       </span>
     </div>
 
@@ -78,11 +78,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span></span>
-<span>  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.name"</span><span class="op">)</span>,</span>
-<span>  tenant <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.tenant"</span><span class="op">)</span>,</span>
-<span>  error_on_fail <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span>team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.name"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -157,12 +153,8 @@ The older teams() function relies on the httr package and requires Incoming Webh
 <dd><p>name of the team</p></dd>
 
 
-<dt>tenant</dt>
-<dd><p>the tenant to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code></p></dd>
-
-
-<dt>error_on_fail</dt>
-<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether an error must be thrown if no connection can be made</p></dd>
+<dt>...</dt>
+<dd><p>not used at the moment</p></dd>
 
 
 <dt>account</dt>
@@ -251,10 +243,6 @@ The older teams() function relies on the httr package and requires Incoming Webh
 
 <dt>webhooks_file</dt>
 <dd><p>the file locations of a YAML file with MS Teams webhooks in the form <code>channel: "URL"</code></p></dd>
-
-
-<dt>...</dt>
-<dd><p>not used at the moment</p></dd>
 
 </dl></div>
 

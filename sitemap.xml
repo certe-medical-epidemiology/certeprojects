@@ -16,13 +16,22 @@
     <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/certeprojects-package.html</loc>
   </url>
   <url>
+    <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/get_microsoft365_token.html</loc>
+  </url>
+  <url>
     <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/pins.html</loc>
   </url>
   <url>
     <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/project_properties.html</loc>
   </url>
   <url>
     <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/project_shiny.html</loc>
+  </url>
+  <url>
+    <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/reexports.html</loc>
   </url>
   <url>
     <loc>https://certe-medical-epidemiology.github.io/certeprojects/reference/schedule_task.html</loc>

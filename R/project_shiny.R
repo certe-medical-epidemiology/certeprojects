@@ -302,7 +302,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     observeEvent(input$create, {
       
       empty_field <- function(field, value) {
-        if (all(is.null(value)) || length(value) == 0 || value == "") {
+        if (is_empty(value)) {
           showDialog(title = field,
                      message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
           TRUE
@@ -358,11 +358,11 @@ project_add <- function(board = read_secret("trello.default.board"),
         description <- ""
       }
       checklist <- input$checklist
-      if (all(is.null(checklist)) | length(checklist) == 0) {
+      if (is_empty(checklist)) {
         checklist <- ""
       }
       trello_cards <- input$trello_cards
-      if (all(is.null(trello_cards)) | length(trello_cards) == 0) {
+      if (is_empty(trello_cards)) {
         trello_cards <- ""
       }
       
@@ -863,7 +863,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
           }
         }
         newtasks <- input$newtasks
-        if (all(is.null(newtasks)) | length(newtasks) == 0) {
+        if (is_empty(newtasks)) {
           newtasks <- ""
         }
         if (newtasks != "") {

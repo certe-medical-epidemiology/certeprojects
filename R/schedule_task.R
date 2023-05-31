@@ -68,15 +68,12 @@ schedule_task <- function(minute, hour, day, month, weekday,
     stop("username not set with `user`")
   }
   
-  if (user != Sys.info()["user"]) {
-    return(invisible())
-  }
-  
   if (deparse(substitute(minute)) == ".") minute <- "."
   if (deparse(substitute(hour)) == ".") hour <- "."
   if (deparse(substitute(day)) == ".") day <- "."
   if (deparse(substitute(month)) == ".") month <- "."
   if (deparse(substitute(weekday)) == ".") weekday <- "."
+  expr_txt <- deparse(substitute(expr))
   
   # translate dots
   if (any(minute %in% c(".", "*"))) {
@@ -116,17 +113,66 @@ schedule_task <- function(minute, hour, day, month, weekday,
       any(day == rounded_time$mday) &
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
+    # run as planned
+    if (user != get_current_user()) {
+      return(invisible())
+    }
     if (isTRUE(log)) {
       message("Running scheduled task at ", format2(Sys.time(), "h:MM:ss"), ";")
       message("`ref_time` was set as: ", as.character(ref_time), ",\n",
               "   -> interpreting as: ", as.character(rounded_time), ".\n")
     }
+    write_task_has_started(usr = get_current_user(),
+                           t = rounded_time,
+                           expr = expr_txt)
     try(expr)
+    
+  } else if (any(minute + 1 == rounded_time$min) &
+             any(hour == rounded_time$hour) &
+             any(day == rounded_time$mday) &
+             any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
+             any(weekday == rounded_time$wday)) {
+    # check if task ran, otherwise run using other account
+    if (user == get_current_user()) {
+      return(invisible())
+    }
+    if (!task_has_run(user, rounded_time, expr_txt)) {
+      if (isTRUE(log)) {
+        message("Task did NOT run as planned for user '", user, "', scheduled task at ", as.character(ref_time), "h:MM:ss", ".\n",
+                "Rerunning now as user '", get_current_user(), "'.\n")
+      }
+      write_task_has_started(usr = get_current_user(),
+                             t = rounded_time,
+                             expr = deparse(substitute(expr)))
+      try(expr)
+    }
+    
   } else {
+    # do nothing
     invisible()
   }
 }
 
 get_current_user <- function() {
   unname(Sys.info()["user"])
+}
+
+write_task_has_started <- function(usr, t, expr, path = paste0(read_secret("path.refmap"), "_cron_history.tsv")) {
+  write.table(data.frame(datetime = t,
+                         user = usr,
+                         expression = expr),
+              file = path,
+              quote = FALSE,
+              sep = "\t",
+              col.names = !file.exists(path),
+              row.names = FALSE,
+              append = file.exists(path))
+}
+
+task_has_run <- function(usr, t, expr, path = paste0(read_secret("path.refmap"), "_cron_history.tsv")) {
+  if (!file.exists(path)) {
+    write_task_has_started(NA, NA, NA, path = path)
+  }
+  df <- read.table(path, sep = "\t", header = TRUE)
+  any(df$datetime == t & df$user == usr & df$expression == expr, na.rm = TRUE)
 }

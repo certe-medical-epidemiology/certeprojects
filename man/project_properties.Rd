@@ -43,7 +43,7 @@ project_open_folder(card_number = project_get_current_id(ask = TRUE))
 
 \item{card_number}{Trello card number}
 
-\item{filename}{filename to set or get}
+\item{filename}{filename to set or get, case-insensitive, and can also be a \link[base:regex]{regular expression}}
 
 \item{fixed}{\link{logical} to turn off regular expressions}
 

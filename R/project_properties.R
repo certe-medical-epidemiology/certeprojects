@@ -22,7 +22,7 @@
 #' Retrieve project properties, such as the title, folder location and Trello card number.
 #' @param ask logical to indicate whether the project number should always be asked. The default, `NULL`, will show a popup in [interactive][interactive()] \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current [working directory][getwd()] to determine the project number.
 #' @param card_number Trello card number
-#' @param filename filename to set or get
+#' @param filename filename to set or get, case-insensitive, and can also be a [regular expression][base::regex]
 #' @param foldername foldername to set
 #' @param fixed [logical] to turn off regular expressions
 #' @name project_properties
@@ -227,7 +227,8 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
     return(invisible())
   }
   card_number <- gsub("[^0-9]", "", card_number)
-  path <- project_get_file(".*[.](R|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", card_number = card_number)
+  # furst argument in project_get_file is case-insensitive
+  path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", card_number = card_number)
   if (is.na(path)) {
     stop(paste0("No .R or .Rmd files found for p", card_number))
   } else {

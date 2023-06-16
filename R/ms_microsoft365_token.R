@@ -20,61 +20,62 @@
 #' Retrieve Microsoft 365 Access Token
 #' 
 #' This function uses retrieves an access token from the department's Microsoft 365 account.
+#' @param scope this must be "mail", "teams", or "planner", and will set the right API permission for each
 #' @param shared_mbox_email email address of the shared mailbox to use for [Microsoft365R::get_business_outlook()]
 #' @param tenant the tenant to use for [Microsoft365R::get_business_outlook()]
 #' @param app_id the Azure app id to use for [Microsoft365R::get_business_outlook()]
 #' @param auth_type the authentication method to use for [Microsoft365R::get_business_outlook()]
-#' @param only_mail a [logical] to indicate whether only [scopes](https://docs.microsoft.com/en-us/graph/permissions-reference) for mail should be used
 #' @param error_on_fail a [logical] to indicate whether an error must be thrown if no connection can be made
 #' @export
-get_microsoft365_token <- function(shared_mbox_email = read_secret("mail.auto_from"),
+get_microsoft365_token <- function(scope,
+                                   shared_mbox_email = read_secret("mail.auto_from"),
                                    tenant = read_secret("mail.tenant"),
                                    app_id = read_secret("mail.app_id"),
                                    auth_type = read_secret("mail.auth_type"),
-                                   only_mail = FALSE,
                                    error_on_fail = FALSE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scopes <- c("Mail.ReadWrite",
-              "Mail.Send")
-  if (only_mail == FALSE) {
-    # these are the basic scopes for mail, SharePoint and Teams:
-    scopes <- c(scopes,
-                "Channel.ReadBasic.All",
-                "ChannelMessage.Send",
-                "Chat.ReadWrite",
-                "ChatMessage.Send",
-                "Files.ReadWrite.All",
-                "MailboxSettings.ReadWrite",
-                "OnlineMeetings.ReadWrite",
-                "Sites.Manage.All",
+  scope_options <- c("mail", "teams", "planner")
+  scope <- tolower(scope)[1]
+  
+  # mail ----
+  if (scope == "mail") {
+    scopes <- c("Mail.ReadWrite", "Mail.Send", "User.Read")
+    if (shared_mbox_email == "") {
+      shared_mbox_email <- NULL
+    } else {
+      scopes <- c(scopes, "Mail.Send.Shared", "Mail.ReadWrite.Shared")
+    }
+    if (tenant == "") {
+      tenant <- NULL
+    }
+    if (app_id == "") {
+      app_id <- get(".microsoft365r_app_id", envir = asNamespace("Microsoft365R"))
+    } else {
+      scopes <- c("Mail.ReadWrite", "Mail.Send", "User.Read",
+                  "Mail.Send.Shared", "Mail.ReadWrite.Shared")
+    }
+    if (auth_type == "") {
+      auth_type <- NULL
+    }
+    
+    # teams ----
+  } else if (scope == "teams") {
+    scopes <- c("Files.ReadWrite.All",
                 "Sites.ReadWrite.All",
-                "Tasks.ReadWrite",
-                "Team.ReadBasic.All",
-                "TeamsActivity.Read",
-                "TeamsActivity.Send",
                 "User.ReadWrite")
-  }
-  
-  if (shared_mbox_email == "") {
-    shared_mbox_email <- NULL
+    
+    # tasks ----
+  } else if (scope == "planner") {
+    scopes <- c("Group.Read.All",
+                "Tasks.Read.Shared",
+                "Tasks.ReadWrite",
+                "User.ReadWrite")
+    
   } else {
-    scopes <- c(scopes, "Mail.Send.Shared", "Mail.ReadWrite.Shared")
+    stop("Invalid scope - must be one of ", toString(scope_options))
   }
-  if (tenant == "") {
-    tenant <- NULL
-  }
-  if (app_id == "") {
-    app_id <- get(".microsoft365r_app_id", envir = asNamespace("Microsoft365R"))
-  } else {
-    scopes <- c(scopes, "Mail.Send.Shared", "Mail.ReadWrite.Shared")
-  }
-  if (auth_type == "") {
-    auth_type <- NULL
-  }
-  
-  scopes <- unique(scopes)
-  
-  if (is.null(pkg_env$microsoft365_token)) {
+
+  if (is.null(pkg_env[[scope]])) {
     # not yet connected to Microsoft 365, so set it up
     tryCatch({
       if (is.null(tenant)) {
@@ -91,7 +92,7 @@ get_microsoft365_token <- function(shared_mbox_email = read_secret("mail.auto_fr
                                               app = app_id,
                                               auth_type = auth_type)))
       }
-      pkg_env$microsoft365_token <- conn$token
+      pkg_env[[scope]] <- conn$token
       message("Connected to Microsoft 365 as ",
               conn$properties$displayName,
               " (", conn$properties$mail, ").")
@@ -106,9 +107,9 @@ get_microsoft365_token <- function(shared_mbox_email = read_secret("mail.auto_fr
       return(NULL)
     })
   }
-  if (isTRUE(error_on_fail) && is.null(pkg_env$microsoft365_token)) {
+  if (isTRUE(error_on_fail) && is.null(pkg_env[[scope]])) {
     stop("Could not connect to Microsoft 365.", call. = FALSE)
   }
   # this will auto-renew authorisation when due
-  pkg_env$microsoft365_token
+  pkg_env[[scope]]
 }

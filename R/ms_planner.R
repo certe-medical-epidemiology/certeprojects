@@ -26,6 +26,7 @@
 #' @rdname planner
 #' @name planner
 #' @importFrom AzureGraph create_graph_login
+#' @importFrom httr POST PATCH add_headers stop_for_status
 #' @export
 #' @examples 
 #' \dontrun{
@@ -57,62 +58,282 @@
 #' planner_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
 planner_connect <- function(team_name = read_secret("teams.name"), plan_name = read_secret("planner.name"), ...) {
-  if (is.null(pkg_env$m365_getplans)) {
-    # not yet connected to Teams in Microsoft 365, so set it up
-    pkg_env$m365_getplans <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
+  if (is.null(pkg_env$m365_getplan)) {
+    # not yet connected to Planner in Microsoft 365, so set it up
+    pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
       get_group(name = team_name)$
       get_plan(plan_title = plan_name)
   }
   # this will auto-renew authorisation when due
-  return(invisible(pkg_env$m365_getplans))
+  return(invisible(pkg_env$m365_getplan))
 }
 
 #' @rdname planner
-#' @param bucket_name name of the bucket
 #' @export
-planner_get_bucket <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
-  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
-  buckets <- account$list_buckets()
-  buckets[[which(vapply(FUN.VALUE = logical(1), buckets, function(b) b$properties$name == bucket_name))]]
-}
-
-#' #' @rdname planner
-#' #' @export
-#' planner_create_bucket <- function(bucket_name, account = planner_connect()) {
-#'   
-#' }
-
-#' @rdname planner
-#' @param task_title title of the task
-#' @param task_id ID of the task
-#' @export
-planner_get_task <- function(task_title, task_id = NULL, account = planner_connect()) {
-  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
-  tasks <- account$list_tasks()
-  if (!is.null(task_id)) {
-    tasks[[which(vapply(FUN.VALUE = logical(1), tasks, function(b) b$properties$id == task_id))]]
-  } else {
-    tasks[[which(vapply(FUN.VALUE = logical(1), tasks, function(b) b$properties$title == task_title))]]
-  }
+planner_bucket_create <- function(bucket_name, account = planner_connect()) {
+  
 }
 
 #' @rdname planner
 #' @param title,descr,due,assigned properties of the new task
-#' @importFrom httr POST add_headers stop_for_status
 #' @export
-planner_create_task <- function(title,
-                                descr = "",
-                                due = NULL,
+planner_task_create <- function(title,
+                                descr = NULL,
+                                duedate = NULL,
+                                requested_by = NULL,
+                                member = NULL,
+                                prio = read_secret("planner.default.priority"),
+                                checklist_items = NULL,
+                                checklist_name = read_secret("planner.default.checklist"),
+                                comments = NULL,
                                 assigned = NULL,
                                 bucket_name = read_secret("planner.default.bucket"),
                                 account = planner_connect()) {
+  # see this for all the possible fields: https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0
+  
   # does not work with Microsoft365R yet, so we do it manually
+  body <- list(title = title,
+               planId = account$properties$id,
+               bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id,
+               startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
+  if (!is.null(duedate)) {
+    body <- c(body, dueDateTime = paste0(format(duedate), "T00:00:00Z"))
+  }
+  
   request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/tasks",
                       encode = "json",
                       config = add_headers(Authorization = paste(account$token$credentials$token_type,
                                                                  account$token$credentials$access_token)),
-                      body = list(title = title,
-                                  planId = account$properties$id,
-                                  bucketId  = planner_get_bucket(bucket_name = bucket_name, account = account)$properties$id))
+                      body = body)
   stop_for_status(request_add, task = paste("add task", title))
+  
+  
+  # # just like Trello, some propertiescan only be added as update, https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
+  # if (!is.null(descr)) {
+  #   body <- c(body, previewType = "description")
+  # }
+  
+}
+
+#' @rdname planner
+#' @param old_title title of the task to update
+#' @param duedate a date to use a due date. Use `FALSE` to remove it.
+#' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
+#' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
+#' @importFrom jsonlite toJSON
+#' @export
+planner_task_update <- function(old_title,
+                                title = NULL,
+                                bucket_name = NULL,
+                                descr = NULL,
+                                duedate = NULL,
+                                assigned = NULL,
+                                assigned_keep = FALSE,
+                                categories = NULL,
+                                categories_keep = FALSE,
+                                comments = NULL,
+                                account = planner_connect()) {
+  # does not work with Microsoft365R yet, so we do it manually
+  task <- planner_task_object(task_title = old_title)
+  task_id <- task$properties$id
+  
+  # UPDATE TASK ITSELF ----
+  
+  body <- list()
+  
+  if (!is.null(title)) {
+    # new title
+    body <- c(body, title = title)
+  }
+  
+  if (!is.null(duedate)) {
+    if (isFALSE(duedate)) {
+      body <- c(body, list(dueDateTime = NULL))
+    } else {
+      if (!inherits(duedate, c("Date", "POSIXct"))) {
+        stop("duedate is not a valid date")
+      }
+      body <- c(body, dueDateTime = paste0(format(duedate, "%Y-%m-%d"), "T00:00:00Z"))
+    }
+  }
+  
+  if (!is.null(bucket_name)) {
+    # new bucket
+    body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id)
+  }
+  
+  if (!is.null(categories)) {
+    apply_categories <- list()
+    # these are all existing categories
+    categories_current <- names(task$properties$appliedCategories)
+    # get internal name of given categories
+    categories_new <- get_internal_category(categories)
+    for (category in unique(c(categories_new, categories_current))) {
+      if (category %in% categories_new) {
+        # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerappliedcategories
+        apply_categories <- c(apply_categories, stats::setNames(list(TRUE), category))
+      } else if (!isTRUE(categories_keep)) {
+        # remove it from the current categories
+        apply_categories <- c(apply_categories, stats::setNames(list(FALSE), category))
+      }
+    }
+    body <- c(body, list(appliedCategories = apply_categories))
+  }
+  
+  if (!is.null(assigned)) {
+    apply_assigned <- list()
+    # these are all existing assigned
+    assigned_current <- names(task$properties$assignments)
+    # get internal name of given assigned
+    assigned_new <- planner_user_id(assigned)
+    for (assign in unique(c(assigned_new, assigned_current))) {
+      if (assign %in% assigned_new) {
+        # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerassignments?view=graph-rest-1.0
+        apply_assigned <- c(apply_assigned,
+                            stats::setNames(list(list(`@odata.type` = "microsoft.graph.plannerAssignment",
+                                                      orderHint = " !")),
+                                            assign))
+      } else if (!isTRUE(assigned_keep) || isFALSE(assigned)) {
+        # remove it from the current assigned
+        apply_assigned <- c(apply_assigned, stats::setNames(list(NULL), assign))
+      }
+    }
+    body <- c(body, list(assignments = apply_assigned))
+  }
+  
+  if (!is.null(comments)) {
+    # comments something with conversationThreadId?
+  }
+  
+  if (length(body) > 0) {
+    # in httr, NULLs will be removed, so we follow this solution: https://github.com/r-lib/httr/issues/561#issuecomment-451278328
+    body <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
+    print(body)
+    # run request:
+    request_update <- PATCH(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id),
+                            encode = "raw",
+                            config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                                       account$token$credentials$access_token),
+                                                 # this one is required for updating tasks:
+                                                 `If-Match` = task$properties$`@odata.etag`,
+                                                 Prefer = "return=representation",
+                                                 `Content-type` = "application/json"),
+                            body = body)
+    stop_for_status(request_update, task = paste("update task", old_title, ".\nBody of request:\n\n", body))
+  }
+  
+  
+  # UPDATE TASK DETAILS -----
+  
+  # the following properties are considered task details and must be updated using .../id/details:
+  # checklist, description, previewType, references
+  # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
+  
+  if (is.null(descr)) {
+    return(invisible())
+  }
+  
+  body <- list()
+  if (!is.null(descr)) {
+    body <- c(body, description = descr, previewType = "description")
+  } else {
+    body <- c(body, previewType = "automatic")
+  }
+  
+  # use a GET to get the correct etag, see https://stackoverflow.com/a/43380424/4575331
+  get_task <- GET(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id, "/details"),
+                  config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                             account$token$credentials$access_token)))
+  # run request:
+  body <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
+  request_updatedetails <- PATCH(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id, "/details"),
+                                 encode = "raw",
+                                 config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                                            account$token$credentials$access_token),
+                                                      # this one is required for updating tasks:
+                                                      `If-Match` = get_task$headers$etag,
+                                                      Prefer = "return=representation",
+                                                      `Content-type` = "application/json"),
+                                 body = body)
+  stop_for_status(request_updatedetails, task = paste("update details of task", old_title, ".\nBody of request:\n\n", body))
+}
+
+#' @rdname planner
+#' @param category_text text of the category to use
+#' @export
+planner_task_request_validation <- function(title,
+                                            category_text = read_secret("planner.label.authorise"),
+                                            account = planner_connect()) {
+  task <- planner_task_object(title)
+  planner_task_update(title,
+                      categories = category_text,
+                      comments = paste0("Validatie aangevraagd\n",
+                                        "ID taak: ",  task$properties$id,
+                                        "ID bucket: ", task$properties$bucketId))
+}
+
+#' @rdname planner
+#' @export
+planner_task_validate <- function(title,
+                                  category_text = read_secret("planner.label.authorised"),
+                                  account = planner_connect()) {
+  task <- planner_task_object(title)
+  
+  # TODO validation part
+  planner_task_update(title,
+                      categories = category_text,
+                      comments = paste0("Geautomatiseeerd gevalideerd\n",
+                                        "ID taak: ",  task$properties$id,
+                                        "ID bucket: ", task$properties$bucketId))
+}
+
+#' @rdname planner
+#' @param user a user name, mail adress, or Certe login name
+#' @importFrom AzureGraph create_graph_login
+#' @importFrom dplyr bind_rows filter pull
+#' @export
+planner_user_id <- function(user, team_name = read_secret("teams.name"), account = planner_connect()) {
+  members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
+  df <- lapply(members, function(m) {
+    data.frame(certe_login = gsub("@certe.nl", "", m$properties$userPrincipalName),
+               name = m$properties$displayName,
+               mail = m$properties$mail,
+               id = m$properties$id)
+  }) |>
+    bind_rows()
+  users <- character(0)
+  for (usr in user) {
+    users <- c(users, df$id[which(df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
+  }
+  users
+}
+
+
+planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
+  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
+  buckets <- account$list_buckets()
+  index <- which(vapply(FUN.VALUE = logical(1), buckets, function(b) b$properties$name == bucket_name))
+  if (length(index) == 0) {
+    stop("Bucket not found")
+  } else {
+    buckets[[index[1L]]]
+  }
+}
+
+planner_task_object <- function(task_title, task_id = NULL, account = planner_connect()) {
+  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
+  tasks <- account$list_tasks()
+  index <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!is.null(task_id), 
+                                                                          b$properties$id == task_id,
+                                                                          b$properties$title == task_title)))
+  if (length(index) == 0) {
+    stop("Task not found")
+  } else {
+    tasks[[index[1L]]]
+  }
+}
+
+get_internal_category <- function(category_name, account = planner_connect()) {
+  categories <- unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
+  names(which(categories == category_name))
 }

@@ -3,10 +3,12 @@
 \name{planner}
 \alias{planner}
 \alias{planner_connect}
-\alias{planner_get_bucket}
-\alias{planner_create_bucket}
-\alias{planner_get_task}
-\alias{planner_create_task}
+\alias{planner_bucket_create}
+\alias{planner_task_create}
+\alias{planner_task_update}
+\alias{planner_task_request_validation}
+\alias{planner_task_validate}
+\alias{planner_user_id}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_connect(
@@ -15,21 +17,52 @@ planner_connect(
   ...
 )
 
-planner_get_bucket(
+planner_bucket_create(bucket_name, account = planner_connect())
+
+planner_task_create(
+  title,
+  descr = NULL,
+  duedate = NULL,
+  requested_by = NULL,
+  member = NULL,
+  prio = read_secret("planner.default.priority"),
+  checklist_items = NULL,
+  checklist_name = read_secret("planner.default.checklist"),
+  comments = NULL,
+  assigned = NULL,
   bucket_name = read_secret("planner.default.bucket"),
   account = planner_connect()
 )
 
-planner_create_bucket(bucket_name, account = planner_connect())
-
-planner_get_task(task_title, task_id = NULL, account = planner_connect())
-
-planner_create_task(
-  title,
-  descr = "",
-  due = NULL,
+planner_task_update(
+  old_title,
+  title = NULL,
+  bucket_name = NULL,
+  descr = NULL,
+  duedate = NULL,
   assigned = NULL,
-  bucket_name = read_secret("planner.default.bucket"),
+  assigned_keep = FALSE,
+  categories = NULL,
+  categories_keep = FALSE,
+  comments = NULL,
+  account = planner_connect()
+)
+
+planner_task_request_validation(
+  title,
+  category_text = read_secret("planner.label.authorise"),
+  account = planner_connect()
+)
+
+planner_task_validate(
+  title,
+  category_text = read_secret("planner.label.authorised"),
+  account = planner_connect()
+)
+
+planner_user_id(
+  user,
+  team_name = read_secret("teams.name"),
   account = planner_connect()
 )
 }
@@ -38,15 +71,15 @@ planner_create_task(
 
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 
-\item{bucket_name}{name of the bucket}
-
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}.}
 
-\item{task_title}{title of the task}
-
-\item{task_id}{ID of the task}
-
 \item{title, descr, due, assigned}{properties of the new task}
+
+\item{old_title}{title of the task to update}
+
+\item{category_text}{text of the category to use}
+
+\item{user}{a user name, mail adress, or Certe login name}
 }
 \description{
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.

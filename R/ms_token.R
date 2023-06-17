@@ -20,43 +20,44 @@
 #' Retrieve Microsoft 365 Access Token
 #' 
 #' This function uses retrieves an access token from the department's Microsoft 365 account.
-#' @param scope this must be "mail", "teams", or "planner", and will set the right API permission for each
-#' @param shared_mbox_email email address of the shared mailbox to use for [Microsoft365R::get_business_outlook()]
-#' @param tenant the tenant to use for [Microsoft365R::get_business_outlook()]
-#' @param app_id the Azure app id to use for [Microsoft365R::get_business_outlook()]
-#' @param auth_type the authentication method to use for [Microsoft365R::get_business_outlook()]
+#' @param scope this must be "outlook", "teams", or "planner", and will set the right API permission for each
+#' @param tenant the tenant to use, passed on to [AzureGraph::create_graph_login()]
+#' @param app_id the Azure app id to use, passed on to [AzureGraph::create_graph_login()]
+#' @param auth_type the authentication method to use, passed on to [AzureGraph::create_graph_login()]
+#' @param ... other arguments passed on to [AzureGraph::create_graph_login()]
 #' @param error_on_fail a [logical] to indicate whether an error must be thrown if no connection can be made
+#' @importFrom AzureGraph create_graph_login get_graph_login
 #' @export
 get_microsoft365_token <- function(scope,
-                                   shared_mbox_email = read_secret("mail.auto_from"),
-                                   tenant = read_secret("mail.tenant"),
-                                   app_id = read_secret("mail.app_id"),
-                                   auth_type = read_secret("mail.auth_type"),
+                                   tenant = read_secret("azure.tenant"),
+                                   app_id = read_secret("azure.app_id"),
+                                   auth_type = read_secret("azure.auth_type"),
+                                   ...,
                                    error_on_fail = FALSE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scope_options <- c("mail", "teams", "planner")
+  scope_options <- c("mail", "outlook", "teams", "planner")
   scope <- tolower(scope)[1]
+  if (scope == "mail") {
+    scope <- "outlook"
+  }
+  
+  if (tenant == "") {
+    tenant <- "common"
+  }
+  if (app_id == "") {
+    app_id <- NULL
+  }
+  if (auth_type == "") {
+    auth_type <- NULL
+  }
   
   # mail ----
-  if (scope == "mail") {
-    scopes <- c("Mail.ReadWrite", "Mail.Send", "User.Read")
-    if (shared_mbox_email == "") {
-      shared_mbox_email <- NULL
-    } else {
-      scopes <- c(scopes, "Mail.Send.Shared", "Mail.ReadWrite.Shared")
-    }
-    if (tenant == "") {
-      tenant <- NULL
-    }
-    if (app_id == "") {
-      app_id <- get(".microsoft365r_app_id", envir = asNamespace("Microsoft365R"))
-    } else {
-      scopes <- c("Mail.ReadWrite", "Mail.Send", "User.Read",
-                  "Mail.Send.Shared", "Mail.ReadWrite.Shared")
-    }
-    if (auth_type == "") {
-      auth_type <- NULL
-    }
+  if (scope == "outlook") {
+    scopes <- c("Mail.ReadWrite",
+                "Mail.ReadWrite.Shared",
+                "Mail.Send",
+                "Mail.Send.Shared",
+                "User.Read")
     
     # teams ----
   } else if (scope == "teams") {
@@ -78,24 +79,13 @@ get_microsoft365_token <- function(scope,
   if (is.null(pkg_env[[scope]])) {
     # not yet connected to Microsoft 365, so set it up
     tryCatch({
-      if (is.null(tenant)) {
-        conn <- suppressWarnings(suppressMessages(
-          Microsoft365R::get_business_outlook(shared_mbox_email = shared_mbox_email,
-                                              scopes = scopes,
-                                              app = app_id,
-                                              auth_type = auth_type)))
-      } else {
-        conn <- suppressWarnings(suppressMessages(
-          Microsoft365R::get_business_outlook(tenant = tenant,
-                                              shared_mbox_email = shared_mbox_email,
-                                              scopes = scopes,
-                                              app = app_id,
-                                              auth_type = auth_type)))
+      # try to get existing login first - this will prevent that the device code must be given every time
+      conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = FALSE)), silent = TRUE)
+      if (inherits(conn, "try-error")) {
+        conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
       }
       pkg_env[[scope]] <- conn$token
-      message("Connected to Microsoft 365 as ",
-              conn$properties$displayName,
-              " (", conn$properties$mail, ").")
+      message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
     }, warning = function(w) {
       return(invisible())
     }, error = function(e, fail = error_on_fail) {

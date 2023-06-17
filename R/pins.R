@@ -102,7 +102,7 @@ board_certeprojects <- function(site_name = read_secret("teams.name"),
                                 ...) {
   if (is.null(pkg_env$microsoft365_pins)) {
     # not yet connected to Teams in Microsoft 365, so set it up
-    sharepoint <- get_sharepoint_site(site_name = site_name, token = get_microsoft365_token(...))
+    sharepoint <- get_sharepoint_site(site_name = site_name, token = get_microsoft365_token("mail", ...))
     drive <- sharepoint$get_drive()
     pkg_env$microsoft365_pins <- board_ms365(drive = drive,
                                              path = drive$get_item("pins"),

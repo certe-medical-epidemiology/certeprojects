@@ -37,9 +37,9 @@ others can understand what the pin contains. If omitted, a brief
 description of the contents will be automatically generated.}
 
 \item{type}{File type used to save \code{x} to disk. Must be one of
-"csv", "json", "rds", "parquet", "arrow", or "qs". If not supplied, will
-use JSON for bare lists and RDS for everything else. Be aware that CSV and
-JSON are plain text formats, while RDS, Parquet, Arrow, and
+"csv", "json", "rds", "arrow", or "qs". If not supplied, will use JSON for
+bare lists and RDS for everything else. Be aware that CSV and JSON are
+plain text formats, while RDS, Arrow, and
 \href{https://CRAN.R-project.org/package=qs}{qs} are binary formats.}
 
 \item{description}{A detailed description of the pin contents.}

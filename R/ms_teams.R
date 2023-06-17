@@ -60,8 +60,9 @@
 teams_connect <- function(team_name = read_secret("teams.name"), ...) {
   if (is.null(pkg_env$m365_getteam)) {
     # not yet connected to Teams in Microsoft 365, so set it up
-    pkg_env$m365_getteam <- get_team(team_name = team_name,
-                                     token = get_microsoft365_token(scope = "teams", ...))
+    pkg_env$m365_getteam <- create_graph_login(token = get_microsoft365_token(scope = "teams", ...))$
+      get_group(name = team_name)$
+      get_team()
   }
   # this will auto-renew authorisation when due
   return(invisible(pkg_env$m365_getteam))

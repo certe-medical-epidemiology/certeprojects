@@ -20,6 +20,7 @@
 # this is the package environment. The Microsoft 365 connection will be saved to this env.
 pkg_env <- new.env(hash = FALSE)
 pkg_env$teams <- NULL
+pkg_env$group_id <- NULL
 
 globalVariables(c(".",
                   "checkItems",
@@ -89,4 +90,8 @@ full_path_to_currently_sourced_script <- function() {
     }
   }
   out
+}
+
+get_current_user <- function() {
+  unname(Sys.info()["user"])
 }

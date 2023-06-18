@@ -21,6 +21,9 @@
 # https://certe-medical-epidemiology.r-universe.dev
 
 on:
+  pull_request:
+    # run in each PR in this repo
+    branches: '**'
   push:
      # run after a git push on any branch in this repo
     branches: '**'

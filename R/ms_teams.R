@@ -57,15 +57,15 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_connect <- function(team_name = read_secret("teams.name"), ...) {
-  
-  if (is.null(pkg_env$microsoft365_teams)) {
+teams_connect <- function(team_name = read_secret("team.name"), ...) {
+  if (is.null(pkg_env$m365_getteam)) {
     # not yet connected to Teams in Microsoft 365, so set it up
-     pkg_env$microsoft365_teams <- get_team(team_name = team_name,
-                                            token = get_microsoft365_token(...))
+    pkg_env$m365_getteam <- create_graph_login(token = get_microsoft365_token(scope = "teams", ...))$
+      get_group(name = team_name)$
+      get_team()
   }
   # this will auto-renew authorisation when due
-  return(invisible(pkg_env$microsoft365_teams))
+  return(invisible(pkg_env$m365_getteam))
 }
 
 #' @rdname teams

@@ -9,7 +9,8 @@ project_add(
   board = read_secret("trello.default.board"),
   username = trello_credentials("member"),
   key = trello_credentials("key"),
-  token = trello_credentials("token")
+  token = trello_credentials("token"),
+  account = planner_connect()
 )
 
 project_edit(
@@ -27,6 +28,8 @@ project_edit(
 \item{key}{Trello API key}
 
 \item{token}{Trello API token}
+
+\item{account}{Microsoft Planner 'Plan', as returned by e.g. \code{\link[=planner_connect]{planner_connect()}}}
 
 \item{card_number}{Trello card number}
 }

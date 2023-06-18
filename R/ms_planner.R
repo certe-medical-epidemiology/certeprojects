@@ -21,7 +21,7 @@
 #'
 #' These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `planner_*()` functions allow to work with this connection.
 #' @param team_name name of the team
-#' @param plan_name name of the plan of the team
+#' @param plan_name name of the team's plan
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()].
 #' @rdname planner
@@ -56,16 +56,37 @@ planner_bucket_create <- function(bucket_name, account = planner_connect()) {
 }
 
 #' @rdname planner
+#' @param plain return as plain names, not as `Azure` objects
 #' @export
-planner_tasks_list <- function(account = planner_connect()) {
-  account$list_tasks()
+planner_buckets_list <- function(account = planner_connect(), plain = FALSE) {
+  if (plain == TRUE) {
+    sort(vapply(FUN.VALUE = character(1), account$list_buckets(), function(x) x$properties$name))
+  } else {
+    account$list_buckets()
+  }
+}
+
+#' @rdname planner
+#' @export
+planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
+  if (plain == TRUE) {
+    sort(vapply(FUN.VALUE = character(1), account$list_tasks(), function(x) x$properties$title))
+  } else {
+    account$list_tasks()
+  }
+}
+
+#' @rdname planner
+#' @export
+planner_categories_list <- function(account = planner_connect()) {
+  unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
 }
 
 #' @rdname planner
 #' @param title title of the task
 #' @param descr a description for the task. A vector will be add as one text separated by white lines.
 #' @param duedate a date to use a due date, use `FALSE` to remove it
-#' @param requested_by name of the person who requested the task
+#' @param requested_by name of the person(s) who requested the task
 #' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
 #' @param checklist_items character vector of checklist items
 #' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
@@ -103,6 +124,10 @@ planner_task_create <- function(title,
   
   if (!is.null(priority)) {
     body <- c(body, list(priority = planner_priority_to_int(priority)))
+  }
+  
+  if (is.null(requested_by)) {
+    descr <- c(descr, paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en ")))
   }
   
   # run request:
@@ -328,18 +353,37 @@ planner_task_validate <- function(title,
 #' @rdname planner
 #' @param user a user name, mail adress, or Certe login name
 #' @param property property to return, can be "id", "name" or "mail"
+#' @param as_list return the full list of members as [list], split into Eigenaars (Owners) / Leden (Members). This ignores `user`.
 #' @importFrom AzureGraph create_graph_login
 #' @importFrom dplyr bind_rows filter pull
 #' @export
-planner_user_property <- function(user, team_name = read_secret("team.name"), account = planner_connect(), property = "id") {
+planner_user_property <- function(user,
+                                  team_name = read_secret("team.name"),
+                                  account = planner_connect(),
+                                  property = "id",
+                                  as_list = FALSE) {
   members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
+  owners <- character(0)
+  if (as_list == TRUE) {
+    owners <- vapply(FUN.VALUE = character(1),
+                     create_graph_login(token = account$token)$get_group(name = "Medische Epidemiologie")$list_owners(),
+                     function(x) x$properties$displayName)
+  }
   df <- lapply(members, function(m) {
     data.frame(certe_login = gsub("@certe.nl", "", m$properties$userPrincipalName),
                name = m$properties$displayName,
                mail = m$properties$mail,
-               id = m$properties$id)
+               id = m$properties$id,
+               role = ifelse(m$properties$displayName %in% owners, "Eigenaar", "Lid"))
   }) |>
-    bind_rows()
+    bind_rows() |> 
+    filter(name != "Azure Connect")
+  
+  if (as_list == TRUE) {
+    return(list(Eigenaars = sort(df[[property]][which(df$role == "Eigenaar")]),
+                Leden = sort(df[[property]][which(df$role == "Lid")])))
+  }
+  
   users <- character(0)
   for (usr in user) {
     users <- c(users, df[[property]][which(df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
@@ -373,7 +417,7 @@ planner_task_object <- function(task_title, task_id = NULL, account = planner_co
 }
 
 get_internal_category <- function(category_name, account = planner_connect()) {
-  categories <- unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
+  categories <- planner_categories_list(account = account)
   names(which(categories == category_name))
 }
 
@@ -389,9 +433,9 @@ planner_priority_to_int <- function(priority) {
     priority <- trimws(tolower(priority))
     if (priority %in% c("urgent", "dringend")) {
       return(1)
-    } else if (priority %in% c("important", "belangrijk")) {
+    } else if (priority %in% c("important", "belangrijk", "hoog")) {
       return(3)
-    } else if (priority %in% c("medium", "gemiddeld" )) {
+    } else if (priority %in% c("medium", "gemiddeld", "normaal")) {
       return(5)
     } else if (priority %in% c("low", "laag")) {
       return(9)

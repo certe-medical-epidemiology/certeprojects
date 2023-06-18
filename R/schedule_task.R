@@ -126,7 +126,3 @@ schedule_task <- function(minute, hour, day, month, weekday,
     invisible()
   }
 }
-
-get_current_user <- function() {
-  unname(Sys.info()["user"])
-}

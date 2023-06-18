@@ -4,7 +4,9 @@
 \alias{planner}
 \alias{planner_connect}
 \alias{planner_bucket_create}
+\alias{planner_buckets_list}
 \alias{planner_tasks_list}
+\alias{planner_categories_list}
 \alias{planner_task_create}
 \alias{planner_task_update}
 \alias{planner_task_id}
@@ -21,7 +23,11 @@ planner_connect(
 
 planner_bucket_create(bucket_name, account = planner_connect())
 
-planner_tasks_list(account = planner_connect())
+planner_buckets_list(account = planner_connect(), plain = FALSE)
+
+planner_tasks_list(account = planner_connect(), plain = FALSE)
+
+planner_categories_list(account = planner_connect())
 
 planner_task_create(
   title,
@@ -69,13 +75,14 @@ planner_user_property(
   user,
   team_name = read_secret("team.name"),
   account = planner_connect(),
-  property = "id"
+  property = "id",
+  as_list = FALSE
 )
 }
 \arguments{
 \item{team_name}{name of the team}
 
-\item{plan_name}{name of the plan of the team}
+\item{plan_name}{name of the team's plan}
 
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 
@@ -83,13 +90,15 @@ planner_user_property(
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}.}
 
+\item{plain}{return as plain names, not as \code{Azure} objects}
+
 \item{title}{title of the task}
 
 \item{descr}{a description for the task. A vector will be add as one text separated by white lines.}
 
 \item{duedate}{a date to use a due date, use \code{FALSE} to remove it}
 
-\item{requested_by}{name of the person who requested the task}
+\item{requested_by}{name of the person(s) who requested the task}
 
 \item{priority}{a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: \code{"urgent"} or \code{"dringend"} for 1, \code{"important"} or \code{"belangrijk"} for 3, \code{"medium"} or \code{"gemiddeld"} or \code{FALSE} for 5, \code{"low"} or \code{"laag"} for 9. Priorities cannot be removed - the default setting is 5.}
 
@@ -110,6 +119,8 @@ planner_user_property(
 \item{user}{a user name, mail adress, or Certe login name}
 
 \item{property}{property to return, can be "id", "name" or "mail"}
+
+\item{as_list}{return the full list of members as \link{list}, split into Eigenaars (Owners) / Leden (Members). This ignores \code{user}.}
 }
 \description{
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.

@@ -21,8 +21,9 @@
 #' 
 #' This is a Shiny app to add a new project: it creates a project folder, generates the required Quarto or R Markdown or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
 #' @inheritParams trello
+#' @param account Microsoft Planner 'Plan', as returned by e.g. [planner_connect()]
 #' @export
-#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a
 #' @importFrom shinyjs useShinyjs enable disable
 #' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
 #' @importFrom dplyr select pull filter if_else
@@ -34,7 +35,8 @@
 project_add <- function(board = read_secret("trello.default.board"),
                         username = trello_credentials("member"),
                         key = trello_credentials("key"),
-                        token = trello_credentials("token")) {
+                        token = trello_credentials("token"),
+                        account = planner_connect()) {
   
   trello_set <- tryCatch(is.data.frame(trello_get_boards(username = username, key = key, token = token)),
                          error = function(e) FALSE)
@@ -88,6 +90,9 @@ project_add <- function(board = read_secret("trello.default.board"),
                     ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
                            "Hoog", # default if card is created on weekend day
                            "Normaal")),
+        if (as.integer(format(Sys.Date(), "%u")) %in% c(6:7)) {
+          p(HTML("<i>De prioriteit is standaard 'Hoog' in het weekend</i>."))
+        },
         tags$label("Deadline"),
         awesomeCheckbox("has_deadline", "Deadline instellen", TRUE),
         uiOutput("deadline"),
@@ -99,12 +104,6 @@ project_add <- function(board = read_secret("trello.default.board"),
         width = 6),
       
       mainPanel(
-        if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px; margin-bottom: 10px"),
-        if (isTRUE(trello_set)) awesomeCheckbox("trello_upload", "Uploaden naar Trello.com", TRUE),
-        if (isTRUE(trello_set)) uiOutput("trello_boards"),
-        if (isTRUE(trello_set)) uiOutput("trello_settings"),
-        if (isTRUE(trello_set)) uiOutput("trello_search_select"),
-        if (isTRUE(trello_set)) hr(),
         img(src = img_rstudio(), height = "45px"),
         br(),
         br(),
@@ -124,6 +123,15 @@ project_add <- function(board = read_secret("trello.default.board"),
                         width = "100%"),
         
         hr(),
+        img(src = img_planner(), height = "45px", style = "margin-bottom: 10px"),
+        awesomeCheckbox("planner_upload", "Taak aanmaken in Microsoft Planner", FALSE),
+        uiOutput("planner_settings"),
+        hr(),
+        if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px; margin-bottom: 10px"),
+        if (isTRUE(trello_set)) awesomeCheckbox("trello_upload", "Kaart aanmaken op Trello.com", TRUE),
+        if (isTRUE(trello_set)) uiOutput("trello_boards"),
+        if (isTRUE(trello_set)) uiOutput("trello_settings"),
+        if (isTRUE(trello_set)) uiOutput("trello_search_select"),
         width = 6
       )
     )
@@ -165,6 +173,49 @@ project_add <- function(board = read_secret("trello.default.board"),
                     min = Sys.Date(),
                     format = "DD d MM yyyy",
                     language = "nl")
+        )
+      }
+    })
+    
+    output$planner_settings <- renderUI({
+      if (input$planner_upload == TRUE) {
+        members <- planner_user_property(property = "name", as_list = TRUE, account = account)
+        active_user <- planner_user_property(get_current_user(), property = "name", account = account)
+        if (length(active_user) == 0) {
+          active_user <- NULL
+        }
+        url <- paste0("https://tasks.office.com/", account$tenant, ".onmicrosoft.com/Home/PlanViews/", account$properties$id)
+        title <- account$properties$title
+        tagList(
+          h5(HTML(paste0("Verbonden met ", a(title, href =url), "."))),
+          selectInput("planner_bucket",
+                      label = "Bucket",
+                      choices = list(Buckets = planner_buckets_list(plain = TRUE, account = account)),
+                      selected = read_secret("planner.default.bucket"),
+                      multiple = FALSE,
+                      width = "100%"),
+          selectizeInput("planner_members",
+                         label = "Uitgevoerd door",
+                         choices = members,
+                         selected = active_user,
+                         multiple = TRUE,
+                         width = "100%",
+                         options = list(
+                           # do not support non-existing members:
+                           create = FALSE,
+                           createOnBlur = FALSE,
+                           closeAfterSelect = FALSE)),
+          selectizeInput("planner_categories",
+                         label = "Labels",
+                         choices = unname(planner_categories_list(account = account)),
+                         selected = NULL,
+                         multiple = TRUE,
+                         width = "100%",
+                         options = list(
+                           # do not support non-existing members:
+                           create = FALSE,
+                           createOnBlur = FALSE,
+                           closeAfterSelect = FALSE))
         )
       }
     })
@@ -218,13 +269,13 @@ project_add <- function(board = read_secret("trello.default.board"),
           tagList(
             selectInput("trello_list",
                         label = "Lijst",
-                        choices = lists,
+                        choices = list(Lijsten = lists),
                         selected = lists[3], # 3 = 'bezig'
                         multiple = FALSE,
                         width = "100%"),
             selectizeInput("trello_members",
                            label = "Uitgevoerd door",
-                           choices = members,
+                           choices = list(Leden = members),
                            selected = active,
                            multiple = TRUE,
                            width = "100%",
@@ -232,7 +283,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                              # do not support non-existing members:
                              create = FALSE,
                              createOnBlur = FALSE,
-                             closeAfterSelect = TRUE)),
+                             closeAfterSelect = FALSE)),
             textAreaInput("trello_comments",
                           label = "Opmerkingen",
                           width = "395px",
@@ -366,12 +417,31 @@ project_add <- function(board = read_secret("trello.default.board"),
         trello_cards <- ""
       }
       
-      withProgress(message = "Creating...", value = 0, {
-        progress_items <- input$rstudio_projectfile + input$trello_upload + 1 # (+ 1 for creating folders)
+      withProgress(message = "Aanmaken...", value = 0, {
+        progress_items <- input$rstudio_projectfile + input$planner_upload + input$trello_upload + 1 # (+ 1 for creating folders)
+        # Planner ----
+        if (input$planner_upload == TRUE) {
+          incProgress(1 / progress_items, detail = "MS Planner taak aanmaken")
+          if (is.null(input$deadline) || input$has_deadline == FALSE) {
+            deadline <- NULL
+          } else {
+            deadline <- input$deadline
+          }
+          planner_task_create(account = account,
+                              title = title,
+                              bucket_name = input$planner_bucket,
+                              assigned = input$planner_members,
+                              requested_by = requested_by,
+                              priority = input$priority,
+                              duedate = deadline,
+                              checklist_items = checklist |> strsplit("\n") |> unlist(),
+                              categories = input$planner_categories,
+                              descr = description)
+        }
         # Trello ----
         trello_card_id <- NULL
         if (input$trello_upload == TRUE) {
-          incProgress(1 / progress_items, detail = "Uploading to Trello")
+          incProgress(1 / progress_items, detail = "Trello-kaart aanmaken")
           if (is.null(input$deadline) || input$has_deadline == FALSE) {
             deadline <- ""
           } else {
@@ -430,11 +500,11 @@ project_add <- function(board = read_secret("trello.default.board"),
                                                                        collapse = ", ")),
                                  NA_character_),
                          paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
-        incProgress(1 / progress_items, detail = "Creating folder")
+        incProgress(1 / progress_items, detail = "Map aanmaken")
         # create folder
         if (!dir.exists(fullpath)) {
           dir.create(fullpath, recursive = TRUE, showWarnings = FALSE)
-          message("NOTE: created directory '", fullpath, "'")
+          message("N.B.: map '", fullpath, "' aangemaakt")
         }
         
         # create file(s)
@@ -445,7 +515,10 @@ project_add <- function(board = read_secret("trello.default.board"),
             'subtitle: ""',
             'subtitle2: ""',
             'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
-            'date: "" # vervang evt. door certestyle::rmarkdown_date()',
+            ifelse(filetype == ".qmd",
+                   'date: "`r Sys.Date()`" # moet in YYYY-MM-DD',
+                   'date: "`r certestyle::rmarkdown_date()`"'),
+            ifelse(filetype == ".qmd", 'date-format: "D MMMM YYYY" # zie Quarto website', NA_character_),
             'identifier: "`r certeprojects::project_identifier()`"',
             "toc: true",
             "toc_depth: 2",
@@ -469,9 +542,7 @@ project_add <- function(board = read_secret("trello.default.board"),
             'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
             'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
             "editor: visual",
-            ifelse(filetype == ".qmd", "crossref:", NA_character_),
-            ifelse(filetype == ".qmd", '  fig-prefix: "figuur"', NA_character_),
-            ifelse(filetype == ".qmd", '  tbl-prefix: "tabel"', NA_character_),
+            ifelse(filetype == ".qmd", 'lang: "nl"', NA_character_),
             "---",
             "")
           if (filetype == ".Rmd") {
@@ -542,11 +613,11 @@ project_add <- function(board = read_secret("trello.default.board"),
         writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
                    con = file.path(filename))
         
-        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "Writing R files", ""))
+        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden schrijven", ""))
         Sys.sleep(0.1)
       })
       
-      message("Project p", trello_card_id, " created.")
+      message("Project p", trello_card_id, " aangemaakt.")
       
       if (isTRUE(input$rstudio_projectfile)) {
         # create project and open it
@@ -1053,3 +1124,9 @@ img_trello <- function() {
       "AgICAgICAgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgICAgICAgICAgICAgIDwvZz4KICAgICAgICAgICAgICAgICAgICA8L2c+CiAgIC",
       "AgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgIDwvZz4KICAgICAgICA8L2c+CiAgICA8L2c+Cjwvc3ZnPg=="))
 }
+
+img_planner <- function() {
+  concat(
+    c("data:image/png;base64,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"
+    ))
+    }

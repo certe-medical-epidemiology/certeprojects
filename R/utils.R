@@ -91,3 +91,7 @@ full_path_to_currently_sourced_script <- function() {
   }
   out
 }
+
+get_current_user <- function() {
+  unname(Sys.info()["user"])
+}

@@ -230,7 +230,7 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
   # furst argument in project_get_file is case-insensitive
   path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", card_number = card_number)
   if (is.na(path)) {
-    stop(paste0("No .R or .Rmd files found for p", card_number))
+    stop(paste0("No syntax files found for p", card_number))
   } else {
     invisible(navigateToFile(path))
   }

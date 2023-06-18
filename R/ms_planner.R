@@ -29,35 +29,6 @@
 #' @importFrom AzureGraph create_graph_login
 #' @importFrom httr POST PATCH add_headers stop_for_status
 #' @export
-#' @examples 
-#' \dontrun{
-#' 
-#' planner_upload("myfile.docx", channel = "My Channel")
-#' planner_upload("myfile.docx", "my channel/my folder/test.docx")
-#' 
-#' # also supports data frames, they will be saved locally in a temp folder
-#' planner_upload(mtcars, channel = "My Channel")
-#' mtcars |> 
-#'   planner_upload(channel = "My Channel")
-#'   
-#'   
-#' # integrates with department projects:
-#' 
-#' # upload "myfile.docx" from the project folder of p123 to "My Channel":
-#' planner_upload("myfile.docx", channel = "My Channel", card_number = 123)
-#' # download "myfile.docx" from "My Channel" to the project folder of p123:
-#' planner_download("myfile.docx", channel = "My Channel", card_number = 123)
-#' planner_download("mychannel/myfile.docx", card_number = 123)
-#' 
-#' # direct import from Teams requires the 'certetoolbox' package
-#' x <- planner_import("mychannel/myfile.docx")
-#' x <- planner_import("mychannel/myfile.docx", card_number = 123)
-#' x <- planner_import("myfile.docx", channel = "My Channel", card_number = 123)
-#' 
-#' # open a file in Excel Online
-#' planner_open("test.xlsx", "My Channel")
-#' planner_open("my channel/test.xlsx") # shorter version, tries to find channel
-#' }
 planner_connect <- function(team_name = read_secret("team.name"), plan_name = read_secret("planner.name"), ...) {
   if (is.null(pkg_env$m365_getplan)) {
     # not yet connected to Planner in Microsoft 365, so set it up
@@ -83,6 +54,12 @@ planner_bucket_create <- function(bucket_name, account = planner_connect()) {
                                   planId = account$properties$id,
                                   orderHint = " !"))
   stop_for_status(request_add, task = paste("add bucket", bucket_name))
+}
+
+#' @rdname planner
+#' @export
+planner_tasks_list <- function(account = planner_connect()) {
+  account$list_tasks()
 }
 
 #' @rdname planner

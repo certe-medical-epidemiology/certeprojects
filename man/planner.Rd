@@ -4,6 +4,7 @@
 \alias{planner}
 \alias{planner_connect}
 \alias{planner_bucket_create}
+\alias{planner_tasks_list}
 \alias{planner_task_create}
 \alias{planner_task_update}
 \alias{planner_task_request_validation}
@@ -18,6 +19,8 @@ planner_connect(
 )
 
 planner_bucket_create(bucket_name, account = planner_connect())
+
+planner_tasks_list(account = planner_connect())
 
 planner_task_create(
   title,
@@ -104,34 +107,4 @@ planner_user_id(
 }
 \description{
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.
-}
-\examples{
-\dontrun{
-
-planner_upload("myfile.docx", channel = "My Channel")
-planner_upload("myfile.docx", "my channel/my folder/test.docx")
-
-# also supports data frames, they will be saved locally in a temp folder
-planner_upload(mtcars, channel = "My Channel")
-mtcars |> 
-  planner_upload(channel = "My Channel")
-  
-  
-# integrates with department projects:
-
-# upload "myfile.docx" from the project folder of p123 to "My Channel":
-planner_upload("myfile.docx", channel = "My Channel", card_number = 123)
-# download "myfile.docx" from "My Channel" to the project folder of p123:
-planner_download("myfile.docx", channel = "My Channel", card_number = 123)
-planner_download("mychannel/myfile.docx", card_number = 123)
-
-# direct import from Teams requires the 'certetoolbox' package
-x <- planner_import("mychannel/myfile.docx")
-x <- planner_import("mychannel/myfile.docx", card_number = 123)
-x <- planner_import("myfile.docx", channel = "My Channel", card_number = 123)
-
-# open a file in Excel Online
-planner_open("test.xlsx", "My Channel")
-planner_open("my channel/test.xlsx") # shorter version, tries to find channel
-}
 }

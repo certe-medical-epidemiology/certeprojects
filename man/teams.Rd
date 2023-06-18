@@ -15,7 +15,7 @@
 \alias{teams_webhooks}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
-teams_connect(team_name = read_secret("teams.name"), ...)
+teams_connect(team_name = read_secret("team.name"), ...)
 
 teams_name(account = teams_connect())
 

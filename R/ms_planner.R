@@ -21,6 +21,7 @@
 #'
 #' These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `planner_*()` functions allow to work with this connection.
 #' @param team_name name of the team
+#' @param plan_name name of the plan of the team
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()].
 #' @rdname planner
@@ -57,35 +58,51 @@
 #' planner_open("test.xlsx", "My Channel")
 #' planner_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-planner_connect <- function(team_name = read_secret("teams.name"), plan_name = read_secret("planner.name"), ...) {
+planner_connect <- function(team_name = read_secret("team.name"), plan_name = read_secret("planner.name"), ...) {
   if (is.null(pkg_env$m365_getplan)) {
     # not yet connected to Planner in Microsoft 365, so set it up
-    pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
-      get_group(name = team_name)$
-      get_plan(plan_title = plan_name)
+    group <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
+      get_group(name = team_name)
+    pkg_env$group_id <- group$properties$id
+    pkg_env$m365_getplan <- group$get_plan(plan_title = plan_name)
   }
   # this will auto-renew authorisation when due
   return(invisible(pkg_env$m365_getplan))
 }
 
 #' @rdname planner
+#' @param bucket_name name of the bucket
 #' @export
 planner_bucket_create <- function(bucket_name, account = planner_connect()) {
-  
+  request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/buckets",
+                      encode = "json",
+                      config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                                 account$token$credentials$access_token),
+                                           `Content-type` = "application/json"),
+                      body = list(name = bucket_name,
+                                  planId = account$properties$id,
+                                  orderHint = " !"))
+  stop_for_status(request_add, task = paste("add bucket", bucket_name))
 }
 
 #' @rdname planner
-#' @param title,descr,due,assigned properties of the new task
+#' @param title title of the task
+#' @param descr a description for the task
+#' @param duedate a date to use a due date, use `FALSE` to remove it
+#' @param requested_by name of the person who requested the task
+#' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
+#' @param checklist_items character vector of checklist items
+#' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
+#' @param categories names of categories to add
 #' @export
 planner_task_create <- function(title,
                                 descr = NULL,
                                 duedate = NULL,
                                 requested_by = NULL,
-                                member = NULL,
-                                prio = read_secret("planner.default.priority"),
+                                priority = read_secret("planner.default.priority"),
                                 checklist_items = NULL,
-                                checklist_name = read_secret("planner.default.checklist"),
-                                comments = NULL,
+                                categories = NULL,
+                                # comments = NULL,
                                 assigned = NULL,
                                 bucket_name = read_secret("planner.default.bucket"),
                                 account = planner_connect()) {
@@ -96,30 +113,42 @@ planner_task_create <- function(title,
                planId = account$properties$id,
                bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id,
                startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
+  
   if (!is.null(duedate)) {
-    body <- c(body, dueDateTime = paste0(format(duedate), "T00:00:00Z"))
+    if (isFALSE(duedate)) {
+      body <- c(body, list(dueDateTime = NULL))
+    } else {
+      if (!inherits(duedate, c("Date", "POSIXct"))) {
+        stop("duedate is not a valid date")
+      }
+      body <- c(body, dueDateTime = paste0(format(duedate, "%Y-%m-%d"), "T00:00:00Z"))
+    }
   }
   
-  request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/tasks",
-                      encode = "json",
-                      config = add_headers(Authorization = paste(account$token$credentials$token_type,
-                                                                 account$token$credentials$access_token)),
-                      body = body)
-  stop_for_status(request_add, task = paste("add task", title))
+  if (!is.null(priority)) {
+    body <- c(body, list(priority = planner_priority_to_int(priority)))
+  }
   
+  # run request:
+  body <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
+  request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/tasks",
+                          encode = "raw",
+                          config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                                     account$token$credentials$access_token),
+                                               `Content-type` = "application/json"),
+                          body = body)
+  stop_for_status(request_add, task = paste("add task", title, ".\nBody of request:\n\n", body))
   
   # # just like Trello, some propertiescan only be added as update, https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
-  # if (!is.null(descr)) {
-  #   body <- c(body, previewType = "description")
-  # }
-  
+  if (!is.null(descr) || !is.null(categories) || !is.null(checklist_items) || !is.null(assigned)) {
+    planner_task_update(title, descr = descr, checklist_items = checklist_items, assigned = assigned, categories = categories)
+  }
 }
 
 #' @rdname planner
 #' @param old_title title of the task to update
-#' @param duedate a date to use a due date. Use `FALSE` to remove it.
-#' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
+#' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
 #' @importFrom jsonlite toJSON
 #' @export
 planner_task_update <- function(old_title,
@@ -131,7 +160,9 @@ planner_task_update <- function(old_title,
                                 assigned_keep = FALSE,
                                 categories = NULL,
                                 categories_keep = FALSE,
-                                comments = NULL,
+                                checklist_items = NULL,
+                                priority = NULL,
+                                # TODO comments = NULL, # these only work with Group.ReadWrite.All
                                 account = planner_connect()) {
   # does not work with Microsoft365R yet, so we do it manually
   task <- planner_task_object(task_title = old_title)
@@ -201,14 +232,13 @@ planner_task_update <- function(old_title,
     body <- c(body, list(assignments = apply_assigned))
   }
   
-  if (!is.null(comments)) {
-    # comments something with conversationThreadId?
+  if (!is.null(priority)) {
+    body <- c(body, list(priority = planner_priority_to_int(priority)))
   }
   
   if (length(body) > 0) {
     # in httr, NULLs will be removed, so we follow this solution: https://github.com/r-lib/httr/issues/561#issuecomment-451278328
     body <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
-    print(body)
     # run request:
     request_update <- PATCH(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id),
                             encode = "raw",
@@ -229,7 +259,7 @@ planner_task_update <- function(old_title,
   # checklist, description, previewType, references
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   
-  if (is.null(descr)) {
+  if (is.null(descr) && is.null(checklist_items)) {
     return(invisible())
   }
   
@@ -238,6 +268,21 @@ planner_task_update <- function(old_title,
     body <- c(body, description = descr, previewType = "description")
   } else {
     body <- c(body, previewType = "automatic")
+  }
+  
+  if (!is.null(checklist_items)) {
+    check_items <- list()
+    for (check_item in checklist_items) {
+      check_items <- c(check_items, 
+                       stats::setNames(list(list(`@odata.type` = "microsoft.graph.plannerChecklistItem",
+                                                 title = check_item,
+                                                 isChecked = FALSE)),
+                                       generate_guids(1)))
+    }
+    body <- c(body, list(checklist = check_items))
+    if (body$previewType == "automatic") {
+      body$previewType <- "checklist"
+    }
   }
   
   # use a GET to get the correct etag, see https://stackoverflow.com/a/43380424/4575331
@@ -266,10 +311,11 @@ planner_task_request_validation <- function(title,
                                             account = planner_connect()) {
   task <- planner_task_object(title)
   planner_task_update(title,
-                      categories = category_text,
-                      comments = paste0("Validatie aangevraagd\n",
-                                        "ID taak: ",  task$properties$id,
-                                        "ID bucket: ", task$properties$bucketId))
+                      categories = category_text)
+                      #,
+                      # comments = paste0("Validatie aangevraagd\n",
+                                        # "ID taak: ",  task$properties$id,
+                                        # "ID bucket: ", task$properties$bucketId))
 }
 
 #' @rdname planner
@@ -278,13 +324,11 @@ planner_task_validate <- function(title,
                                   category_text = read_secret("planner.label.authorised"),
                                   account = planner_connect()) {
   task <- planner_task_object(title)
-  
-  # TODO validation part
   planner_task_update(title,
-                      categories = category_text,
-                      comments = paste0("Geautomatiseeerd gevalideerd\n",
-                                        "ID taak: ",  task$properties$id,
-                                        "ID bucket: ", task$properties$bucketId))
+                      categories = category_text) #,
+                      # comments = paste0("Geautomatiseeerd gevalideerd\n",
+                      #                   "ID taak: ",  task$properties$id,
+                      #                   "ID bucket: ", task$properties$bucketId))
 }
 
 #' @rdname planner
@@ -292,7 +336,7 @@ planner_task_validate <- function(title,
 #' @importFrom AzureGraph create_graph_login
 #' @importFrom dplyr bind_rows filter pull
 #' @export
-planner_user_id <- function(user, team_name = read_secret("teams.name"), account = planner_connect()) {
+planner_user_id <- function(user, team_name = read_secret("team.name"), account = planner_connect()) {
   members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
   df <- lapply(members, function(m) {
     data.frame(certe_login = gsub("@certe.nl", "", m$properties$userPrincipalName),
@@ -336,4 +380,40 @@ planner_task_object <- function(task_title, task_id = NULL, account = planner_co
 get_internal_category <- function(category_name, account = planner_connect()) {
   categories <- unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
   names(which(categories == category_name))
+}
+
+planner_priority_to_int <- function(priority) {
+  # from https://learn.microsoft.com/nl-nl/graph/api/plannertask-update?view=graph-rest-1.0&tabs=http:
+  # Planner sets the value 1 for "urgent", 3 for "important", 5 for "medium", and 9 for "low".
+  # 0 has the highest priority and 10 has the lowest priority
+  if (isFALSE(priority)) {
+    return(5) # default setting
+  } else if (is.numeric(priority) && priority >= 0 && priority <= 10) {
+    return(priority)
+  } else {
+    priority <- trimws(tolower(priority))
+    if (priority %in% c("urgent", "dringend")) {
+      return(1)
+    } else if (priority %in% c("important", "belangrijk")) {
+      return(3)
+    } else if (priority %in% c("medium", "gemiddeld" )) {
+      return(5)
+    } else if (priority %in% c("low", "laag")) {
+      return(9)
+    } else {
+      stop("invalid priority: ", priority, call. = FALSE)
+    }
+  }
+}
+
+generate_guids <- function(length) {
+  vapply(FUN.VALUE = character(1), seq_len(length), function(x) {
+    out <- paste0(sample(c(0:9, letters[1:6]), 30, replace = TRUE), collapse = "")
+    paste0(substr(out, 1, 8), "-",
+           substr(out, 9, 12), "-4",
+           substr(out, 13, 15), "-",
+           sample(c("8", "9", "a", "b"), 1),
+           substr(out, 16, 18), "-",
+           substr(out, 19, 30))
+  })
 }

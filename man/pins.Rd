@@ -22,7 +22,7 @@ import_pin(name, version = NULL, hash = NULL, board = board_certeprojects())
 remove_pin(name, version = NULL, board = board_certeprojects())
 
 board_certeprojects(
-  site_name = read_secret("teams.name"),
+  site_name = read_secret("team.name"),
   delete_by_item = TRUE,
   ...
 )

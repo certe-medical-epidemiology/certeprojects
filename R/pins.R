@@ -97,7 +97,7 @@ remove_pin <- function(name,
 #' @rdname pins
 #' @name pins
 #' @export
-board_certeprojects <- function(site_name = read_secret("teams.name"),
+board_certeprojects <- function(site_name = read_secret("team.name"),
                                 delete_by_item = TRUE,
                                 ...) {
   if (is.null(pkg_env$microsoft365_pins)) {

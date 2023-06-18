@@ -57,7 +57,7 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_connect <- function(team_name = read_secret("teams.name"), ...) {
+teams_connect <- function(team_name = read_secret("team.name"), ...) {
   if (is.null(pkg_env$m365_getteam)) {
     # not yet connected to Teams in Microsoft 365, so set it up
     pkg_env$m365_getteam <- create_graph_login(token = get_microsoft365_token(scope = "teams", ...))$

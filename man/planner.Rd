@@ -12,7 +12,7 @@
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_connect(
-  team_name = read_secret("teams.name"),
+  team_name = read_secret("team.name"),
   plan_name = read_secret("planner.name"),
   ...
 )
@@ -24,11 +24,9 @@ planner_task_create(
   descr = NULL,
   duedate = NULL,
   requested_by = NULL,
-  member = NULL,
-  prio = read_secret("planner.default.priority"),
+  priority = read_secret("planner.default.priority"),
   checklist_items = NULL,
-  checklist_name = read_secret("planner.default.checklist"),
-  comments = NULL,
+  categories = NULL,
   assigned = NULL,
   bucket_name = read_secret("planner.default.bucket"),
   account = planner_connect()
@@ -44,7 +42,8 @@ planner_task_update(
   assigned_keep = FALSE,
   categories = NULL,
   categories_keep = FALSE,
-  comments = NULL,
+  checklist_items = NULL,
+  priority = NULL,
   account = planner_connect()
 )
 
@@ -62,20 +61,42 @@ planner_task_validate(
 
 planner_user_id(
   user,
-  team_name = read_secret("teams.name"),
+  team_name = read_secret("team.name"),
   account = planner_connect()
 )
 }
 \arguments{
 \item{team_name}{name of the team}
 
+\item{plan_name}{name of the plan of the team}
+
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
+
+\item{bucket_name}{name of the bucket}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}.}
 
-\item{title, descr, due, assigned}{properties of the new task}
+\item{title}{title of the task}
+
+\item{descr}{a description for the task}
+
+\item{duedate}{a date to use a due date, use \code{FALSE} to remove it}
+
+\item{requested_by}{name of the person who requested the task}
+
+\item{priority}{a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: \code{"urgent"} or \code{"dringend"} for 1, \code{"important"} or \code{"belangrijk"} for 3, \code{"medium"} or \code{"gemiddeld"} or \code{FALSE} for 5, \code{"low"} or \code{"laag"} for 9. Priorities cannot be removed - the default setting is 5.}
+
+\item{checklist_items}{character vector of checklist items}
+
+\item{categories}{names of categories to add}
+
+\item{assigned}{names of members within the plan. Use \code{FALSE} to remove all assigned members.}
 
 \item{old_title}{title of the task to update}
+
+\item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
+
+\item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
 
 \item{category_text}{text of the category to use}
 

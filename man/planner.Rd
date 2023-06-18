@@ -7,9 +7,10 @@
 \alias{planner_tasks_list}
 \alias{planner_task_create}
 \alias{planner_task_update}
+\alias{planner_task_id}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
-\alias{planner_user_id}
+\alias{planner_user_property}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_connect(
@@ -50,6 +51,8 @@ planner_task_update(
   account = planner_connect()
 )
 
+planner_task_id(old_title, account = planner_connect())
+
 planner_task_request_validation(
   title,
   category_text = read_secret("planner.label.authorise"),
@@ -62,10 +65,11 @@ planner_task_validate(
   account = planner_connect()
 )
 
-planner_user_id(
+planner_user_property(
   user,
   team_name = read_secret("team.name"),
-  account = planner_connect()
+  account = planner_connect(),
+  property = "id"
 )
 }
 \arguments{
@@ -81,7 +85,7 @@ planner_user_id(
 
 \item{title}{title of the task}
 
-\item{descr}{a description for the task}
+\item{descr}{a description for the task. A vector will be add as one text separated by white lines.}
 
 \item{duedate}{a date to use a due date, use \code{FALSE} to remove it}
 
@@ -104,6 +108,8 @@ planner_user_id(
 \item{category_text}{text of the category to use}
 
 \item{user}{a user name, mail adress, or Certe login name}
+
+\item{property}{property to return, can be "id", "name" or "mail"}
 }
 \description{
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.

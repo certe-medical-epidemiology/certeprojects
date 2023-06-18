@@ -18,6 +18,9 @@
 # ===================================================================== #
 
 on:
+  pull_request:
+    # run in each PR in this repo
+    branches: '**'
   push:
     # only run when pushed to the 'main' branch
     branches: 'main' 

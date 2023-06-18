@@ -32,10 +32,9 @@
 planner_connect <- function(team_name = read_secret("team.name"), plan_name = read_secret("planner.name"), ...) {
   if (is.null(pkg_env$m365_getplan)) {
     # not yet connected to Planner in Microsoft 365, so set it up
-    group <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
-      get_group(name = team_name)
-    pkg_env$group_id <- group$properties$id
-    pkg_env$m365_getplan <- group$get_plan(plan_title = plan_name)
+    pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
+      get_group(name = team_name)$
+      get_plan(plan_title = plan_name)
   }
   # this will auto-renew authorisation when due
   return(invisible(pkg_env$m365_getplan))
@@ -64,7 +63,7 @@ planner_tasks_list <- function(account = planner_connect()) {
 
 #' @rdname planner
 #' @param title title of the task
-#' @param descr a description for the task
+#' @param descr a description for the task. A vector will be add as one text separated by white lines.
 #' @param duedate a date to use a due date, use `FALSE` to remove it
 #' @param requested_by name of the person who requested the task
 #' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
@@ -109,11 +108,11 @@ planner_task_create <- function(title,
   # run request:
   body <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
   request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/tasks",
-                          encode = "raw",
-                          config = add_headers(Authorization = paste(account$token$credentials$token_type,
-                                                                     account$token$credentials$access_token),
-                                               `Content-type` = "application/json"),
-                          body = body)
+                      encode = "raw",
+                      config = add_headers(Authorization = paste(account$token$credentials$token_type,
+                                                                 account$token$credentials$access_token),
+                                           `Content-type` = "application/json"),
+                      body = body)
   stop_for_status(request_add, task = paste("add task", title, ".\nBody of request:\n\n", body))
   
   # # just like Trello, some propertiescan only be added as update, https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
@@ -152,22 +151,26 @@ planner_task_update <- function(old_title,
   if (!is.null(title)) {
     # new title
     body <- c(body, title = title)
+    # descr <- c(descr, create_log("Changed title to '", title, "'"))
   }
   
   if (!is.null(duedate)) {
     if (isFALSE(duedate)) {
       body <- c(body, list(dueDateTime = NULL))
+      # descr <- c(descr, create_log("Removed due date"))
     } else {
       if (!inherits(duedate, c("Date", "POSIXct"))) {
         stop("duedate is not a valid date")
       }
       body <- c(body, dueDateTime = paste0(format(duedate, "%Y-%m-%d"), "T00:00:00Z"))
+      # descr <- c(descr, create_log("Changed due date to ", format(duedate, "%a %d %b %Y")))
     }
   }
   
   if (!is.null(bucket_name)) {
     # new bucket
     body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id)
+    # descr <- c(descr, create_log("Moved to bucket '", bucket_name, "'"))
   }
   
   if (!is.null(categories)) {
@@ -176,6 +179,7 @@ planner_task_update <- function(old_title,
     categories_current <- names(task$properties$appliedCategories)
     # get internal name of given categories
     categories_new <- get_internal_category(categories)
+    # descr <- c(descr, create_log("Added category: ", paste0("'", sort(categories), "'", collapse = " and ")))
     for (category in unique(c(categories_new, categories_current))) {
       if (category %in% categories_new) {
         # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerappliedcategories
@@ -186,6 +190,7 @@ planner_task_update <- function(old_title,
       }
     }
     body <- c(body, list(appliedCategories = apply_categories))
+    
   }
   
   if (!is.null(assigned)) {
@@ -193,7 +198,8 @@ planner_task_update <- function(old_title,
     # these are all existing assigned
     assigned_current <- names(task$properties$assignments)
     # get internal name of given assigned
-    assigned_new <- planner_user_id(assigned)
+    assigned_new <- planner_user_property(assigned)
+    # descr <- c(descr, create_log("Assigned user(s) ", paste0(sort(planner_user_property(assigned, property = "name")), collapse = " and ")))
     for (assign in unique(c(assigned_new, assigned_current))) {
       if (assign %in% assigned_new) {
         # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerassignments?view=graph-rest-1.0
@@ -211,6 +217,7 @@ planner_task_update <- function(old_title,
   
   if (!is.null(priority)) {
     body <- c(body, list(priority = planner_priority_to_int(priority)))
+    # descr <- c(descr, create_log("Changed priority to '", priority, "' (", planner_priority_to_int(priority), ")"))
   }
   
   if (length(body) > 0) {
@@ -242,7 +249,7 @@ planner_task_update <- function(old_title,
   
   body <- list()
   if (!is.null(descr)) {
-    body <- c(body, description = descr, previewType = "description")
+    body <- c(body, description = paste(descr, collapse = "\n\n"), previewType = "description")
   } else {
     body <- c(body, previewType = "automatic")
   }
@@ -280,6 +287,16 @@ planner_task_update <- function(old_title,
   stop_for_status(request_updatedetails, task = paste("update details of task", old_title, ".\nBody of request:\n\n", body))
 }
 
+
+#' @rdname planner
+#' @export
+planner_task_id <- function(old_title, account = planner_connect()) {
+  task <- planner_task_object(task_title = old_title)
+  date <- format(as.Date(task$properties$createdDateTime), "%y-%m")
+  id_index <- match(strsplit(task$properties$id, "")[[1]], c(0:9, letters[1:26], LETTERS[1:26]))
+  paste0(substr(date, 2, 2), substr(date, 5, 5), "-", substr(id_index[1], 1, 1), substr(id_index[2], 1, 1), substr(id_index[3], 1, 1))
+}
+
 #' @rdname planner
 #' @param category_text text of the category to use
 #' @export
@@ -289,10 +306,10 @@ planner_task_request_validation <- function(title,
   task <- planner_task_object(title)
   planner_task_update(title,
                       categories = category_text)
-                      #,
-                      # comments = paste0("Validatie aangevraagd\n",
-                                        # "ID taak: ",  task$properties$id,
-                                        # "ID bucket: ", task$properties$bucketId))
+  #,
+  # comments = paste0("Validatie aangevraagd\n",
+  # "ID taak: ",  task$properties$id,
+  # "ID bucket: ", task$properties$bucketId))
 }
 
 #' @rdname planner
@@ -303,17 +320,18 @@ planner_task_validate <- function(title,
   task <- planner_task_object(title)
   planner_task_update(title,
                       categories = category_text) #,
-                      # comments = paste0("Geautomatiseeerd gevalideerd\n",
-                      #                   "ID taak: ",  task$properties$id,
-                      #                   "ID bucket: ", task$properties$bucketId))
+  # comments = paste0("Geautomatiseeerd gevalideerd\n",
+  #                   "ID taak: ",  task$properties$id,
+  #                   "ID bucket: ", task$properties$bucketId))
 }
 
 #' @rdname planner
 #' @param user a user name, mail adress, or Certe login name
+#' @param property property to return, can be "id", "name" or "mail"
 #' @importFrom AzureGraph create_graph_login
 #' @importFrom dplyr bind_rows filter pull
 #' @export
-planner_user_id <- function(user, team_name = read_secret("team.name"), account = planner_connect()) {
+planner_user_property <- function(user, team_name = read_secret("team.name"), account = planner_connect(), property = "id") {
   members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
   df <- lapply(members, function(m) {
     data.frame(certe_login = gsub("@certe.nl", "", m$properties$userPrincipalName),
@@ -324,7 +342,7 @@ planner_user_id <- function(user, team_name = read_secret("team.name"), account 
     bind_rows()
   users <- character(0)
   for (usr in user) {
-    users <- c(users, df$id[which(df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
+    users <- c(users, df[[property]][which(df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
   }
   users
 }
@@ -393,4 +411,8 @@ generate_guids <- function(length) {
            substr(out, 16, 18), "-",
            substr(out, 19, 30))
   })
+}
+
+create_log <- function(...) {
+  paste0(format(Sys.time(), "%Y-%m-%d %H:%M"), ", ", get_current_user(), "/ ", paste0(c(...), collapse = ""))
 }

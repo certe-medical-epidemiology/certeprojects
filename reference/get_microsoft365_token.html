@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.8.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.9.0</span>
       </span>
     </div>
 
@@ -67,7 +67,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Retrieve Microsoft 365 Access Token</h1>
-    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/get_microsoft365_token.R" class="external-link"><code>R/get_microsoft365_token.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/ms_token.R" class="external-link"><code>R/ms_token.R</code></a></small>
     <div class="hidden name"><code>get_microsoft365_token.Rd</code></div>
     </div>
 
@@ -77,35 +77,35 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_microsoft365_token</span><span class="op">(</span></span>
-<span>  shared_mbox_email <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.auto_from"</span><span class="op">)</span>,</span>
-<span>  tenant <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.tenant"</span><span class="op">)</span>,</span>
-<span>  app_id <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.app_id"</span><span class="op">)</span>,</span>
-<span>  auth_type <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.auth_type"</span><span class="op">)</span>,</span>
-<span>  only_mail <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">scope</span>,</span>
+<span>  tenant <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"azure.tenant"</span><span class="op">)</span>,</span>
+<span>  app_id <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"azure.app_id"</span><span class="op">)</span>,</span>
+<span>  auth_type <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"azure.auth_type"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span>,</span>
 <span>  error_on_fail <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
-    <dl><dt>shared_mbox_email</dt>
-<dd><p>email address of the shared mailbox to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_business_outlook()</a></code></p></dd>
+    <dl><dt>scope</dt>
+<dd><p>this must be "outlook", "teams", or "planner", and will set the right API permission for each</p></dd>
 
 
 <dt>tenant</dt>
-<dd><p>the tenant to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_business_outlook()</a></code></p></dd>
+<dd><p>the tenant to use, passed on to <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code></p></dd>
 
 
 <dt>app_id</dt>
-<dd><p>the Azure app id to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_business_outlook()</a></code></p></dd>
+<dd><p>the Azure app id to use, passed on to <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code></p></dd>
 
 
 <dt>auth_type</dt>
-<dd><p>the authentication method to use for <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_business_outlook()</a></code></p></dd>
+<dd><p>the authentication method to use, passed on to <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code></p></dd>
 
 
-<dt>only_mail</dt>
-<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether only <a href="https://docs.microsoft.com/en-us/graph/permissions-reference" class="external-link">scopes</a> for mail should be used</p></dd>
+<dt>...</dt>
+<dd><p>other arguments passed on to <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code></p></dd>
 
 
 <dt>error_on_fail</dt>

@@ -5,7 +5,7 @@
 \alias{export_pin}
 \alias{import_pin}
 \alias{remove_pin}
-\alias{board_certeprojects}
+\alias{board_sharepoint}
 \title{Work with Pins}
 \usage{
 export_pin(
@@ -14,15 +14,15 @@ export_pin(
   title = NULL,
   type = NULL,
   description = NULL,
-  board = board_certeprojects()
+  board = board_sharepoint()
 )
 
-import_pin(name, version = NULL, hash = NULL, board = board_certeprojects())
+import_pin(name, version = NULL, hash = NULL, board = board_sharepoint())
 
-remove_pin(name, version = NULL, board = board_certeprojects())
+remove_pin(name, version = NULL, board = board_sharepoint())
 
-board_certeprojects(
-  site_name = read_secret("team.name"),
+board_sharepoint(
+  team_name = read_secret("team.name"),
   delete_by_item = TRUE,
   ...
 )
@@ -54,7 +54,7 @@ find out which versions are available and when they were created.}
 you expect. You can find the hash of an existing pin by looking for
 \code{pin_hash} in \code{\link[pins:pin_meta]{pin_meta()}}.}
 
-\item{site_name}{Name of the SharePoint site}
+\item{team_name}{Name of the SharePoint site}
 
 \item{delete_by_item}{Whether to handle folder deletions on an item-by-item
 basis, rather than deleting the entire folder at once. You may need to set
@@ -68,11 +68,11 @@ folders.}
 These functions can be used to work with \href{https://pins.rstudio.com}{pins}, developed by RStudio.
 }
 \details{
-The board will be automatically retrieved based on the Microsoft 365 account (by running \code{\link[=board_certeprojects]{board_certeprojects()}}), leading to the SharePoints folder "pins" within the Microsoft 365 account.
+The board will be automatically retrieved based on the Microsoft 365 account (by running \code{\link[=board_sharepoint]{board_sharepoint()}}), leading to the SharePoints folder "pins" within the Microsoft 365 account.
 
-For Pins functions of the \code{pins} package, use \code{\link[=board_certeprojects]{board_certeprojects()}} as board, e.g.:
+For Pins functions of the \code{pins} package, use \code{\link[=board_sharepoint]{board_sharepoint()}} as board, e.g.:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{  pin_list(board_certeprojects())
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{  pin_list(board_sharepoint())
 }\if{html}{\out{</div>}}
 
 The following \code{pins} functions are re-exported by this package: \code{\link[=pin_list]{pin_list()}}, \code{\link[=pin_meta]{pin_meta()}}, and \code{\link[=pin_versions]{pin_versions()}}.

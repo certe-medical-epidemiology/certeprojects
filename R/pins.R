@@ -23,12 +23,12 @@
 #' @inheritParams pins::pin_write
 #' @importFrom pins pin_write
 #' @details
-#' The board will be automatically retrieved based on the Microsoft 365 account (by running [board_certeprojects()]), leading to the SharePoints folder "pins" within the Microsoft 365 account.
+#' The board will be automatically retrieved based on the Microsoft 365 account (by running [board_sharepoint()]), leading to the SharePoints folder "pins" within the Microsoft 365 account.
 #' 
-#' For Pins functions of the `pins` package, use [board_certeprojects()] as board, e.g.:
+#' For Pins functions of the `pins` package, use [board_sharepoint()] as board, e.g.:
 #' 
 #' ```r
-#'   pin_list(board_certeprojects())
+#'   pin_list(board_sharepoint())
 #' ```
 #' 
 #' The following `pins` functions are re-exported by this package: [pin_list()], [pin_meta()], and [pin_versions()].
@@ -40,7 +40,7 @@ export_pin <- function(x,
                        title = NULL,
                        type = NULL,
                        description = NULL,
-                       board = board_certeprojects()) {
+                       board = board_sharepoint()) {
   nm <- deparse(substitute(x))
   if (is.null(name) && nm != ".") {
     name <- nm
@@ -63,7 +63,7 @@ export_pin <- function(x,
 import_pin <- function(name,
                        version = NULL,
                        hash = NULL,
-                       board = board_certeprojects()) {
+                       board = board_sharepoint()) {
   pin_read(board = board,
            name = name,
            version = version,
@@ -78,7 +78,7 @@ import_pin <- function(name,
 #' @export
 remove_pin <- function(name,
                        version = NULL,
-                       board = board_certeprojects()) {
+                       board = board_sharepoint()) {
   if (is.null(version)) {
     pin_delete(board = board,
                names = name)
@@ -89,7 +89,7 @@ remove_pin <- function(name,
   }
 }
 
-#' @param site_name Name of the SharePoint site
+#' @param team_name Name of the SharePoint site
 #' @inheritParams pins::board_ms365
 #' @param ... Arguments passed on to [get_microsoft365_token()]
 #' @importFrom Microsoft365R get_sharepoint_site
@@ -97,12 +97,12 @@ remove_pin <- function(name,
 #' @rdname pins
 #' @name pins
 #' @export
-board_certeprojects <- function(site_name = read_secret("team.name"),
-                                delete_by_item = TRUE,
-                                ...) {
+board_sharepoint <- function(team_name = read_secret("team.name"),
+                             delete_by_item = TRUE,
+                             ...) {
   if (is.null(pkg_env$microsoft365_pins)) {
     # not yet connected to Teams in Microsoft 365, so set it up
-    sharepoint <- get_sharepoint_site(site_name = site_name, token = get_microsoft365_token("mail", ...))
+    sharepoint <- get_sharepoint_site(site_name = team_name, token = get_microsoft365_token("sharepoint", ...))
     drive <- sharepoint$get_drive()
     pkg_env$microsoft365_pins <- board_ms365(drive = drive,
                                              path = drive$get_item("pins"),

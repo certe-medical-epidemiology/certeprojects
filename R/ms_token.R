@@ -20,7 +20,7 @@
 #' Retrieve Microsoft 365 Access Token
 #' 
 #' This function uses retrieves an access token from the department's Microsoft 365 account.
-#' @param scope this must be "outlook", "teams", or "planner", and will set the right API permission for each
+#' @param scope this must be "outlook", "teams", "planner", or "sharepoint", and will set the right API permission for each
 #' @param tenant the tenant to use, passed on to [AzureGraph::create_graph_login()]
 #' @param app_id the Azure app id to use, passed on to [AzureGraph::create_graph_login()]
 #' @param auth_type the authentication method to use, passed on to [AzureGraph::create_graph_login()]
@@ -35,7 +35,7 @@ get_microsoft365_token <- function(scope,
                                    ...,
                                    error_on_fail = FALSE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scope_options <- c("mail", "outlook", "teams", "planner")
+  scope_options <- c("mail", "outlook", "teams", "planner", "sharepoint")
   scope <- tolower(scope)[1]
   if (scope == "mail") {
     scope <- "outlook"
@@ -70,6 +70,13 @@ get_microsoft365_token <- function(scope,
     scopes <- c("Group.Read.All",
                 "Tasks.Read.Shared",
                 "Tasks.ReadWrite",
+                "User.ReadWrite")
+    
+    # sharepoint ----
+  } else if (scope == "sharepoint") {
+    scopes <- c("Group.Read.All",
+                "Files.ReadWrite.All",
+                "Sites.ReadWrite.All",
                 "User.ReadWrite")
     
   } else {

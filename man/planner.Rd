@@ -9,7 +9,6 @@
 \alias{planner_categories_list}
 \alias{planner_task_create}
 \alias{planner_task_update}
-\alias{planner_task_id}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
 \alias{planner_user_property}
@@ -31,7 +30,7 @@ planner_categories_list(account = planner_connect())
 
 planner_task_create(
   title,
-  descr = NULL,
+  description = NULL,
   duedate = NULL,
   requested_by = NULL,
   priority = read_secret("planner.default.priority"),
@@ -46,7 +45,7 @@ planner_task_update(
   old_title,
   title = NULL,
   bucket_name = NULL,
-  descr = NULL,
+  description = NULL,
   duedate = NULL,
   assigned = NULL,
   assigned_keep = FALSE,
@@ -57,8 +56,6 @@ planner_task_update(
   attachment_urls = NULL,
   account = planner_connect()
 )
-
-planner_task_id(old_title, account = planner_connect())
 
 planner_task_request_validation(
   title,
@@ -95,7 +92,7 @@ planner_user_property(
 
 \item{title}{title of the task}
 
-\item{descr}{a description for the task. A vector will be add as one text separated by white lines.}
+\item{description}{a description for the task. A vector will be add as one text separated by white lines.}
 
 \item{duedate}{a date to use a due date, use \code{FALSE} to remove it}
 

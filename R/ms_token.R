@@ -92,7 +92,9 @@ get_microsoft365_token <- function(scope,
         conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
       }
       pkg_env[[scope]] <- conn$token
-      message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
+      if (interactive()) {
+        message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
+      }
     }, warning = function(w) {
       return(invisible())
     }, error = function(e, fail = error_on_fail) {

@@ -66,22 +66,7 @@ test_that("project properties work", {
                    paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM")))
 })
 
-test_that("teams legacy works", {
-  expect_warning(teams("test"))
-  expect_identical(suppressWarnings(teams("test")), "test")
-  expect_warning(teams("test", title = "Title", subtitle = "Subtitle"))
-  expect_identical(class(suppressWarnings(teams("test", title = "Title", subtitle = "Subtitle"))), "list")
-  expect_error(suppressWarnings(teams("test", title = "Title", subtitle = "Subtitle", images = "hello")))
-  expect_identical(class(question_mark_image()), "character")
-  expect_warning(teams("test", title = "Title", subtitle = "Subtitle",
-                       items = c(test = "abc",
-                                 "bcd"),
-                       buttons = c("Send mail" = "mailto:test@test.com",
-                                   "Open link" = "https://duckduckgo.com")))
-  expect_error(teams_webhooks())
-})
-
-test_that("teams legacy works", {
+test_that("scheduling works", {
   expect_message(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1))
   expect_equal(suppressMessages(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1)), 2)
 })

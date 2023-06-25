@@ -30,6 +30,25 @@
 #' @export
 #' @examples 
 #' \dontrun{
+#' # PROJECT-RELATED --------------------------------------------------------
+#' 
+#' # Project-related Teams function rely on existing Planner tasks.
+#' 
+#' # create a new project, which will be a folder in the Teams channel
+#' # for this, the task 'My Planner task' must already exist
+#' teams_new_project("My Planner task")
+#' 
+#' # the task 'My Planner task' will now contain the URL to the project
+#' 
+#' # upload a file there
+#' teams_upload_project_file("analysis.Rmd", "My Planner task")
+#' 
+#' # render R markdown or Quarto from and to the cloud
+#' teams_render_project_file("analysis.Rmd", "My Planner task")
+#' # this will put the output file in the same Teams folder as 'analysis.Rmd'
+#' 
+#' 
+#' # PROJECT-UNRELATED ------------------------------------------------------
 #' 
 #' teams_upload("myfile.docx", channel = "My Channel")
 #' teams_upload("myfile.docx", "my channel/my folder/test.docx")
@@ -86,62 +105,168 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
 
 #' @rdname teams
 #' @param task_title title of the Planner task
-#' @param projects a Teams folder object. This has to be an object as returned by [teams_projects_channel()].
+#' @param channel a Teams folder object. This has to be an object as returned by [teams_projects_channel()].
 #' @param planner a Microsoft 365 account for Planner. This has to be an object as returned by [planner_connect()].
+#' @details
+#' The [teams_new_project()] function:
+#' 1. Checks if there is a Planner task with the correct task title
+#' 2. Creates a new folder in Teams in the projects channel
+#' 3. Updates the task to contain the project folder URL as an attachment
+#' 
 #' @export
-teams_projects_new <- function(task_title, projects = teams_projects_channel(), planner = planner_connect()) {
+teams_new_project <- function(task_title, channel = teams_projects_channel(), planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_object(task_title = task_title, account = planner)
   task_title <- task$properties$title
   # create the folder
-  if (task_title %in% projects$list_files()$name) {
+  if (task_title %in% channel$list_files()$name) {
     message("Project folder already exists, skipping.")
   } else {
-    projects$create_folder(path = task_title)
+    channel$create_folder(path = task_title)
   }
   # add link to Planner task
-  link <- c(Projectmap = projects$get_item(task_title)$properties$webUrl)
+  link <- c(Projectmap = channel$get_item(task_title)$properties$webUrl)
   planner_task_update(old_title = task_title,
                       attachment_urls = link)
 }
 
 #' @rdname teams
 #' @export
-teams_projects_open <- function(task_title, projects = teams_projects_channel(), planner = planner_connect()) {
+teams_browse_project <- function(task_title, channel = teams_projects_channel(), planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_object(task_title = task_title, account = planner)
   task_title <- task$properties$title
   # open in the browser
-  projects$get_item(task_title)$open()
+  channel$get_item(task_title)$open()
+}
+
+#' @rdname teams
+#' @details
+#' The [teams_get_project_file()] function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use [source()], [rmarkdown::render()] or [quarto::quarto_render()] using the [teams_get_project_file()] function as input.
+#' @export
+teams_get_project_file <- function(file, task_title, channel = teams_projects_channel(), planner = planner_connect()) {
+  # validate that the task exists
+  task <- planner_task_object(task_title = task_title, account = planner)
+  task_title <- task$properties$title
+  # download to temporary file
+  file_local <- paste0(tempdir(), "/", basename(file))
+  file_teams <- channel$get_item(task_title)$get_item(file)
+  tryCatch(
+    file_teams$download(dest = file_local, overwrite = TRUE),
+    error = function(e) stop("Error while downloading file '", file, "' from '", task_title, ":\n", e$message))
+  if (file.exists(file_local)) {
+    # download succeeded - return the file
+    return(invisible(file_local))
+  } else {
+    return(NULL)
+  }
+}
+
+#' @rdname teams
+#' @param output_file path of the output file
+#' @param fun function to use for rendering. Can be e.g. [rmarkdown::render] or [quarto::quarto_render].
+#' @param ... arguments passed on to `fun`
+#' @details
+#' The [teams_render_project_file()] function allows to render a Teams file. It downloads the Teams file using [teams_get_project_file()], runs the rendering function set in `fun`, and uploads the resulting output file back to Teams using the same file name a `file`, but with the new file extension (such as pdf, html, or docx).
+#' @export
+teams_render_project_file <- function(file,
+                                      task_title,
+                                      output_file = NULL,
+                                      fun = rmarkdown::render,
+                                      ...,
+                                      channel = teams_projects_channel(),
+                                      planner = planner_connect()) {
+  temp_file <- teams_get_project_file(file = file, task_title = task_title, channel = channel, planner = planner)
+  temp_dir <- dirname(temp_file)
+  
+  message(format(Sys.time()), " - Rendering... ", appendLF = FALSE)
+  
+  if (is.null(output_file) || !"output_file" %in% names(formals(fun))) {
+    if ("quiet" %in% names(formals(fun))) {
+      fun(temp_file, ..., quiet = TRUE)
+    } else {
+      fun(temp_file, ...)
+    }
+    message("OK")
+    output_file <- list.files(path = temp_dir,
+                              pattern = gsub(paste0("[.]", tools::file_ext(temp_file), "$"), "", basename(temp_file)),
+                              full.names = TRUE)
+    output_file <- output_file[output_file %unlike% basename(temp_file)][1L]
+  } else {
+    if ("quiet" %in% names(formals(fun))) {
+      fun(temp_file, ..., output_file = output_file, quiet = TRUE)
+    } else {
+      fun(temp_file, ..., output_file = output_file)
+    }
+    message("OK")
+    if (!file.exists(output_file)) {
+      # then it's in the temp location
+      output_file <- paste0(temp_dir, "/", output_file)
+    }
+  }
+  
+  if (!is.na(output_file) && file.exists(output_file)) {
+    # upload to Teams again
+    # validate that the task exists
+    task <- planner_task_object(task_title = task_title, account = planner)
+    task_title <- task$properties$title
+    message(format(Sys.time()), " - Uploading... ", appendLF = FALSE)
+    new_file <- NULL
+    tryCatch({
+      # upload
+      channel$get_item(task_title)$upload(src = output_file, dest = basename(output_file))
+      # get file to return it in this function
+      new_file <- channel$get_item(task_title)$get_item(basename(output_file))
+      url <- new_file$get_path()
+      if (interactive()) {
+        # this will create a clickable link in the console, it was taken from cli::style_hyperlink
+        url <- paste0("\033]8;;", new_file$properties$webUrl, "\a", url, "\033]8;;\a")
+      }
+      message("OK, saved in Teams: ", url,
+              " (",
+              format(structure(file.size(output_file), class = "object_size"), units = "auto"),
+              ", v", get_version_number(new_file),
+              ")")
+    }, error = function(e) message("ERROR.\n", e$message))
+    return(invisible(new_file))
+  } else {
+    stop("Rendered file not found: ", output_file)
+  }
 }
 
 #' @rdname teams
 #' @param file the file name to open
 #' @export
-teams_projects_file_open <- function(task_title, file, projects = teams_projects_channel(), planner = planner_connect()) {
+teams_view_project_file <- function(file,
+                                    task_title,
+                                    channel = teams_projects_channel(),
+                                    planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_object(task_title = task_title, account = planner)
   task_title <- task$properties$title
   # open in the browser
-  projects$get_item(task_title)$get_item(file)$open()
+  channel$get_item(task_title)$get_item(file)$open()
 }
 
 #' @rdname teams
 #' @param files the files to upload
 #' @export
-teams_projects_upload <- function(task_title, files, projects = teams_projects_channel(), planner = planner_connect()) {
+teams_upload_project_file <- function(files,
+                                      task_title,
+                                      channel = teams_projects_channel(),
+                                      planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_object(task_title = task_title, account = planner)
   task_title <- task$properties$title
   # open in the browser
-  folder <- projects$get_item(task_title)
+  folder <- channel$get_item(task_title)
   for (f in files) {
     if (!file.exists(f)) {
       stop("File ", f, " does not exist")
     }
     base <- basename(f)
     message("Uploading ", base, "... ", appendLF = FALSE)
-    folder$upload_file(src = f, dest = base)
+    folder$upload(src = f, dest = base)
     message("OK")
   }
 }
@@ -382,6 +507,16 @@ is_valid_teams <- function(account) {
   inherits(account, "ms_object") &&
     tryCatch(!is.null(account$list_channels), error = function(e) FALSE) &&
     is.function(account$list_channels)
+}
+
+get_version_number <- function(file) {
+  v <- file$do_operation("versions")
+  this_version <- v$value[[1]]
+  structure(this_version$id,
+            modified = as.POSIXct(as.POSIXct(gsub("[TZ]", "", this_version$lastModifiedDateTime),
+                                             tz = "UTC"),
+                                  tz = "Europe/Amsterdam"),
+            size = structure(this_version$size, class = "object_size"))
 }
 
 get_teams_property <- function(account, property_names, account_fn = NULL) {

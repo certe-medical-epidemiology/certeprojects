@@ -698,7 +698,7 @@ trello_move_card <- function(card_id,
 }
 
 #' @importFrom jsonlite fromJSON
-#' @importFrom httr GET stop_for_status
+#' @importFrom httr GET stop_for_status content
 GET_df <- function(x) {
   result <- GET(x)
   stop_for_status(result)

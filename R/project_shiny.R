@@ -21,9 +21,10 @@
 #' 
 #' This is a Shiny app to add a new project: it creates a project folder, generates the required Quarto or R Markdown or R files, and creates a new card in Trello. These functions come with RStudio addins to quickly access existing projects.
 #' @inheritParams trello
-#' @param account Microsoft Planner 'Plan', as returned by e.g. [planner_connect()]
+#' @param planner Microsoft Planner 'Plan', as returned by e.g. [planner_connect()]
+#' @param channel Microsoft Teams Channel, as returned by e.g. [teams_projects_channel()]
 #' @export
-#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput
 #' @importFrom shinyjs useShinyjs enable disable
 #' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
 #' @importFrom dplyr select pull filter if_else
@@ -36,7 +37,8 @@ project_add <- function(board = read_secret("trello.default.board"),
                         username = trello_credentials("member"),
                         key = trello_credentials("key"),
                         token = trello_credentials("token"),
-                        account = planner_connect()) {
+                        planner = planner_connect(),
+                        channel = teams_projects_channel()) {
   
   trello_set <- tryCatch(is.data.frame(trello_get_boards(username = username, key = key, token = token)),
                          error = function(e) FALSE)
@@ -121,10 +123,21 @@ project_add <- function(board = read_secret("trello.default.board"),
                         status = "primary",
                         value = FALSE,
                         width = "100%"),
-        
         hr(),
         img(src = img_planner(), height = "45px", style = "margin-bottom: 10px"),
-        awesomeCheckbox("planner_upload", "Taak aanmaken in Microsoft Planner", FALSE),
+        if (!is.null(planner)) 
+          h5(HTML(paste0("Verbonden met ", a(paste0("Plan '", planner$properties$title, "'"), href = paste0("https://tasks.office.com/", planner$tenant, ".onmicrosoft.com/Home/PlanViews/", planner$properties$id)), "."))),
+        if (!is.null(channel)) {
+          tagList(
+            h5(HTML(paste0("Verbonden met ", a(paste0("Teams-kanaal '", channel$properties$name, "'"), href = channel$properties$webUrl), "."))),
+            awesomeCheckbox("files_only_teams",
+                            label = "Bestanden alleen in Teams aanmaken",
+                            status = "primary",
+                            value = FALSE,
+                            width = "100%"))
+          
+        },
+        awesomeCheckbox("planner_upload", "Taak aanmaken in Microsoft Planner & Teams", FALSE),
         uiOutput("planner_settings"),
         hr(),
         if (isTRUE(trello_set)) img(src = img_trello(), height = "40px", style = "margin-top: 10px; margin-bottom: 10px"),
@@ -179,18 +192,19 @@ project_add <- function(board = read_secret("trello.default.board"),
     
     output$planner_settings <- renderUI({
       if (input$planner_upload == TRUE) {
-        members <- planner_user_property(property = "name", as_list = TRUE, account = account)
-        active_user <- planner_user_property(get_current_user(), property = "name", account = account)
+        members <- planner_user_property(property = "name", as_list = TRUE, account = planner)
+        categories <- unname(planner_categories_list(account = planner))
+        if (length(categories) > 1) {
+          categories <- list(Labels = categories)
+        }
+        active_user <- planner_user_property(get_current_user(), property = "name", account = planner)
         if (length(active_user) == 0) {
           active_user <- NULL
         }
-        url <- paste0("https://tasks.office.com/", account$tenant, ".onmicrosoft.com/Home/PlanViews/", account$properties$id)
-        title <- account$properties$title
         tagList(
-          h5(HTML(paste0("Verbonden met ", a(title, href =url), "."))),
           selectInput("planner_bucket",
                       label = "Bucket",
-                      choices = list(Buckets = planner_buckets_list(plain = TRUE, account = account)),
+                      choices = list(Buckets = planner_buckets_list(plain = TRUE, account = planner)),
                       selected = read_secret("planner.default.bucket"),
                       multiple = FALSE,
                       width = "100%"),
@@ -207,7 +221,7 @@ project_add <- function(board = read_secret("trello.default.board"),
                            closeAfterSelect = FALSE)),
           selectizeInput("planner_categories",
                          label = "Labels",
-                         choices = unname(planner_categories_list(account = account)),
+                         choices = categories,
                          selected = NULL,
                          multiple = TRUE,
                          width = "100%",
@@ -230,7 +244,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         
         slct <- selectInput("trello_boards",
                             label = "Bord",
-                            choices = boards_shortLink,
+                            choices = list(Borden = boards_shortLink),
                             selected = read_secret("trello.default.board"),
                             multiple = FALSE,
                             width = "100%")
@@ -349,6 +363,17 @@ project_add <- function(board = read_secret("trello.default.board"),
       }
     })
     
+    observeEvent(input$files_only_teams, {
+      if (input$files_only_teams == TRUE) {
+        updateCheckboxInput(session = session, inputId = "rstudio_projectfile", value = FALSE)
+        disable("rstudio_projectfile")
+        on.exit(disable("rstudio_projectfile"))
+      } else {
+        enable("rstudio_projectfile")
+        on.exit(enable("rstudio_projectfile"))
+      }
+    })
+    
     # SAVE ----
     observeEvent(input$create, {
       
@@ -418,49 +443,56 @@ project_add <- function(board = read_secret("trello.default.board"),
       }
       
       withProgress(message = "Aanmaken...", value = 0, {
-        progress_items <- input$rstudio_projectfile + input$planner_upload + input$trello_upload + 1 # (+ 1 for creating folders)
+        progress_items <- input$rstudio_projectfile + input$planner_upload * 2 + input$trello_upload + 1 # (+ 1 for creating folders)
+        card_id <- NULL
+        new_title <- title
         # Planner ----
         if (input$planner_upload == TRUE) {
-          incProgress(1 / progress_items, detail = "MS Planner taak aanmaken")
+          incProgress(1 / progress_items, detail = "MS Planner: taak aanmaken")
           if (is.null(input$deadline) || input$has_deadline == FALSE) {
             deadline <- NULL
           } else {
             deadline <- input$deadline
           }
-          planner_task_create(account = account,
-                              title = title,
-                              bucket_name = input$planner_bucket,
-                              assigned = input$planner_members,
-                              requested_by = requested_by,
-                              priority = input$priority,
-                              duedate = deadline,
-                              checklist_items = checklist |> strsplit("\n") |> unlist(),
-                              categories = input$planner_categories,
-                              descr = description)
+          new_task <- planner_task_create(account = planner,
+                                         title = title,
+                                         bucket_name = input$planner_bucket,
+                                         assigned = input$planner_members,
+                                         requested_by = requested_by,
+                                         priority = input$priority,
+                                         duedate = deadline,
+                                         checklist_items = checklist |> strsplit("\n") |> unlist(),
+                                         categories = input$planner_categories,
+                                         description = description)
+          card_id <- new_task$id
+          new_title <- new_task$title
+          # create Teams folder
+          incProgress(1 / progress_items, detail = "MS Teams: map aanmaken")
+          teams_new_project(task_title = new_title, channel = channel, planner = planner)
         }
         # Trello ----
-        trello_card_id <- NULL
         if (input$trello_upload == TRUE) {
+          card_id <- NULL
           incProgress(1 / progress_items, detail = "Trello-kaart aanmaken")
           if (is.null(input$deadline) || input$has_deadline == FALSE) {
             deadline <- ""
           } else {
             deadline <- input$deadline
           }
-          trello_card_id <- trello_upload(board = input$trello_boards,
-                                          title = title,
-                                          member = input$trello_members,
-                                          requested_by = requested_by,
-                                          project_path = "",
-                                          list = input$trello_list,
-                                          prio = input$priority,
-                                          duedate = deadline,
-                                          attachments = trello_cards,
-                                          checklist = checklist |> strsplit("\n") |> unlist(),
-                                          desc = description,
-                                          comments = input$trello_comments,
-                                          key = key,
-                                          token = token)
+          card_id <- trello_upload(board = input$trello_boards,
+                                   title = title,
+                                   member = input$trello_members,
+                                   requested_by = requested_by,
+                                   project_path = "",
+                                   list = input$trello_list,
+                                   prio = input$priority,
+                                   duedate = deadline,
+                                   attachments = trello_cards,
+                                   checklist = checklist |> strsplit("\n") |> unlist(),
+                                   desc = description,
+                                   comments = input$trello_comments,
+                                   key = key,
+                                   token = token)
         }
         projects_path <- read_secret("projects.path")
         if (projects_path == "") {
@@ -469,10 +501,10 @@ project_add <- function(board = read_secret("trello.default.board"),
         }
         fullpath <- paste0(projects_path, "/",
                            trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", title)),
-                           ifelse(is.null(trello_card_id), "", paste0(" - p", trello_card_id)))
+                           ifelse(is.null(card_id), "", paste0(" - p", card_id)))
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
-        desc <- unlist(strsplit(input$description, "\n", fixed = TRUE))
+        desc <- unlist(strsplit(description, "\n", fixed = TRUE))
         if (requested_by != "") {
           request <- get_user(id == requested_by, property = "name")
           if (request == "") {
@@ -490,8 +522,8 @@ project_add <- function(board = read_secret("trello.default.board"),
                          if_else(length(desc) > 1,
                                  paste0("#                   ", desc[2:length(desc)], collapse = "\n"),
                                  NA_character_),
-                         if_else(!is.null(trello_card_id),
-                                 paste0("# Projectnummer:    p", trello_card_id),
+                         if_else(!is.null(card_id),
+                                 paste0("# Projectnummer:    p", card_id),
                                  NA_character_),
                          request,
                          if_else(!identical(trello_cards, ""),
@@ -568,12 +600,12 @@ project_add <- function(board = read_secret("trello.default.board"),
                            "library(certedata)",
                            "",
                            "data_download <- FALSE",
-                           paste0('if (!is.na(project_get_file(".*rds$", ', trello_card_id, ")) & !data_download) {"),
-                           paste0("  data_", trello_card_id, ' <- import_rds(project_get_file(".*rds$", ', trello_card_id, "))"),
+                           paste0('if (!is.na(project_get_file(".*rds$", ', card_id, ")) & !data_download) {"),
+                           paste0("  data_", card_id, ' <- import_rds(project_get_file(".*rds$", ', card_id, "))"),
                            "} else {",
-                           paste0("  data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           paste0("  data_", card_id, " <- certedb_getmmb(dates = c(start, stop),"),
                            "                             where  = where(db))",
-                           paste0("  export_rds(data_", trello_card_id, ', "data_', trello_card_id, '", card_number = ', trello_card_id, ')'),
+                           paste0("  export_rds(data_", card_id, ', "data_', card_id, '", card_number = ', card_id, ')'),
                            "}",
                            "```",
                            "",
@@ -598,34 +630,42 @@ project_add <- function(board = read_secret("trello.default.board"),
           filecontent <- c(header_text,
                            "",
                            "library(certedata)",
-                           paste0("data_", trello_card_id, " <- certedb_getmmb(dates = c(start, stop),"),
-                           paste0(strrep(" ", nchar(trello_card_id)), "                        where = where(db))"),
-                           paste0("export_rds(data_", trello_card_id, ', "data_', trello_card_id, '.rds", card_number = ', trello_card_id, ")"),
-                           paste0("# data_", trello_card_id, ' <- import_rds(project_get_file(".*rds$", ', trello_card_id, '))'),
+                           paste0("data_", card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           paste0(strrep(" ", nchar(card_id)), "                        where = where(db))"),
+                           paste0("export_rds(data_", card_id, ', "data_', card_id, '.rds", card_number = ', card_id, ")"),
+                           paste0("# data_", card_id, ' <- import_rds(project_get_file(".*rds$", ', card_id, '))'),
                            ""
           )
         }
         filename <- paste0(fullpath, "/Analyse",
-                           ifelse(!is.null(trello_card_id),
-                                  paste0(" p", trello_card_id),
+                           ifelse(!is.null(card_id),
+                                  paste0(" p", card_id),
                                   ""),
                            filetype)
         writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
                    con = file.path(filename))
+        if (isTRUE(input$files_only_teams)) {
+          teams_upload_project_file(files = file.path(filename), task_title = new_title, channel = channel, planner = planner)
+          unlink(file.path(filename), force = TRUE)
+        }
         
         incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden schrijven", ""))
         Sys.sleep(0.1)
       })
       
-      message("Project p", trello_card_id, " aangemaakt.")
+      message("Project p", card_id, " aangemaakt.")
       
       if (isTRUE(input$rstudio_projectfile)) {
         # create project and open it
         initializeProject(fullpath)
         openProject(fullpath, newSession = TRUE)
       } else {
-        # open file
-        navigateToFile(filename)
+        if (isTRUE(input$files_only_teams)) {
+          teams_browse_project(task_title = new_title, channel = channel, planner = planner)
+        } else {
+          # open file
+          navigateToFile(filename)
+        }
       }
       
       stopApp()
@@ -1129,4 +1169,4 @@ img_planner <- function() {
   concat(
     c("data:image/png;base64,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"
     ))
-    }
+}

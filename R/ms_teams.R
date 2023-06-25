@@ -68,6 +68,87 @@ teams_connect <- function(team_name = read_secret("team.name"), ...) {
   return(invisible(pkg_env$m365_getteam))
 }
 
+
+# PROJECT FUNCTIONS -----------------------------------------------------------
+
+#' @rdname teams
+#' @param projects_channel Teams channel name of the projects
+#' @export
+teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
+                                   account = teams_connect()) {
+  if (is.null(pkg_env$project_folder)) {
+    pkg_env$project_folder <- account$
+      get_channel(channel_name = projects_channel)$
+      get_folder()
+  }
+  return(pkg_env$project_folder)
+}
+
+#' @rdname teams
+#' @param task_title title of the Planner task
+#' @param projects a Teams folder object. This has to be an object as returned by [teams_projects_channel()].
+#' @param planner a Microsoft 365 account for Planner. This has to be an object as returned by [planner_connect()].
+#' @export
+teams_projects_new <- function(task_title, projects = teams_projects_channel(), planner = planner_connect()) {
+  # validate that the task exists
+  task <- planner_task_object(task_title = task_title, account = planner)
+  task_title <- task$properties$title
+  # create the folder
+  if (task_title %in% projects$list_files()$name) {
+    message("Project folder already exists, skipping.")
+  } else {
+    projects$create_folder(path = task_title)
+  }
+  # add link to Planner task
+  link <- c(Projectmap = projects$get_item(task_title)$properties$webUrl)
+  planner_task_update(old_title = task_title,
+                      attachment_urls = link)
+}
+
+#' @rdname teams
+#' @export
+teams_projects_open <- function(task_title, projects = teams_projects_channel(), planner = planner_connect()) {
+  # validate that the task exists
+  task <- planner_task_object(task_title = task_title, account = planner)
+  task_title <- task$properties$title
+  # open in the browser
+  projects$get_item(task_title)$open()
+}
+
+#' @rdname teams
+#' @param file the file name to open
+#' @export
+teams_projects_file_open <- function(task_title, file, projects = teams_projects_channel(), planner = planner_connect()) {
+  # validate that the task exists
+  task <- planner_task_object(task_title = task_title, account = planner)
+  task_title <- task$properties$title
+  # open in the browser
+  projects$get_item(task_title)$get_item(file)$open()
+}
+
+#' @rdname teams
+#' @param files the files to upload
+#' @export
+teams_projects_upload <- function(task_title, files, projects = teams_projects_channel(), planner = planner_connect()) {
+  # validate that the task exists
+  task <- planner_task_object(task_title = task_title, account = planner)
+  task_title <- task$properties$title
+  # open in the browser
+  folder <- projects$get_item(task_title)
+  for (f in files) {
+    if (!file.exists(f)) {
+      stop("File ", f, " does not exist")
+    }
+    base <- basename(f)
+    message("Uploading ", base, "... ", appendLF = FALSE)
+    folder$upload_file(src = f, dest = base)
+    message("OK")
+  }
+}
+
+
+# OTHER FUNCTIONS -------------------------------------------------------------
+
 #' @rdname teams
 #' @export
 teams_name <- function(account = teams_connect()) {
@@ -292,6 +373,9 @@ teams_get_link <- function(teams_path,
                       expiry = expire_after,
                       password = password)
 }
+
+
+# HELPER FUNCTIONS ------------------------------------------------------------
 
 is_valid_teams <- function(account) {
   # inherits() returns FALSE for NULL, so no need to check is.null(account)

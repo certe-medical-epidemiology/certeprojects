@@ -54,6 +54,7 @@ planner_task_update(
   categories_keep = FALSE,
   checklist_items = NULL,
   priority = NULL,
+  attachment_urls = NULL,
   account = planner_connect()
 )
 
@@ -113,6 +114,8 @@ planner_user_property(
 \item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
 
 \item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
+
+\item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title}
 
 \item{category_text}{text of the category to use}
 

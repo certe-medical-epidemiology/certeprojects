@@ -150,7 +150,9 @@ planner_task_create <- function(title,
 #' @param old_title title of the task to update
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
+#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
 #' @importFrom jsonlite toJSON
+#' @importFrom dplyr case_when
 #' @export
 planner_task_update <- function(old_title,
                                 title = NULL,
@@ -163,9 +165,11 @@ planner_task_update <- function(old_title,
                                 categories_keep = FALSE,
                                 checklist_items = NULL,
                                 priority = NULL,
+                                attachment_urls = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
                                 account = planner_connect()) {
   # does not work with Microsoft365R yet, so we do it manually
+  
   task <- planner_task_object(task_title = old_title)
   task_id <- task$properties$id
   
@@ -268,7 +272,7 @@ planner_task_update <- function(old_title,
   # checklist, description, previewType, references
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   
-  if (is.null(descr) && is.null(checklist_items)) {
+  if (is.null(descr) && is.null(checklist_items) && is.null(attachment_urls)) {
     return(invisible())
   }
   
@@ -291,6 +295,41 @@ planner_task_update <- function(old_title,
     body <- c(body, list(checklist = check_items))
     if (body$previewType == "automatic") {
       body$previewType <- "checklist"
+    }
+  }
+  
+  if (!is.null(attachment_urls)) {
+    attachment_items <- list()
+    for (i in seq_len(length(attachment_urls))) {
+      attachment_item <- attachment_urls[i]
+      names(attachment_item) <- names(attachment_urls[i])
+      type <- case_when(attachment_item %like% "[.]xlsx?" ~ "Excel",
+                        attachment_item %like% "[.]docx?" ~ "Word",
+                        attachment_item %like% "[.]pptx?" ~ "PowerPoint",
+                        TRUE ~ "Other",
+      )
+      url <- unname(attachment_item)
+      alias <- names(attachment_item)
+      if (is.null(alias) || alias == "") {
+        alias <- gsub("https?://", "", url)
+      }
+      # 5 characters need to be encoded, see
+      # https://learn.microsoft.com/en-us/graph/api/resources/plannerexternalreferences?view=graph-rest-1.0
+      url <- gsub("%", "%25", url, fixed = TRUE)
+      url <- gsub(".", "%2E", url, fixed = TRUE)
+      url <- gsub(":", "%3A", url, fixed = TRUE)
+      url <- gsub("@", "%40", url, fixed = TRUE)
+      url <- gsub("#", "%23", url, fixed = TRUE)
+      attachment_items <- c(attachment_items, 
+                            stats::setNames(list(list(`@odata.type` = "microsoft.graph.plannerExternalReference",
+                                                      alias = alias,
+                                                      type = type)),
+                                            url))
+    }
+    body <- c(body, list(references = attachment_items))
+    if (body$previewType == "automatic") {
+      # prioritise the website on the task card, it will contain a clickable link to the Teams project folder
+      body$previewType <- "reference"
     }
   }
   

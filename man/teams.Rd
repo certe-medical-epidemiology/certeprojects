@@ -3,6 +3,11 @@
 \name{teams}
 \alias{teams}
 \alias{teams_connect}
+\alias{teams_projects_channel}
+\alias{teams_projects_new}
+\alias{teams_projects_open}
+\alias{teams_projects_file_open}
+\alias{teams_projects_upload}
 \alias{teams_name}
 \alias{teams_channels}
 \alias{teams_view_sharepoint}
@@ -16,6 +21,37 @@
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
 teams_connect(team_name = read_secret("team.name"), ...)
+
+teams_projects_channel(
+  projects_channel = read_secret("teams.projects.channel"),
+  account = teams_connect()
+)
+
+teams_projects_new(
+  task_title,
+  projects = teams_projects_channel(),
+  planner = planner_connect()
+)
+
+teams_projects_open(
+  task_title,
+  projects = teams_projects_channel(),
+  planner = planner_connect()
+)
+
+teams_projects_file_open(
+  task_title,
+  file,
+  projects = teams_projects_channel(),
+  planner = planner_connect()
+)
+
+teams_projects_upload(
+  task_title,
+  files,
+  projects = teams_projects_channel(),
+  planner = planner_connect()
+)
 
 teams_name(account = teams_connect())
 
@@ -88,7 +124,19 @@ teams_webhooks(webhooks_file = read_secret("teams.webhooks.file"))
 
 \item{...}{not used at the moment}
 
+\item{projects_channel}{Teams channel name of the projects}
+
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+
+\item{task_title}{title of the Planner task}
+
+\item{projects}{a Teams folder object. This has to be an object as returned by \code{\link[=teams_projects_channel]{teams_projects_channel()}}.}
+
+\item{planner}{a Microsoft 365 account for Planner. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}}.}
+
+\item{file}{the file name to open}
+
+\item{files}{the files to upload}
 
 \item{channel}{channel to send message to, run \code{\link[=teams_webhooks]{teams_webhooks()}} for list of valid channels}
 

@@ -18,7 +18,7 @@ The older teams() function relies on the httr package and requires Incoming Webh
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.9.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.10.0</span>
       </span>
     </div>
 
@@ -79,6 +79,37 @@ The older teams() function relies on the httr package and requires Incoming Webh
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span>team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_projects_channel</span><span class="op">(</span></span>
+<span>  projects_channel <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel"</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_projects_new</span><span class="op">(</span></span>
+<span>  <span class="va">task_title</span>,</span>
+<span>  projects <span class="op">=</span> <span class="fu">teams_projects_channel</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_projects_open</span><span class="op">(</span></span>
+<span>  <span class="va">task_title</span>,</span>
+<span>  projects <span class="op">=</span> <span class="fu">teams_projects_channel</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_projects_file_open</span><span class="op">(</span></span>
+<span>  <span class="va">task_title</span>,</span>
+<span>  <span class="va">file</span>,</span>
+<span>  projects <span class="op">=</span> <span class="fu">teams_projects_channel</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_projects_upload</span><span class="op">(</span></span>
+<span>  <span class="va">task_title</span>,</span>
+<span>  <span class="va">files</span>,</span>
+<span>  projects <span class="op">=</span> <span class="fu">teams_projects_channel</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -157,8 +188,32 @@ The older teams() function relies on the httr package and requires Incoming Webh
 <dd><p>not used at the moment</p></dd>
 
 
+<dt>projects_channel</dt>
+<dd><p>Teams channel name of the projects</p></dd>
+
+
 <dt>account</dt>
 <dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code>teams_connect()</code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
+
+
+<dt>task_title</dt>
+<dd><p>title of the Planner task</p></dd>
+
+
+<dt>projects</dt>
+<dd><p>a Teams folder object. This has to be an object as returned by <code>teams_projects_channel()</code>.</p></dd>
+
+
+<dt>planner</dt>
+<dd><p>a Microsoft 365 account for Planner. This has to be an object as returned by <code><a href="planner.html">planner_connect()</a></code>.</p></dd>
+
+
+<dt>file</dt>
+<dd><p>the file name to open</p></dd>
+
+
+<dt>files</dt>
+<dd><p>the files to upload</p></dd>
 
 
 <dt>channel</dt>

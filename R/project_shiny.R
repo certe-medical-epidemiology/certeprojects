@@ -507,7 +507,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         desc <- unlist(strsplit(description, "\n", fixed = TRUE))
         if (requested_by != "") {
           request <- get_user(id == requested_by, property = "name")
-          if (request == "") {
+          if (request %in% c("", NA)) {
             request <- requested_by
           }
           request <- paste0("# Aangevraagd door: ", request)
@@ -949,7 +949,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
         }
         
         # comment
-        if (trimws(input$comment) != "") {
+        if (!is.null(input$comment) && trimws(input$comment) != "") {
           trello_set_comment(card_id = card_info$id,
                              comment = input$comment,
                              key = key,
@@ -974,7 +974,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
           }
         }
         newtasks <- input$newtasks
-        if (all(is.null(newtasks)) | length(newtasks) == 0) {
+        if (is.null(newtasks) || length(newtasks) == 0) {
           newtasks <- ""
         }
         if (newtasks != "") {

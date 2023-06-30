@@ -89,12 +89,13 @@ get_microsoft365_token <- function(scope,
       # try to get existing login first - this will prevent that the device code must be given every time
       conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = FALSE)), silent = TRUE)
       if (inherits(conn, "try-error")) {
+        # now create a new login
         conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
       }
       pkg_env[[scope]] <- conn$token
-      if (interactive()) {
-        message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
-      }
+      # if (interactive()) {
+      #   message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
+      # }
     }, warning = function(w) {
       return(invisible())
     }, error = function(e, fail = error_on_fail) {

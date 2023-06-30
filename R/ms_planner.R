@@ -315,9 +315,9 @@ planner_task_update <- function(old_title,
     for (i in seq_len(length(attachment_urls))) {
       attachment_item <- attachment_urls[i]
       names(attachment_item) <- names(attachment_urls[i])
-      type <- case_when(attachment_item %like% "[.]xlsx?" ~ "Excel",
-                        attachment_item %like% "[.]docx?" ~ "Word",
-                        attachment_item %like% "[.]pptx?" ~ "PowerPoint",
+      type <- case_when(attachment_item %like% "[.]xlsx?$" ~ "Excel",
+                        attachment_item %like% "[.]docx?$" ~ "Word",
+                        attachment_item %like% "[.]pptx?$" ~ "PowerPoint",
                         TRUE ~ "Other",
       )
       url <- unname(attachment_item)

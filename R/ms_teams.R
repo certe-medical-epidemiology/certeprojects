@@ -95,9 +95,10 @@ teams_connect <- function(team_name = read_secret("team.name"), ...) {
 #' @export
 teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
                                    account = teams_connect()) {
+  channel_name <- find_channel(project_channel, account = account)
   if (is.null(pkg_env$project_folder)) {
     pkg_env$project_folder <- account$
-      get_channel(channel_name = projects_channel)$
+      get_channel(channel_name = channel_name)$
       get_folder()
   }
   return(pkg_env$project_folder)
@@ -297,7 +298,7 @@ teams_view_sharepoint <- function(channel, account = teams_connect()) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
-  channel <- retrieve_channel(path = channel, account = account)
+  channel <- find_channel(path = channel, account = account)
   if (is.na(channel)) {
     return(NA_character_)
   } else {
@@ -321,6 +322,7 @@ teams_send_message <- function(body,
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
+  channel <- find_channel(path = channel, account = account)
   out <- account$
     get_channel(channel)$
     send_message(body = body,
@@ -361,7 +363,7 @@ teams_upload <- function(local_path,
   }
   if (is.null(channel)) {
     # find channel based on teams path
-    channel <- retrieve_channel(path = teams_path, account = account)
+    channel <- find_channel(path = teams_path, account = account)
     if (!is.na(channel) && teams_path %like% "[/]") {
       # a channel was found, so remove first part of name from teams_path
       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
@@ -397,7 +399,7 @@ teams_download <- function(teams_path,
   }
   if (is.null(channel)) {
     # find channel based on teams path
-    channel <- retrieve_channel(path = teams_path, account = account)
+    channel <- find_channel(path = teams_path, account = account)
     if (!is.na(channel) && teams_path %like% "[/]") {
       # a channel was found, so remove first part of name from teams_path
       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
@@ -451,7 +453,7 @@ teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
   }
   if (is.null(channel)) {
     # find channel based on teams path
-    channel <- retrieve_channel(path = teams_path, account = account)
+    channel <- find_channel(path = teams_path, account = account)
     if (!is.na(channel) && teams_path %like% "[/]") {
       # a channel was found, so remove first part of name from teams_path
       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
@@ -482,7 +484,7 @@ teams_get_link <- function(teams_path,
   }
   if (is.null(channel)) {
     # find channel based on teams path
-    channel <- retrieve_channel(path = teams_path, account = account)
+    channel <- find_channel(path = teams_path, account = account)
     if (!is.na(channel) && teams_path %like% "[/]") {
       # a channel was found, so remove first part of name from teams_path
       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
@@ -534,7 +536,7 @@ get_teams_property <- function(account, property_names, account_fn = NULL) {
   return(out)
 }
 
-retrieve_channel <- function(path, account = teams_connect()) {
+find_channel <- function(path, account = teams_connect()) {
   channels <- teams_channels(account = account)
   if (path %in% channels) {
     return(path)

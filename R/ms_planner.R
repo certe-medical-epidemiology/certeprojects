@@ -37,7 +37,7 @@ planner_connect <- function(team_name = read_secret("team.name"), plan_name = re
       get_plan(plan_title = plan_name)
   }
   # this will auto-renew authorisation when due
-  return(invisible(pkg_env$m365_getplan))
+  return(suppressMessages(invisible(pkg_env$m365_getplan)))
 }
 
 #' @rdname planner

@@ -84,7 +84,7 @@ teams_connect <- function(team_name = read_secret("team.name"), ...) {
       get_team()
   }
   # this will auto-renew authorisation when due
-  return(invisible(pkg_env$m365_getteam))
+  return(suppressMessages(invisible(pkg_env$m365_getteam)))
 }
 
 
@@ -95,7 +95,7 @@ teams_connect <- function(team_name = read_secret("team.name"), ...) {
 #' @export
 teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
                                    account = teams_connect()) {
-  channel_name <- find_channel(project_channel, account = account)
+  channel_name <- find_channel(projects_channel, account = account)
   if (is.null(pkg_env$project_folder)) {
     pkg_env$project_folder <- account$
       get_channel(channel_name = channel_name)$

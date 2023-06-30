@@ -83,7 +83,7 @@ get_microsoft365_token <- function(scope,
     stop("Invalid scope - must be one of ", toString(scope_options))
   }
 
-  if (is.null(pkg_env[[scope]])) {
+  if (is.null(suppressMessages(pkg_env[[scope]]))) {
     # not yet connected to Microsoft 365, so set it up
     tryCatch({
       # try to get existing login first - this will prevent that the device code must be given every time
@@ -92,7 +92,7 @@ get_microsoft365_token <- function(scope,
         # now create a new login
         conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
       }
-      pkg_env[[scope]] <- conn$token
+      pkg_env[[scope]] <- suppressMessages(conn$token)
       # if (interactive()) {
       #   message("Connected to Microsoft 365 ", tools::toTitleCase(scope), ".")
       # }
@@ -111,5 +111,5 @@ get_microsoft365_token <- function(scope,
     stop("Could not connect to Microsoft 365.", call. = FALSE)
   }
   # this will auto-renew authorisation when due
-  pkg_env[[scope]]
+  suppressMessages(pkg_env[[scope]])
 }

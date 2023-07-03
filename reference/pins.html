@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.10.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.0</span>
       </span>
     </div>
 
@@ -72,7 +72,7 @@
     </div>
 
     <div class="ref-description">
-    <p>These functions can be used to work with <a href="https://pins.rstudio.com" class="external-link">pins</a>, developed by RStudio.</p>
+    <p>These functions can be used to work with <a href="https://pins.rstudio.com" class="external-link"><code>pins</code></a>, developed by RStudio.</p>
     </div>
 
     <div id="ref-usage">
@@ -82,17 +82,17 @@
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  board <span class="op">=</span> <span class="fu">board_sharepoint</span><span class="op">(</span><span class="op">)</span></span>
+<span>  board <span class="op">=</span> <span class="fu">pins_board</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">import_pin</span><span class="op">(</span><span class="va">name</span>, version <span class="op">=</span> <span class="cn">NULL</span>, hash <span class="op">=</span> <span class="cn">NULL</span>, board <span class="op">=</span> <span class="fu">board_sharepoint</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">import_pin</span><span class="op">(</span><span class="va">name</span>, version <span class="op">=</span> <span class="cn">NULL</span>, hash <span class="op">=</span> <span class="cn">NULL</span>, board <span class="op">=</span> <span class="fu">pins_board</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">remove_pin</span><span class="op">(</span><span class="va">name</span>, version <span class="op">=</span> <span class="cn">NULL</span>, board <span class="op">=</span> <span class="fu">board_sharepoint</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">remove_pin</span><span class="op">(</span><span class="va">name</span>, version <span class="op">=</span> <span class="cn">NULL</span>, board <span class="op">=</span> <span class="fu">pins_board</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">board_sharepoint</span><span class="op">(</span></span>
-<span>  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>,</span>
-<span>  delete_by_item <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  <span class="va">...</span></span>
+<span><span class="fu">pins_board</span><span class="op">(</span></span>
+<span>  projects_channel <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel"</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="teams.html">teams_connect</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  delete_by_item <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -140,8 +140,12 @@ you expect. You can find the hash of an existing pin by looking for
 <code>pin_hash</code> in <code><a href="https://pins.rstudio.com/reference/pin_meta.html" class="external-link">pin_meta()</a></code>.</p></dd>
 
 
-<dt>team_name</dt>
-<dd><p>Name of the SharePoint site</p></dd>
+<dt>projects_channel</dt>
+<dd><p>Teams channel name of the projects</p></dd>
+
+
+<dt>account</dt>
+<dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="teams.html">teams_connect()</a></code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
 
 
 <dt>delete_by_item</dt>
@@ -151,17 +155,14 @@ this to <code>TRUE</code> for a board in SharePoint Online or OneDrive for Busin
 due to document protection policies that prohibit deleting non-empty
 folders.</p></dd>
 
-
-<dt>...</dt>
-<dd><p>Arguments passed on to <code><a href="get_microsoft365_token.html">get_microsoft365_token()</a></code></p></dd>
-
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p>The board will be automatically retrieved based on the Microsoft 365 account (by running <code>board_sharepoint()</code>), leading to the SharePoints folder "pins" within the Microsoft 365 account.</p>
-<p>For Pins functions of the <code>pins</code> package, use <code>board_sharepoint()</code> as board, e.g.:</p>
-<p></p><div class="sourceCode r"><pre><code><span>  <span class="fu"><a href="https://pins.rstudio.com/reference/pin_list.html" class="external-link">pin_list</a></span><span class="op">(</span><span class="fu"><a href="../reference/pins.html">board_sharepoint</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre><p></p></div>
+    <p>These functions from the <a href="https://pins.rstudio.com" class="external-link"><code>pins</code></a> package are integrated into the team's Microsoft 365 account, using the <code>"pins"</code> folder in the given MS Teams channel.</p>
+<p>For Pins functions of the <code>pins</code> package, use <code>pins_board()</code> as input, e.g.:</p>
+<p></p><div class="sourceCode r"><pre><code><span>  <span class="fu"><a href="https://pins.rstudio.com/reference/pin_list.html" class="external-link">pin_list</a></span><span class="op">(</span><span class="fu"><a href="../reference/pins.html">pins_board</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>The following <code>pins</code> functions are re-exported by this package: <code><a href="https://pins.rstudio.com/reference/pin_list.html" class="external-link">pin_list()</a></code>, <code><a href="https://pins.rstudio.com/reference/pin_meta.html" class="external-link">pin_meta()</a></code>, and <code><a href="https://pins.rstudio.com/reference/pin_versions.html" class="external-link">pin_versions()</a></code>.</p>
+<p>The <code>pins_board()</code> function returns a <a href="https://pins.rstudio.com/reference/board_ms365.html" class="external-link">pins::board_ms365</a> object based on the <code>"pins"</code> folder in the Teams channel<em>Projects</em>, which is retrieved with <code><a href="teams.html">teams_projects_channel()</a></code>.</p>
     </div>
 
   </div>

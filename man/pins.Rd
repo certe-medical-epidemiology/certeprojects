@@ -5,7 +5,7 @@
 \alias{export_pin}
 \alias{import_pin}
 \alias{remove_pin}
-\alias{board_sharepoint}
+\alias{pins_board}
 \title{Work with Pins}
 \usage{
 export_pin(
@@ -14,17 +14,17 @@ export_pin(
   title = NULL,
   type = NULL,
   description = NULL,
-  board = board_sharepoint()
+  board = pins_board()
 )
 
-import_pin(name, version = NULL, hash = NULL, board = board_sharepoint())
+import_pin(name, version = NULL, hash = NULL, board = pins_board())
 
-remove_pin(name, version = NULL, board = board_sharepoint())
+remove_pin(name, version = NULL, board = pins_board())
 
-board_sharepoint(
-  team_name = read_secret("team.name"),
-  delete_by_item = TRUE,
-  ...
+pins_board(
+  projects_channel = read_secret("teams.projects.channel"),
+  account = teams_connect(),
+  delete_by_item = TRUE
 )
 }
 \arguments{
@@ -54,26 +54,28 @@ find out which versions are available and when they were created.}
 you expect. You can find the hash of an existing pin by looking for
 \code{pin_hash} in \code{\link[pins:pin_meta]{pin_meta()}}.}
 
-\item{team_name}{Name of the SharePoint site}
+\item{projects_channel}{Teams channel name of the projects}
+
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
 \item{delete_by_item}{Whether to handle folder deletions on an item-by-item
 basis, rather than deleting the entire folder at once. You may need to set
 this to \code{TRUE} for a board in SharePoint Online or OneDrive for Business,
 due to document protection policies that prohibit deleting non-empty
 folders.}
-
-\item{...}{Arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 }
 \description{
-These functions can be used to work with \href{https://pins.rstudio.com}{pins}, developed by RStudio.
+These functions can be used to work with \href{https://pins.rstudio.com}{\code{pins}}, developed by RStudio.
 }
 \details{
-The board will be automatically retrieved based on the Microsoft 365 account (by running \code{\link[=board_sharepoint]{board_sharepoint()}}), leading to the SharePoints folder "pins" within the Microsoft 365 account.
+These functions from the \href{https://pins.rstudio.com}{\code{pins}} package are integrated into the team's Microsoft 365 account, using the \code{"pins"} folder in the given MS Teams channel.
 
-For Pins functions of the \code{pins} package, use \code{\link[=board_sharepoint]{board_sharepoint()}} as board, e.g.:
+For Pins functions of the \code{pins} package, use \code{\link[=pins_board]{pins_board()}} as input, e.g.:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{  pin_list(board_sharepoint())
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{  pin_list(pins_board())
 }\if{html}{\out{</div>}}
 
 The following \code{pins} functions are re-exported by this package: \code{\link[=pin_list]{pin_list()}}, \code{\link[=pin_meta]{pin_meta()}}, and \code{\link[=pin_versions]{pin_versions()}}.
+
+The \code{\link[=pins_board]{pins_board()}} function returns a \link[pins:board_ms365]{pins::board_ms365} object based on the \code{"pins"} folder in the Teams channel\emph{Projects}, which is retrieved with \code{\link[=teams_projects_channel]{teams_projects_channel()}}.
 }

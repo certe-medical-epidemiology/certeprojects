@@ -20,7 +20,7 @@
 #' Retrieve Microsoft 365 Access Token
 #' 
 #' This function uses retrieves an access token from the department's Microsoft 365 account.
-#' @param scope this must be "outlook", "teams", "planner", or "sharepoint", and will set the right API permission for each
+#' @param scope this must be "outlook", "teams", "planner", "tasks" (which is "planner" without group rights), or "sharepoint", and will set the right API permission for each
 #' @param tenant the tenant to use, passed on to [AzureGraph::create_graph_login()]
 #' @param app_id the Azure app id to use, passed on to [AzureGraph::create_graph_login()]
 #' @param auth_type the authentication method to use, passed on to [AzureGraph::create_graph_login()]
@@ -35,19 +35,19 @@ get_microsoft365_token <- function(scope,
                                    ...,
                                    error_on_fail = FALSE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
-  scope_options <- c("mail", "outlook", "teams", "planner", "sharepoint")
+  scope_options <- c("mail", "outlook", "teams", "planner", "tasks", "sharepoint")
   scope <- tolower(scope)[1]
   if (scope == "mail") {
     scope <- "outlook"
   }
   
-  if (tenant == "") {
+  if (is.null(tenant) || tenant == "") {
     tenant <- "common"
   }
-  if (app_id == "") {
+  if (is.null(app_id) || app_id == "") {
     app_id <- NULL
   }
-  if (auth_type == "") {
+  if (is.null(auth_type) || auth_type == "") {
     auth_type <- NULL
   }
   
@@ -69,6 +69,10 @@ get_microsoft365_token <- function(scope,
   } else if (scope == "planner") {
     scopes <- c("Group.Read.All",
                 "Tasks.Read.Shared",
+                "Tasks.ReadWrite",
+                "User.ReadWrite")
+  } else if (scope == "tasks") { # same as planner, but without the Groups permission for individual use
+    scopes <- c("Tasks.Read.Shared",
                 "Tasks.ReadWrite",
                 "User.ReadWrite")
     

@@ -3,6 +3,7 @@
 \name{planner}
 \alias{planner}
 \alias{planner_connect}
+\alias{planner_browse}
 \alias{planner_bucket_create}
 \alias{planner_buckets_list}
 \alias{planner_tasks_list}
@@ -11,14 +12,17 @@
 \alias{planner_task_update}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
+\alias{planner_task_find}
 \alias{planner_user_property}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_connect(
+  plan = read_secret("planner.name"),
   team_name = read_secret("team.name"),
-  plan_name = read_secret("planner.name"),
   ...
 )
+
+planner_browse(account = planner_connect())
 
 planner_bucket_create(bucket_name, account = planner_connect())
 
@@ -42,7 +46,7 @@ planner_task_create(
 )
 
 planner_task_update(
-  old_title,
+  task,
   title = NULL,
   bucket_name = NULL,
   description = NULL,
@@ -58,14 +62,20 @@ planner_task_update(
 )
 
 planner_task_request_validation(
-  title,
+  task,
   category_text = read_secret("planner.label.authorise"),
   account = planner_connect()
 )
 
 planner_task_validate(
-  title,
+  task,
   category_text = read_secret("planner.label.authorised"),
+  account = planner_connect()
+)
+
+planner_task_find(
+  task_title = NULL,
+  task_id = NULL,
   account = planner_connect()
 )
 
@@ -78,15 +88,15 @@ planner_user_property(
 )
 }
 \arguments{
-\item{team_name}{name of the team}
+\item{plan}{name of the team's plan if \code{team_name} is not empty. Otherwise, a plan ID (for individual use).}
 
-\item{plan_name}{name of the team's plan}
+\item{team_name}{name of the team}
 
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 
-\item{bucket_name}{name of the bucket}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
 
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}.}
+\item{bucket_name}{name of the bucket}
 
 \item{plain}{return as plain names, not as \code{Azure} objects}
 
@@ -106,7 +116,7 @@ planner_user_property(
 
 \item{assigned}{names of members within the plan. Use \code{FALSE} to remove all assigned members.}
 
-\item{old_title}{title of the task to update}
+\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 
 \item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
 
@@ -116,6 +126,10 @@ planner_user_property(
 
 \item{category_text}{text of the category to use}
 
+\item{task_title}{title of the task, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
+
+\item{task_id}{exact id of the task}
+
 \item{user}{a user name, mail adress, or Certe login name}
 
 \item{property}{property to return, can be "id", "name" or "mail"}
@@ -124,4 +138,7 @@ planner_user_property(
 }
 \description{
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.
+}
+\details{
+The \code{\link[=planner_task_find]{planner_task_find()}} returns a \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object.
 }

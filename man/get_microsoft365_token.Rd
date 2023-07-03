@@ -14,7 +14,7 @@ get_microsoft365_token(
 )
 }
 \arguments{
-\item{scope}{this must be "outlook", "teams", "planner", or "sharepoint", and will set the right API permission for each}
+\item{scope}{this must be "outlook", "teams", "planner", "tasks" (which is "planner" without group rights), or "sharepoint", and will set the right API permission for each}
 
 \item{tenant}{the tenant to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
 

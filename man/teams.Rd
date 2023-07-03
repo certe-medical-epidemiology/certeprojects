@@ -6,7 +6,9 @@
 \alias{teams_projects_channel}
 \alias{teams_new_project}
 \alias{teams_browse_project}
+\alias{teams_download_project_file}
 \alias{teams_get_project_file}
+\alias{teams_open_project_analysis_file}
 \alias{teams_render_project_file}
 \alias{teams_view_project_file}
 \alias{teams_upload_project_file}
@@ -29,27 +31,40 @@ teams_projects_channel(
 )
 
 teams_new_project(
-  task_title,
+  task,
   channel = teams_projects_channel(),
   planner = planner_connect()
 )
 
 teams_browse_project(
-  task_title,
+  task,
+  channel = teams_projects_channel(),
+  planner = planner_connect()
+)
+
+teams_download_project_file(
+  file,
+  task,
   channel = teams_projects_channel(),
   planner = planner_connect()
 )
 
 teams_get_project_file(
   file,
-  task_title,
+  task,
+  channel = teams_projects_channel(),
+  planner = planner_connect()
+)
+
+teams_open_project_analysis_file(
+  task,
   channel = teams_projects_channel(),
   planner = planner_connect()
 )
 
 teams_render_project_file(
   file,
-  task_title,
+  task,
   output_file = NULL,
   fun = rmarkdown::render,
   ...,
@@ -59,14 +74,14 @@ teams_render_project_file(
 
 teams_view_project_file(
   file,
-  task_title,
+  task,
   channel = teams_projects_channel(),
   planner = planner_connect()
 )
 
 teams_upload_project_file(
   files,
-  task_title,
+  task,
   channel = teams_projects_channel(),
   planner = planner_connect()
 )
@@ -128,7 +143,7 @@ teams_get_link(
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
-\item{task_title}{title of the Planner task}
+\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 
 \item{channel}{a Teams folder object. This has to be an object as returned by \code{\link[=teams_projects_channel]{teams_projects_channel()}}.}
 
@@ -171,9 +186,9 @@ The \code{\link[=teams_new_project]{teams_new_project()}} function:
 \item Updates the task to contain the project folder URL as an attachment
 }
 
-The \code{\link[=teams_get_project_file]{teams_get_project_file()}} function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use \code{\link[=source]{source()}}, \code{\link[rmarkdown:render]{rmarkdown::render()}} or \code{\link[quarto:quarto_render]{quarto::quarto_render()}} using the \code{\link[=teams_get_project_file]{teams_get_project_file()}} function as input.
+The \code{\link[=teams_download_project_file]{teams_download_project_file()}} function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use \code{\link[=source]{source()}}, \code{\link[rmarkdown:render]{rmarkdown::render()}} or \code{\link[quarto:quarto_render]{quarto::quarto_render()}} using the \code{\link[=teams_download_project_file]{teams_download_project_file()}} function as input.
 
-The \code{\link[=teams_render_project_file]{teams_render_project_file()}} function allows to render a Teams file. It downloads the Teams file using \code{\link[=teams_get_project_file]{teams_get_project_file()}}, runs the rendering function set in \code{fun}, and uploads the resulting output file back to Teams using the same file name a \code{file}, but with the new file extension (such as pdf, html, or docx).
+The \code{\link[=teams_render_project_file]{teams_render_project_file()}} function allows to render a Teams file. It downloads the Teams file using \code{\link[=teams_download_project_file]{teams_download_project_file()}}, runs the rendering function set in \code{fun}, and uploads the resulting output file back to Teams using the same file name a \code{file}, but with the new file extension (such as pdf, html, or docx). It \strong{invisibly returns} the temporary local file location, so that the output of \code{\link[=teams_render_project_file]{teams_render_project_file()}} can be given to e.g. \code{\link[certemail:mail]{certemail::mail()}} as an attachment.
 }
 \examples{
 \dontrun{

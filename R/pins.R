@@ -19,16 +19,16 @@
 
 #' Work with Pins
 #' 
-#' These functions can be used to work with [pins](https://pins.rstudio.com), developed by RStudio.
+#' These functions can be used to work with [`pins`](https://pins.rstudio.com), developed by RStudio.
 #' @inheritParams pins::pin_write
 #' @importFrom pins pin_write
 #' @details
-#' The board will be automatically retrieved based on the Microsoft 365 account (by running [board_sharepoint()]), leading to the SharePoints folder "pins" within the Microsoft 365 account.
+#' These functions from the [`pins`](https://pins.rstudio.com) package are integrated into the team's Microsoft 365 account, using the `"pins"` folder in the given MS Teams channel.
 #' 
-#' For Pins functions of the `pins` package, use [board_sharepoint()] as board, e.g.:
+#' For Pins functions of the `pins` package, use [pins_board()] as input, e.g.:
 #' 
 #' ```r
-#'   pin_list(board_sharepoint())
+#'   pin_list(pins_board())
 #' ```
 #' 
 #' The following `pins` functions are re-exported by this package: [pin_list()], [pin_meta()], and [pin_versions()].
@@ -40,7 +40,7 @@ export_pin <- function(x,
                        title = NULL,
                        type = NULL,
                        description = NULL,
-                       board = board_sharepoint()) {
+                       board = pins_board()) {
   nm <- deparse(substitute(x))
   if (is.null(name) && nm != ".") {
     name <- nm
@@ -63,7 +63,7 @@ export_pin <- function(x,
 import_pin <- function(name,
                        version = NULL,
                        hash = NULL,
-                       board = board_sharepoint()) {
+                       board = pins_board()) {
   pin_read(board = board,
            name = name,
            version = version,
@@ -78,7 +78,7 @@ import_pin <- function(name,
 #' @export
 remove_pin <- function(name,
                        version = NULL,
-                       board = board_sharepoint()) {
+                       board = pins_board()) {
   if (is.null(version)) {
     pin_delete(board = board,
                names = name)
@@ -89,23 +89,22 @@ remove_pin <- function(name,
   }
 }
 
-#' @param team_name Name of the SharePoint site
+#' @inheritParams teams_projects_channel
 #' @inheritParams pins::board_ms365
-#' @param ... Arguments passed on to [get_microsoft365_token()]
-#' @importFrom Microsoft365R get_sharepoint_site
+#' @details The [pins_board()] function returns a [pins::board_ms365] object based on the `"pins"` folder in the Teams channel*Projects*, which is retrieved with [teams_projects_channel()].
 #' @importFrom pins board_ms365
 #' @rdname pins
 #' @name pins
 #' @export
-board_sharepoint <- function(team_name = read_secret("team.name"),
-                             delete_by_item = TRUE,
-                             ...) {
+pins_board <- function(projects_channel = read_secret("teams.projects.channel"),
+                       account = teams_connect(),
+                       delete_by_item = TRUE) {
   if (is.null(pkg_env$microsoft365_pins)) {
-    # not yet connected to Teams in Microsoft 365, so set it up
-    sharepoint <- get_sharepoint_site(site_name = team_name, token = get_microsoft365_token("sharepoint", ...))
-    drive <- sharepoint$get_drive()
+    drives <- account$list_drives()
+    drive <- drives[[which(vapply(FUN.VALUE = logical(1), drives, function(x) x$properties$name %unlike% "Wiki"))[1]]]
+    projects <- teams_projects_channel(projects_channel = projects_channel, account = account)
     pkg_env$microsoft365_pins <- board_ms365(drive = drive,
-                                             path = drive$get_item("pins"),
+                                             path = projects$get_item("pins"),
                                              delete_by_item = delete_by_item)
     
   }

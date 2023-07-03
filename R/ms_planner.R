@@ -21,20 +21,27 @@
 #'
 #' These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `planner_*()` functions allow to work with this connection.
 #' @param team_name name of the team
-#' @param plan_name name of the team's plan
+#' @param plan name of the team's plan if `team_name` is not empty. Otherwise, a plan ID (for individual use).
 #' @param ... arguments passed on to [get_microsoft365_token()]
-#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()].
+#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()]`$get_group(name)$get_plan(plan_title)`.
 #' @rdname planner
 #' @name planner
-#' @importFrom AzureGraph create_graph_login
-#' @importFrom httr POST PATCH add_headers stop_for_status
+#' @importFrom AzureGraph create_graph_login call_graph_endpoint
+#' @importFrom Microsoft365R ms_plan
 #' @export
-planner_connect <- function(team_name = read_secret("team.name"), plan_name = read_secret("planner.name"), ...) {
+planner_connect <- function(plan = read_secret("planner.name"), team_name = read_secret("team.name"), ...) {
   if (is.null(pkg_env$m365_getplan)) {
     # not yet connected to Planner in Microsoft 365, so set it up
-    pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
-      get_group(name = team_name)$
-      get_plan(plan_title = plan_name)
+    if (!is.null(team_name) && team_name != "") {
+      pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
+        get_group(name = team_name)$
+        get_plan(plan_title = plan)
+    } else {
+      # team_name can be empty, but then plan must be a plan_id
+      token <- get_microsoft365_token(scope = "tasks", ...)
+      res <- call_graph_endpoint(token = token, file.path("planner/plans", plan))
+      pkg_env$m365_getplan <- ms_plan$new(token, token$tenant, res)
+    }
   }
   # this will auto-renew authorisation when due
   return(suppressMessages(invisible(pkg_env$m365_getplan)))
@@ -42,6 +49,15 @@ planner_connect <- function(team_name = read_secret("team.name"), plan_name = re
 
 #' @rdname planner
 #' @param bucket_name name of the bucket
+#' @export
+planner_browse <- function(account = planner_connect()) {
+  utils::browseURL(paste0("https://tasks.office.com/", account$token$tenant, 
+                          "/nl-NL/Home/Planner/#/plantaskboard?planId=", account$properties$id))
+}
+
+#' @rdname planner
+#' @param bucket_name name of the bucket
+#' @importFrom httr add_headers
 #' @export
 planner_bucket_create <- function(bucket_name, account = planner_connect()) {
   request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/buckets",
@@ -91,6 +107,8 @@ planner_categories_list <- function(account = planner_connect()) {
 #' @param checklist_items character vector of checklist items
 #' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
 #' @param categories names of categories to add
+#' @importFrom httr add_headers stop_for_status POST
+#' @importFrom jsonlite toJSON
 #' @export
 planner_task_create <- function(title,
                                 description = NULL,
@@ -157,14 +175,15 @@ planner_task_create <- function(title,
 }
 
 #' @rdname planner
-#' @param old_title title of the task to update
+#' @param task any task title, task ID, or [`ms_plan_task`][Microsoft365R::ms_plan_task] object (e.g. from [planner_task_find()])
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
 #' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
 #' @importFrom jsonlite toJSON
+#' @importFrom httr add_headers stop_for_status PATCH GET
 #' @importFrom dplyr case_when
 #' @export
-planner_task_update <- function(old_title,
+planner_task_update <- function(task,
                                 title = NULL,
                                 bucket_name = NULL,
                                 description = NULL,
@@ -180,8 +199,9 @@ planner_task_update <- function(old_title,
                                 account = planner_connect()) {
   # does not work with Microsoft365R yet, so we do it manually
   
-  task <- planner_task_object(task_title = old_title)
+  task <- planner_task_find(task)
   task_id <- task$properties$id
+  task_title <- task$properties$title
   
   # UPDATE TASK ITSELF ----
   
@@ -272,7 +292,7 @@ planner_task_update <- function(old_title,
                                                  Prefer = "return=representation",
                                                  `Content-type` = "application/json"),
                             body = body)
-    stop_for_status(request_update, task = paste("update task", old_title, ".\nBody of request:\n\n", body))
+    stop_for_status(request_update, task = paste("update task", task_title, ".\nBody of request:\n\n", body))
   }
   
   
@@ -340,10 +360,6 @@ planner_task_update <- function(old_title,
     }
     if (length(attachment_items) > 0) {
       body <- c(body, list(references = attachment_items))
-      if (body$previewType == "automatic") {
-        # prioritise the website on the task card, it will contain a clickable link to the Teams project folder
-        body$previewType <- "reference"
-      }
     }
   }
   
@@ -362,35 +378,58 @@ planner_task_update <- function(old_title,
                                                       Prefer = "return=representation",
                                                       `Content-type` = "application/json"),
                                  body = body)
-  stop_for_status(request_updatedetails, task = paste("update details of task", old_title, ".\nBody of request:\n\n", body))
+  stop_for_status(request_updatedetails, task = paste("update details of task", task_title, ".\nBody of request:\n\n", body))
 }
 
 #' @rdname planner
 #' @param category_text text of the category to use
 #' @export
-planner_task_request_validation <- function(title,
+planner_task_request_validation <- function(task,
                                             category_text = read_secret("planner.label.authorise"),
                                             account = planner_connect()) {
-  task <- planner_task_object(title)
-  planner_task_update(title,
-                      categories = category_text)
-  #,
-  # comments = paste0("Validatie aangevraagd\n",
-  # "ID taak: ",  task$properties$id,
-  # "ID bucket: ", task$properties$bucketId))
+  planner_task_update(task, categories = category_text, account = account)
 }
 
 #' @rdname planner
 #' @export
-planner_task_validate <- function(title,
+planner_task_validate <- function(task,
                                   category_text = read_secret("planner.label.authorised"),
                                   account = planner_connect()) {
-  task <- planner_task_object(title)
-  planner_task_update(title,
-                      categories = category_text) #,
-  # comments = paste0("Geautomatiseeerd gevalideerd\n",
-  #                   "ID taak: ",  task$properties$id,
-  #                   "ID bucket: ", task$properties$bucketId))
+  planner_task_update(task, categories = category_text, account = account)
+}
+
+#' @rdname planner
+#' @param task_title title of the task, will be searched with [`%like%`][certetoolbox::like]
+#' @param task_id exact id of the task
+#' @details The [planner_task_find()] returns a [`ms_plan_task`][Microsoft365R::ms_plan_task] object.
+#' @importFrom Microsoft365R ms_plan_task
+#' @export
+planner_task_find <- function(task_title = NULL, task_id = NULL, account = planner_connect()) {
+  if (inherits(task_title, "ms_plan_task")) {
+    return(task_title)
+  }
+  if (is.null(task_title) && is.null(task_id)) {
+    stop("task_title or task_id must be given")
+  }
+  # account$get_bucket() does not work yet in Microsoft365R, returns error 'Invalid bucket name', so do it manually:
+  tasks <- account$list_tasks()
+  out <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!is.null(task_id), # this prioritises ID over title
+                                                                        b$properties$id == task_id,
+                                                                        b$properties$title %like% task_title)))
+  if (length(out) == 0) {
+    stop("Task not found: '", task_title, "'", call. = FALSE)
+  } else if (length(out) == 1) {
+    return(tasks[[out[1]]])
+  } else {
+    titles <- vapply(FUN.VALUE = character(1), tasks[out], function(t) t$properties$title)
+    if (any(titles == task_title)) {
+      return(tasks[[out[which(titles == task_title)]]])
+    } else {
+      out <- tasks[[out[1]]]
+      message("Assuming task '", out$properties$title,  "' for searching with text '", task_title, "'")
+      return(out)
+    }
+  }
 }
 
 #' @rdname planner
@@ -446,33 +485,14 @@ planner_bucket_object <- function(bucket_name = read_secret("planner.default.buc
   }
 }
 
-planner_task_object <- function(task_title, task_id = NULL, account = planner_connect()) {
-  # account$get_bucket() does not work yet in Microsoft365R, returns error 'Invalid bucket name', so do it manually:
-  tasks <- account$list_tasks()
-  out <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!is.null(task_id), 
-                                                                        b$properties$id == task_id,
-                                                                        b$properties$title %like% task_title)))
-  if (length(out) == 0) {
-    stop("Task not found: '", task_title, "'", call. = FALSE)
-  } else {
-    titles <- vapply(FUN.VALUE = character(1), tasks[out], function(t) t$properties$title)
-    if (any(titles == task_title)) {
-      return(tasks[[out[which(titles == task_title)]]])
-    } else {
-      out <- tasks[[out[1]]]
-      message("Assuming task '", out$properties$title,  "' for searching with text '", task_title, "'")
-      return(out)
-    }
-  }
-}
-
 #' @importFrom jsonlite fromJSON
-#' @importFrom httr GET stop_for_status content
-current_highest_card_id <- function(task_title = read_secret("planner.dummycard"),
+#' @importFrom httr GET add_headers stop_for_status content
+current_highest_card_id <- function(task = read_secret("planner.dummycard"),
                                     account = planner_connect()) {
   # this returns the currently highest card number, which is saved to the description
-  task <- planner_task_object(task_title = task_title)
+  task <- planner_task_find(task)
   task_id <- task$properties$id
+  task_title <- task$properties$title
   
   get_task <- GET(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id, "/details"),
                   config = add_headers(Authorization = paste(account$token$credentials$token_type,
@@ -485,10 +505,10 @@ current_highest_card_id <- function(task_title = read_secret("planner.dummycard"
   as.integer(response_body$description)
 }
 
-increase_highest_card_id <- function(task_title = read_secret("planner.dummycard"),
+increase_highest_card_id <- function(task = read_secret("planner.dummycard"),
                                      account = planner_connect()) {
-  highest <- current_highest_card_id(task_title = task_title, account = account)
-  planner_task_update(old_title = task_title, description = highest + 1)
+  highest <- current_highest_card_id(task = task, account = account)
+  planner_task_update(task = task, description = highest + 1)
 }
 
 get_internal_category <- function(category_name, account = planner_connect()) {

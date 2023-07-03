@@ -378,7 +378,7 @@ project_add <- function(board = read_secret("trello.default.board"),
     observeEvent(input$create, {
       
       empty_field <- function(field, value) {
-        if (all(is.null(value)) || length(value) == 0 || value == "") {
+        if (is.null(value) || length(value) == 0 || value == "") {
           showDialog(title = field,
                      message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
           TRUE
@@ -434,11 +434,11 @@ project_add <- function(board = read_secret("trello.default.board"),
         description <- ""
       }
       checklist <- input$checklist
-      if (all(is.null(checklist)) | length(checklist) == 0) {
+      if (is.null(checklist) || length(checklist) == 0) {
         checklist <- ""
       }
       trello_cards <- input$trello_cards
-      if (all(is.null(trello_cards)) | length(trello_cards) == 0) {
+      if (is.null(trello_cards) || length(trello_cards) == 0) {
         trello_cards <- ""
       }
       
@@ -455,20 +455,20 @@ project_add <- function(board = read_secret("trello.default.board"),
             deadline <- input$deadline
           }
           new_task <- planner_task_create(account = planner,
-                                         title = title,
-                                         bucket_name = input$planner_bucket,
-                                         assigned = input$planner_members,
-                                         requested_by = requested_by,
-                                         priority = input$priority,
-                                         duedate = deadline,
-                                         checklist_items = checklist |> strsplit("\n") |> unlist(),
-                                         categories = input$planner_categories,
-                                         description = description)
+                                          title = title,
+                                          bucket_name = input$planner_bucket,
+                                          assigned = input$planner_members,
+                                          requested_by = requested_by,
+                                          priority = input$priority,
+                                          duedate = deadline,
+                                          checklist_items = checklist |> strsplit("\n") |> unlist(),
+                                          categories = input$planner_categories,
+                                          description = description)
           card_id <- new_task$id
           new_title <- new_task$title
           # create Teams folder
           incProgress(1 / progress_items, detail = "MS Teams: map aanmaken")
-          teams_new_project(task_title = new_title, channel = channel, planner = planner)
+          teams_new_project(task = new_title, channel = channel, planner = planner)
         }
         # Trello ----
         if (input$trello_upload == TRUE) {
@@ -645,7 +645,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
                    con = file.path(filename))
         if (isTRUE(input$files_only_teams)) {
-          teams_upload_project_file(files = file.path(filename), task_title = new_title, channel = channel, planner = planner)
+          teams_upload_project_file(files = file.path(filename), task = new_title, channel = channel, planner = planner)
           unlink(file.path(filename), force = TRUE)
         }
         
@@ -661,7 +661,7 @@ project_add <- function(board = read_secret("trello.default.board"),
         openProject(fullpath, newSession = TRUE)
       } else {
         if (isTRUE(input$files_only_teams)) {
-          teams_browse_project(task_title = new_title, channel = channel, planner = planner)
+          teams_browse_project(task = new_title, channel = channel, planner = planner)
         } else {
           # open file
           navigateToFile(filename)
@@ -704,7 +704,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
                          token = trello_credentials("token")) {
   card_number <- gsub("[^0-9]", "", card_number)
   
-  if (is.null(card_number) | all(is.na(card_number))) {
+  if (is.null(card_number) || all(is.na(card_number))) {
     return(invisible())
   }
   
@@ -838,7 +838,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       
       l <- tagList()
       
-      if (length(desc) > 0 & desc != "") {
+      if (length(desc) > 0 && desc != "") {
         l <- tagList(l, h4("Omschrijving"),
                      HTML(paste0("<p>", desc, "</p>")))
       }
@@ -921,7 +921,7 @@ project_edit <- function(card_number = project_get_current_id(ask = TRUE),
       disable("save")
       disable("cancel")
       
-      if (input$status == card_status & trimws(input$comment) == "" & input$status %unlike% "(wachten|voltooid)") {
+      if (input$status == card_status && trimws(input$comment) == "" && input$status %unlike% "(wachten|voltooid)") {
         showDialog("Status gewijzigd", "Als de status gewijzigd is naar 'wachten op een ander' of 'voltooid', moet een opmerking ingevuld worden.")
       } else {
         

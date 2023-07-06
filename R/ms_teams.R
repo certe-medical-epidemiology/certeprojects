@@ -97,9 +97,10 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
                                    account = teams_connect()) {
   channel_name <- find_channel(projects_channel, account = account)
   if (is.null(pkg_env$project_folder)) {
-    pkg_env$project_folder <- account$
-      get_channel(channel_name = channel_name)$
-      get_folder()
+    tryCatch(pkg_env$project_folder <- account$
+               get_channel(channel_name = channel_name)$
+               get_folder(),
+             error = function(e) warning("Cannot retrieve Teams project channel", immediate. = TRUE))
   }
   return(pkg_env$project_folder)
 }
@@ -334,9 +335,10 @@ teams_channels <- function(account = teams_connect()) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
-  sort(vapply(FUN.VALUE = character(1),
-              account$list_channels(), 
-              function(ch) ch$properties$displayName))
+  tryCatch(sort(vapply(FUN.VALUE = character(1),
+                       account$list_channels(), 
+                       function(ch) ch$properties$displayName)),
+           error = function(e) warning("Cannot retrieve Teams channels", immediate. = TRUE))
 }
 
 #' @rdname teams

@@ -11,7 +11,8 @@ project_add(
   key = trello_credentials("key"),
   token = trello_credentials("token"),
   planner = planner_connect(),
-  channel = teams_projects_channel()
+  teams = teams_connect(),
+  projects_channel = read_secret("teams.projects.channel")
 )
 
 project_edit(
@@ -30,9 +31,11 @@ project_edit(
 
 \item{token}{Trello API token}
 
-\item{planner}{Microsoft Planner 'Plan', as returned by e.g. \code{\link[=planner_connect]{planner_connect()}}}
+\item{planner}{Microsoft Planner account, as returned by e.g. \code{\link[=planner_connect]{planner_connect()}}}
 
-\item{channel}{Microsoft Teams Channel, as returned by e.g. \code{\link[=teams_projects_channel]{teams_projects_channel()}}}
+\item{teams}{Microsoft Teams account, as returned by e.g. \code{\link[=teams_connect]{teams_connect()}}}
+
+\item{projects_channel}{name of a channel in the Teams account set in \code{teams}}
 
 \item{card_number}{Trello card number}
 }

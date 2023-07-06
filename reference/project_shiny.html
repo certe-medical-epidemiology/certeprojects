@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.1</span>
       </span>
     </div>
 
@@ -82,7 +82,8 @@
 <span>  key <span class="op">=</span> <span class="fu"><a href="trello.html">trello_credentials</a></span><span class="op">(</span><span class="st">"key"</span><span class="op">)</span>,</span>
 <span>  token <span class="op">=</span> <span class="fu"><a href="trello.html">trello_credentials</a></span><span class="op">(</span><span class="st">"token"</span><span class="op">)</span>,</span>
 <span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  channel <span class="op">=</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  teams <span class="op">=</span> <span class="fu"><a href="teams.html">teams_connect</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  projects_channel <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">project_edit</span><span class="op">(</span></span>
@@ -112,11 +113,15 @@
 
 
 <dt>planner</dt>
-<dd><p>Microsoft Planner 'Plan', as returned by e.g. <code><a href="planner.html">planner_connect()</a></code></p></dd>
+<dd><p>Microsoft Planner account, as returned by e.g. <code><a href="planner.html">planner_connect()</a></code></p></dd>
 
 
-<dt>channel</dt>
-<dd><p>Microsoft Teams Channel, as returned by e.g. <code><a href="teams.html">teams_projects_channel()</a></code></p></dd>
+<dt>teams</dt>
+<dd><p>Microsoft Teams account, as returned by e.g. <code><a href="teams.html">teams_connect()</a></code></p></dd>
+
+
+<dt>projects_channel</dt>
+<dd><p>name of a channel in the Teams account set in <code>teams</code></p></dd>
 
 
 <dt>card_number</dt>

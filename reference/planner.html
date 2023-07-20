@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.2</span>
       </span>
     </div>
 
@@ -102,7 +102,8 @@
 <span>  categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  assigned <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bucket_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.default.bucket"</span><span class="op">)</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  add_project_number <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_task_update</span><span class="op">(</span></span>
@@ -115,6 +116,7 @@
 <span>  assigned_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categories_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  percent_completed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  checklist_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  priority <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachment_urls <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -206,6 +208,10 @@
 <dd><p>names of members within the plan. Use <code>FALSE</code> to remove all assigned members.</p></dd>
 
 
+<dt>add_project_number</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to add a project number</p></dd>
+
+
 <dt>task</dt>
 <dd><p>any task title, task ID, or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object (e.g. from <code>planner_task_find()</code>)</p></dd>
 
@@ -216,6 +222,10 @@
 
 <dt>categories_keep</dt>
 <dd><p>add categories that are set in <code>categories</code> instead of replacing them, defaults to <code>FALSE</code></p></dd>
+
+
+<dt>percent_completed</dt>
+<dd><p>percentage of task completion between 0-100</p></dd>
 
 
 <dt>attachment_urls</dt>

@@ -439,7 +439,8 @@ project_add <- function(board = read_secret("trello.default.board"),
                                           duedate = deadline,
                                           checklist_items = checklist |> strsplit("\n") |> unlist(),
                                           categories = input$planner_categories,
-                                          description = description)
+                                          description = description,
+                                          add_project_number = TRUE)
           card_id <- new_task$id
           new_title <- new_task$title
         }

@@ -42,7 +42,8 @@ planner_task_create(
   categories = NULL,
   assigned = NULL,
   bucket_name = read_secret("planner.default.bucket"),
-  account = planner_connect()
+  account = planner_connect(),
+  add_project_number = FALSE
 )
 
 planner_task_update(
@@ -55,6 +56,7 @@ planner_task_update(
   assigned_keep = FALSE,
   categories = NULL,
   categories_keep = FALSE,
+  percent_completed = NULL,
   checklist_items = NULL,
   priority = NULL,
   attachment_urls = NULL,
@@ -116,11 +118,15 @@ planner_user_property(
 
 \item{assigned}{names of members within the plan. Use \code{FALSE} to remove all assigned members.}
 
+\item{add_project_number}{a \link{logical} to add a project number}
+
 \item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 
 \item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
 
 \item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
+
+\item{percent_completed}{percentage of task completion between 0-100}
 
 \item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title}
 

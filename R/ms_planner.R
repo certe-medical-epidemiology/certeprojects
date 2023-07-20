@@ -107,6 +107,7 @@ planner_categories_list <- function(account = planner_connect()) {
 #' @param checklist_items character vector of checklist items
 #' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
 #' @param categories names of categories to add
+#' @param add_project_number a [logical] to add a project number
 #' @importFrom httr add_headers stop_for_status POST
 #' @importFrom jsonlite toJSON
 #' @export
@@ -120,12 +121,17 @@ planner_task_create <- function(title,
                                 # comments = NULL,
                                 assigned = NULL,
                                 bucket_name = read_secret("planner.default.bucket"),
-                                account = planner_connect()) {
+                                account = planner_connect(),
+                                add_project_number = FALSE) {
   # see this for all the possible fields: https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0
   
   # assign project ID
-  new_id <- current_highest_card_id(account = account) + 1
-  title <- paste0(title, " - p", new_id)
+  if (isTRUE(add_project_number)) {
+    new_id <- current_highest_card_id(account = account) + 1
+    title <- paste0(title, " - p", new_id)
+  } else {
+    new_id <- NULL
+  }
   
   # does not work with Microsoft365R yet, so we do it manually
   body <- list(title = title,
@@ -133,7 +139,7 @@ planner_task_create <- function(title,
                bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id,
                startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
   
-  if (!is.null(duedate)) {
+  if (!arg_is_empty(duedate)) {
     if (isFALSE(duedate)) {
       body <- c(body, list(dueDateTime = NULL))
     } else {
@@ -144,12 +150,12 @@ planner_task_create <- function(title,
     }
   }
   
-  if (!is.null(priority)) {
+  if (!arg_is_empty(priority)) {
     body <- c(body, list(priority = planner_priority_to_int(priority)))
   }
   
-  if (is.null(requested_by)) {
-    description <- c(description, paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en ")))
+  if (!arg_is_empty(requested_by)) {
+    description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), "."), description)
   }
   
   # run request:
@@ -163,11 +169,25 @@ planner_task_create <- function(title,
   stop_for_status(request_add, task = paste("add task", title, ".\nBody of request:\n\n", body))
   
   # went well, so increase the highest ID by 1
-  increase_highest_card_id(account = account)
+  if (isTRUE(add_project_number)) {
+    increase_highest_card_id(account = account)
+  }
   
   # just like Trello, some properties can only be added as update
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
-  if (!is.null(description) || !is.null(categories) || !is.null(checklist_items) || !is.null(assigned)) {
+  if (!arg_is_empty(description) || !arg_is_empty(categories) || !arg_is_empty(checklist_items) || !arg_is_empty(assigned)) {
+    tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
+    if (is.null(tsk)) {
+      # sync the fields
+      try(pkg_env$m365_getplan$sync_fields(), silent = TRUE)
+      tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
+    }
+    if (is.null(tsk)) {
+      # still cannot be found yet, wait a sec
+      Sys.sleep(1)
+    } else {
+      title <- tsk
+    }
     planner_task_update(title, description = description, checklist_items = checklist_items, assigned = assigned, categories = categories)
   }
   
@@ -176,6 +196,7 @@ planner_task_create <- function(title,
 
 #' @rdname planner
 #' @param task any task title, task ID, or [`ms_plan_task`][Microsoft365R::ms_plan_task] object (e.g. from [planner_task_find()])
+#' @param percent_completed percentage of task completion between 0-100
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
 #' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
@@ -192,6 +213,7 @@ planner_task_update <- function(task,
                                 assigned_keep = FALSE,
                                 categories = NULL,
                                 categories_keep = FALSE,
+                                percent_completed = NULL,
                                 checklist_items = NULL,
                                 priority = NULL,
                                 attachment_urls = NULL,
@@ -207,38 +229,41 @@ planner_task_update <- function(task,
   
   body <- list()
   
-  if (!is.null(title)) {
+  if (!arg_is_empty(title)) {
     # new title
     body <- c(body, title = title)
-    # description <- c(description, create_log("Changed title to '", title, "'"))
   }
   
-  if (!is.null(duedate)) {
+  if (!arg_is_empty(duedate)) {
     if (isFALSE(duedate)) {
       body <- c(body, list(dueDateTime = NULL))
-      # description <- c(description, create_log("Removed due date"))
     } else {
       if (!inherits(duedate, c("Date", "POSIXct"))) {
         stop("duedate is not a valid date")
       }
       body <- c(body, dueDateTime = paste0(format(duedate, "%Y-%m-%d"), "T00:00:00Z"))
-      # description <- c(description, create_log("Changed due date to ", format(duedate, "%a %d %b %Y")))
     }
   }
   
-  if (!is.null(bucket_name)) {
-    # new bucket
-    body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id)
-    # description <- c(description, create_log("Moved to bucket '", bucket_name, "'"))
+  if (!arg_is_empty(percent_completed)) {
+    if (percent_completed < 1) {
+      # if 0.5 was meant as 50%
+      percent_completed <- percent_completed * 100
+    }
+    body <- c(body, percentComplete = as.integer(percent_completed))
   }
   
-  if (!is.null(categories)) {
+  if (!arg_is_empty(bucket_name)) {
+    # new bucket
+    body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id)
+  }
+  
+  if (!arg_is_empty(categories)) {
     apply_categories <- list()
     # these are all existing categories
     categories_current <- names(task$properties$appliedCategories)
     # get internal name of given categories
     categories_new <- get_internal_category(categories)
-    # description <- c(description, create_log("Added category: ", paste0("'", sort(categories), "'", collapse = " and ")))
     for (category in unique(c(categories_new, categories_current))) {
       if (category %in% categories_new) {
         # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerappliedcategories
@@ -249,16 +274,14 @@ planner_task_update <- function(task,
       }
     }
     body <- c(body, list(appliedCategories = apply_categories))
-    
   }
   
-  if (!is.null(assigned)) {
+  if (!arg_is_empty(assigned)) {
     apply_assigned <- list()
     # these are all existing assigned
     assigned_current <- names(task$properties$assignments)
     # get internal name of given assigned
     assigned_new <- planner_user_property(assigned)
-    # description <- c(description, create_log("Assigned user(s) ", paste0(sort(planner_user_property(assigned, property = "name")), collapse = " and ")))
     for (assign in unique(c(assigned_new, assigned_current))) {
       if (assign %in% assigned_new) {
         # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerassignments?view=graph-rest-1.0
@@ -274,9 +297,8 @@ planner_task_update <- function(task,
     body <- c(body, list(assignments = apply_assigned))
   }
   
-  if (!is.null(priority)) {
+  if (!arg_is_empty(priority)) {
     body <- c(body, list(priority = planner_priority_to_int(priority)))
-    # description <- c(description, create_log("Changed priority to '", priority, "' (", planner_priority_to_int(priority), ")"))
   }
   
   if (length(body) > 0) {
@@ -302,18 +324,18 @@ planner_task_update <- function(task,
   # checklist, description, previewType, references
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   
-  if (is.null(description) && is.null(checklist_items) && is.null(attachment_urls)) {
+  if (arg_is_empty(description) && arg_is_empty(checklist_items) && arg_is_empty(attachment_urls)) {
     return(invisible())
   }
   
   body <- list()
-  if (!is.null(description)) {
+  if (!arg_is_empty(description)) {
     body <- c(body, description = paste(description, collapse = "\n\n"), previewType = "description")
   } else {
     body <- c(body, previewType = "automatic")
   }
   
-  if (!is.null(checklist_items)) {
+  if (!arg_is_empty(checklist_items)) {
     check_items <- list()
     for (check_item in checklist_items) {
       check_items <- c(check_items, 
@@ -330,7 +352,7 @@ planner_task_update <- function(task,
     }
   }
   
-  if (!is.null(attachment_urls)) {
+  if (!arg_is_empty(attachment_urls)) {
     attachment_items <- list()
     for (i in seq_len(length(attachment_urls))) {
       attachment_item <- attachment_urls[i]
@@ -408,12 +430,12 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = plann
   if (inherits(task_title, "ms_plan_task")) {
     return(task_title)
   }
-  if (is.null(task_title) && is.null(task_id)) {
+  if (arg_is_empty(task_title) && arg_is_empty(task_id)) {
     stop("task_title or task_id must be given")
   }
   # account$get_bucket() does not work yet in Microsoft365R, returns error 'Invalid bucket name', so do it manually:
   tasks <- account$list_tasks()
-  out <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!is.null(task_id), # this prioritises ID over title
+  out <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!arg_is_empty(task_id), # this prioritises ID over title
                                                                         b$properties$id == task_id,
                                                                         b$properties$title %like% task_title)))
   if (length(out) == 0) {
@@ -553,6 +575,6 @@ generate_guids <- function(length) {
   })
 }
 
-create_log <- function(...) {
-  paste0(format(Sys.time(), "%Y-%m-%d %H:%M"), ", ", get_current_user(), "/ ", paste0(c(...), collapse = ""))
+arg_is_empty <- function(x) {
+  is.null(x) || all(is.na(x))
 }

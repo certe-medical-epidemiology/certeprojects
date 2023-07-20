@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.11.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.12.0</span>
       </span>
     </div>
 
@@ -95,6 +95,7 @@
 <span><span class="fu">planner_task_create</span><span class="op">(</span></span>
 <span>  <span class="va">title</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  startdate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  duedate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  requested_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  priority <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.default.priority"</span><span class="op">)</span>,</span>
@@ -102,26 +103,42 @@
 <span>  categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  assigned <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bucket_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.default.bucket"</span><span class="op">)</span>,</span>
+<span>  attachment_urls <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  add_project_number <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">planner_highest_project_id</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_task_update</span><span class="op">(</span></span>
 <span>  <span class="va">task</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  bucket_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  description <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  startdate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  duedate <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  assigned <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  assigned_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  priority <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checklist_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categories_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  assigned <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  assigned_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bucket_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  percent_completed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  checklist_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  priority <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachment_urls <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_task_search</span><span class="op">(</span></span>
+<span>  search_term <span class="op">=</span> <span class="st">".*"</span>,</span>
+<span>  limit <span class="op">=</span> <span class="cn">Inf</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_task_find</span><span class="op">(</span></span>
+<span>  task_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  task_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_retrieve_project_id</span><span class="op">(</span><span class="va">task</span>, account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_task_request_validation</span><span class="op">(</span></span>
 <span>  <span class="va">task</span>,</span>
@@ -135,18 +152,17 @@
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">planner_task_find</span><span class="op">(</span></span>
-<span>  task_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  task_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu">planner_user_property</span><span class="op">(</span></span>
 <span>  <span class="va">user</span>,</span>
 <span>  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  property <span class="op">=</span> <span class="st">"id"</span>,</span>
 <span>  as_list <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_highest_project_id</span><span class="op">(</span></span>
+<span>  task <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.dummycard"</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -184,8 +200,12 @@
 <dd><p>a description for the task. A vector will be add as one text separated by white lines.</p></dd>
 
 
+<dt>startdate</dt>
+<dd><p>a date to use as start date, use <code>FALSE</code> to remove it. Defaults to today.</p></dd>
+
+
 <dt>duedate</dt>
-<dd><p>a date to use a due date, use <code>FALSE</code> to remove it</p></dd>
+<dd><p>a date to use as due date, use <code>FALSE</code> to remove it</p></dd>
 
 
 <dt>requested_by</dt>
@@ -205,35 +225,39 @@
 
 
 <dt>assigned</dt>
-<dd><p>names of members within the plan. Use <code>FALSE</code> to remove all assigned members.</p></dd>
-
-
-<dt>add_project_number</dt>
-<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to add a project number</p></dd>
-
-
-<dt>task</dt>
-<dd><p>any task title, task ID, or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object (e.g. from <code>planner_task_find()</code>)</p></dd>
-
-
-<dt>assigned_keep</dt>
-<dd><p>add members that are set in <code>assigned</code> instead of replacing them, defaults to <code>FALSE</code></p></dd>
-
-
-<dt>categories_keep</dt>
-<dd><p>add categories that are set in <code>categories</code> instead of replacing them, defaults to <code>FALSE</code></p></dd>
-
-
-<dt>percent_completed</dt>
-<dd><p>percentage of task completion between 0-100</p></dd>
+<dd><p>names of members within the plan - use <code>NULL</code> to not add members in <code>planner_task_create()</code>, and use <code>FALSE</code> to remove all existing member in <code>planner_task_update()</code></p></dd>
 
 
 <dt>attachment_urls</dt>
 <dd><p>URLs to add as attachment, can be named characters to give the URLs a title</p></dd>
 
 
-<dt>category_text</dt>
-<dd><p>text of the category to use</p></dd>
+<dt>project_number</dt>
+<dd><p>the new project number to assign. Use <code>NULL</code> or <code>FALSE</code> to not assign a project number. Defaults to the currently highest project ID + 1.</p></dd>
+
+
+<dt>task</dt>
+<dd><p>any task title, task ID, or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object (e.g. from <code>planner_task_find()</code>)</p></dd>
+
+
+<dt>categories_keep</dt>
+<dd><p>add categories that are set in <code>categories</code> instead of replacing them, defaults to <code>FALSE</code></p></dd>
+
+
+<dt>assigned_keep</dt>
+<dd><p>add members that are set in <code>assigned</code> instead of replacing them, defaults to <code>FALSE</code></p></dd>
+
+
+<dt>percent_completed</dt>
+<dd><p>percentage of task completion between 0-100</p></dd>
+
+
+<dt>search_term</dt>
+<dd><p>search term, can contain regular expressions</p></dd>
+
+
+<dt>limit</dt>
+<dd><p>maximum number of tasks to show</p></dd>
 
 
 <dt>task_title</dt>
@@ -242,6 +266,10 @@
 
 <dt>task_id</dt>
 <dd><p>exact id of the task</p></dd>
+
+
+<dt>category_text</dt>
+<dd><p>text of the category to use</p></dd>
 
 
 <dt>user</dt>
@@ -258,7 +286,10 @@
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p>The <code>planner_task_find()</code> returns a <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object.</p>
+    <p><code>planner_task_search()</code> searches the title and description using case-insensitive regular expressions and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. In interactive mode and with multiple hits, a menu will be shown to pick from.</p>
+<p><code>planner_task_find()</code> searches task title or ID, and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. It is used internally b a lot of <code>planner_*</code> functions, very fast, and does not support interactive use.</p>
+<p><code>planner_retrieve_project_id()</code> retrieves the p-number from the task title and returns it as <a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a>.</p>
+<p><code>planner_highest_project_id()</code> retrieves the currently highest project ID from the dummy card.</p>
     </div>
 
   </div>

@@ -10,10 +10,13 @@
 \alias{planner_categories_list}
 \alias{planner_task_create}
 \alias{planner_task_update}
+\alias{planner_task_search}
+\alias{planner_task_find}
+\alias{planner_retrieve_project_id}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
-\alias{planner_task_find}
 \alias{planner_user_property}
+\alias{planner_highest_project_id}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_connect(
@@ -35,6 +38,7 @@ planner_categories_list(account = planner_connect())
 planner_task_create(
   title,
   description = NULL,
+  startdate = Sys.Date(),
   duedate = NULL,
   requested_by = NULL,
   priority = read_secret("planner.default.priority"),
@@ -42,26 +46,42 @@ planner_task_create(
   categories = NULL,
   assigned = NULL,
   bucket_name = read_secret("planner.default.bucket"),
+  attachment_urls = NULL,
   account = planner_connect(),
-  add_project_number = FALSE
+  project_number = planner_highest_project_id() + 1
 )
 
 planner_task_update(
   task,
   title = NULL,
-  bucket_name = NULL,
   description = NULL,
+  startdate = NULL,
   duedate = NULL,
-  assigned = NULL,
-  assigned_keep = FALSE,
+  priority = NULL,
+  checklist_items = NULL,
   categories = NULL,
   categories_keep = FALSE,
+  assigned = NULL,
+  assigned_keep = FALSE,
+  bucket_name = NULL,
   percent_completed = NULL,
-  checklist_items = NULL,
-  priority = NULL,
   attachment_urls = NULL,
   account = planner_connect()
 )
+
+planner_task_search(
+  search_term = ".*",
+  limit = Inf,
+  account = planner_connect()
+)
+
+planner_task_find(
+  task_title = NULL,
+  task_id = NULL,
+  account = planner_connect()
+)
+
+planner_retrieve_project_id(task, account = planner_connect())
 
 planner_task_request_validation(
   task,
@@ -75,18 +95,17 @@ planner_task_validate(
   account = planner_connect()
 )
 
-planner_task_find(
-  task_title = NULL,
-  task_id = NULL,
-  account = planner_connect()
-)
-
 planner_user_property(
   user,
   team_name = read_secret("team.name"),
   account = planner_connect(),
   property = "id",
   as_list = FALSE
+)
+
+planner_highest_project_id(
+  task = read_secret("planner.dummycard"),
+  account = planner_connect()
 )
 }
 \arguments{
@@ -106,7 +125,9 @@ planner_user_property(
 
 \item{description}{a description for the task. A vector will be add as one text separated by white lines.}
 
-\item{duedate}{a date to use a due date, use \code{FALSE} to remove it}
+\item{startdate}{a date to use as start date, use \code{FALSE} to remove it. Defaults to today.}
+
+\item{duedate}{a date to use as due date, use \code{FALSE} to remove it}
 
 \item{requested_by}{name of the person(s) who requested the task}
 
@@ -116,25 +137,29 @@ planner_user_property(
 
 \item{categories}{names of categories to add}
 
-\item{assigned}{names of members within the plan. Use \code{FALSE} to remove all assigned members.}
-
-\item{add_project_number}{a \link{logical} to add a project number}
-
-\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
-
-\item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
-
-\item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
-
-\item{percent_completed}{percentage of task completion between 0-100}
+\item{assigned}{names of members within the plan - use \code{NULL} to not add members in \code{\link[=planner_task_create]{planner_task_create()}}, and use \code{FALSE} to remove all existing member in \code{\link[=planner_task_update]{planner_task_update()}}}
 
 \item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title}
 
-\item{category_text}{text of the category to use}
+\item{project_number}{the new project number to assign. Use \code{NULL} or \code{FALSE} to not assign a project number. Defaults to the currently highest project ID + 1.}
+
+\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
+
+\item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
+
+\item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
+
+\item{percent_completed}{percentage of task completion between 0-100}
+
+\item{search_term}{search term, can contain regular expressions}
+
+\item{limit}{maximum number of tasks to show}
 
 \item{task_title}{title of the task, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
 
 \item{task_id}{exact id of the task}
+
+\item{category_text}{text of the category to use}
 
 \item{user}{a user name, mail adress, or Certe login name}
 
@@ -146,5 +171,11 @@ planner_user_property(
 These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.
 }
 \details{
-The \code{\link[=planner_task_find]{planner_task_find()}} returns a \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object.
+\code{\link[=planner_task_search]{planner_task_search()}} searches the title and description using case-insensitive regular expressions and returns an \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object. In interactive mode and with multiple hits, a menu will be shown to pick from.
+
+\code{\link[=planner_task_find]{planner_task_find()}} searches task title or ID, and returns an \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object. It is used internally b a lot of \verb{planner_*} functions, very fast, and does not support interactive use.
+
+\code{\link[=planner_retrieve_project_id]{planner_retrieve_project_id()}} retrieves the p-number from the task title and returns it as \link{integer}.
+
+\code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy card.
 }

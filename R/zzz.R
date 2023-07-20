@@ -17,16 +17,9 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-coverage:
-  # more than 75% coverage is unfeasible in non-interactive mode
-  range:
-  - 0.0
-  - 75.0
-
-ignore:
-  - "R/addins.R"
-  - "R/project_shiny.R"
-  - "R/ms_teams.R"
-  - "R/ms_planner.R"
-  - "R/ms_token.R"
-  - "R/universal.R"
+.onLoad <- function(...) {
+  if (interactive()) {
+    # connect on load, so Planner will initialize much faster
+    try(planner_connect(), silent = TRUE)
+  }
+}

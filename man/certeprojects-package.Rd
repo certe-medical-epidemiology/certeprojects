@@ -6,7 +6,7 @@
 \alias{certeprojects-package}
 \title{certeprojects: A Certe R Package for Department Projects}
 \description{
-A Certe R Package with functions to automate department projects using Shiny, R Markdown, Quarto, MS Teams and Trello. This package is part of the 'certedata' universe.
+A Certe R Package with functions to automate department projects using MS Teams, MS Planner, Shiny, R Markdown and Quarto. This package is part of the 'certedata' universe.
 }
 \seealso{
 Useful links:

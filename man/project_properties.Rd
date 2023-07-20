@@ -41,7 +41,7 @@ project_open_folder(card_number = project_get_current_id(ask = TRUE))
 \arguments{
 \item{ask}{logical to indicate whether the project number should always be asked. The default, \code{NULL}, will show a popup in \link[=interactive]{interactive} \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current \link[=getwd]{working directory} to determine the project number.}
 
-\item{card_number}{Trello card number}
+\item{card_number}{Planner card number}
 
 \item{filename}{filename to set or get, case-insensitive, and can also be a \link[base:regex]{regular expression}}
 
@@ -50,10 +50,10 @@ project_open_folder(card_number = project_get_current_id(ask = TRUE))
 \item{foldername}{foldername to set}
 }
 \description{
-Retrieve project properties, such as the title, folder location and Trello card number.
+Retrieve project properties, such as the title, folder location and project number.
 }
 \details{
-\code{\link[=project_get_current_id]{project_get_current_id()}} uses \code{\link[=trello_search_card]{trello_search_card()}} to find a specific project based on any search string.
+\code{\link[=project_get_current_id]{project_get_current_id()}} uses \code{\link[=planner_task_search]{planner_task_search()}} to find a specific project based on any search string.
 
 \code{\link[=project_identifier]{project_identifier()}} generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: '\Sexpr{Sys.info()["user"]}'), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).
 

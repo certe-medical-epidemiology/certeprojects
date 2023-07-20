@@ -167,7 +167,7 @@ teams_get_link(
 
 \item{teams_path}{file location in Microsoft Teams, may also contain the channel name if \code{channel} is \code{NULL}, e.g., \code{teams_path = "channel name/test.xlsx"}}
 
-\item{card_number}{Trello card number}
+\item{card_number}{Planner card number}
 
 \item{share_type}{type of share, must be \code{"view"} (default) or \code{"edit"}}
 

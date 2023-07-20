@@ -33,9 +33,11 @@ planner_connect <- function(plan = read_secret("planner.name"), team_name = read
   if (is.null(pkg_env$m365_getplan)) {
     # not yet connected to Planner in Microsoft 365, so set it up
     if (!is.null(team_name) && team_name != "") {
-      pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
-        get_group(name = team_name)$
-        get_plan(plan_title = plan)
+      suppressMessages(
+        pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
+          get_group(name = team_name)$
+          get_plan(plan_title = plan)
+      )
     } else {
       # team_name can be empty, but then plan must be a plan_id
       token <- get_microsoft365_token(scope = "tasks", ...)
@@ -43,8 +45,7 @@ planner_connect <- function(plan = read_secret("planner.name"), team_name = read
       pkg_env$m365_getplan <- ms_plan$new(token, token$tenant, res)
     }
   }
-  # this will auto-renew authorisation when due
-  return(suppressMessages(invisible(pkg_env$m365_getplan)))
+  return(invisible(pkg_env$m365_getplan))
 }
 
 #' @rdname planner
@@ -101,18 +102,21 @@ planner_categories_list <- function(account = planner_connect()) {
 #' @rdname planner
 #' @param title title of the task
 #' @param description a description for the task. A vector will be add as one text separated by white lines.
-#' @param duedate a date to use a due date, use `FALSE` to remove it
+#' @param startdate a date to use as start date, use `FALSE` to remove it. Defaults to today.
+#' @param duedate a date to use as due date, use `FALSE` to remove it
 #' @param requested_by name of the person(s) who requested the task
 #' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
 #' @param checklist_items character vector of checklist items
-#' @param assigned names of members within the plan. Use `FALSE` to remove all assigned members.
+#' @param assigned names of members within the plan - use `NULL` to not add members in [planner_task_create()], and use `FALSE` to remove all existing member in [planner_task_update()]
 #' @param categories names of categories to add
-#' @param add_project_number a [logical] to add a project number
+#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
+#' @param project_number the new project number to assign. Use `NULL` or `FALSE` to not assign a project number. Defaults to the currently highest project ID + 1.
 #' @importFrom httr add_headers stop_for_status POST
 #' @importFrom jsonlite toJSON
 #' @export
 planner_task_create <- function(title,
                                 description = NULL,
+                                startdate = Sys.Date(),
                                 duedate = NULL,
                                 requested_by = NULL,
                                 priority = read_secret("planner.default.priority"),
@@ -121,16 +125,19 @@ planner_task_create <- function(title,
                                 # comments = NULL,
                                 assigned = NULL,
                                 bucket_name = read_secret("planner.default.bucket"),
+                                attachment_urls = NULL,
                                 account = planner_connect(),
-                                add_project_number = FALSE) {
+                                project_number = planner_highest_project_id() + 1) {
   # see this for all the possible fields: https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0
   
   # assign project ID
-  if (isTRUE(add_project_number)) {
-    new_id <- current_highest_card_id(account = account) + 1
-    title <- paste0(title, " - p", new_id)
+  if (!is.null(project_number) && !isFALSE(project_number)) {
+    if (!is.numeric(project_number)) {
+      stop("project_number must be numeric, or NULL or FALSE")
+    }
+    title <- paste0(title, " - p", project_number)
   } else {
-    new_id <- NULL
+    project_number <- NULL
   }
   
   # does not work with Microsoft365R yet, so we do it manually
@@ -139,6 +146,16 @@ planner_task_create <- function(title,
                bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id,
                startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
   
+  if (!arg_is_empty(startdate)) {
+    if (isFALSE(startdate)) {
+      body <- c(body, list(startDateTime = NULL))
+    } else {
+      if (!inherits(startdate, c("Date", "POSIXct"))) {
+        stop("startdate is not a valid date")
+      }
+      body <- c(body, startDateTime = paste0(format(startdate, "%Y-%m-%d"), "T00:00:00Z"))
+    }
+  }
   if (!arg_is_empty(duedate)) {
     if (isFALSE(duedate)) {
       body <- c(body, list(dueDateTime = NULL))
@@ -169,13 +186,14 @@ planner_task_create <- function(title,
   stop_for_status(request_add, task = paste("add task", title, ".\nBody of request:\n\n", body))
   
   # went well, so increase the highest ID by 1
-  if (isTRUE(add_project_number)) {
-    increase_highest_card_id(account = account)
+  if (!is.null(project_number)) {
+    increase_highest_project_id(account = account)
   }
   
-  # just like Trello, some properties can only be added as update
+  # some properties can only be added as update (using PATCH)
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
-  if (!arg_is_empty(description) || !arg_is_empty(categories) || !arg_is_empty(checklist_items) || !arg_is_empty(assigned)) {
+  if (!arg_is_empty(description) || !arg_is_empty(categories) || !arg_is_empty(checklist_items) ||
+      !arg_is_empty(assigned) || !arg_is_empty(attachment_urls)) {
     tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
     if (is.null(tsk)) {
       # sync the fields
@@ -188,10 +206,11 @@ planner_task_create <- function(title,
     } else {
       title <- tsk
     }
-    planner_task_update(title, description = description, checklist_items = checklist_items, assigned = assigned, categories = categories)
+    planner_task_update(title, description = description, checklist_items = checklist_items,
+                        assigned = assigned, categories = categories, attachment_urls = attachment_urls)
   }
   
-  return(invisible(list(id = new_id, title = title)))
+  return(invisible(list(id = project_number, title = title)))
 }
 
 #' @rdname planner
@@ -199,23 +218,23 @@ planner_task_create <- function(title,
 #' @param percent_completed percentage of task completion between 0-100
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
-#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
 #' @importFrom jsonlite toJSON
 #' @importFrom httr add_headers stop_for_status PATCH GET
 #' @importFrom dplyr case_when
 #' @export
 planner_task_update <- function(task,
                                 title = NULL,
-                                bucket_name = NULL,
                                 description = NULL,
+                                startdate = NULL,
                                 duedate = NULL,
-                                assigned = NULL,
-                                assigned_keep = FALSE,
+                                priority = NULL,
+                                checklist_items = NULL,
                                 categories = NULL,
                                 categories_keep = FALSE,
+                                assigned = NULL,
+                                assigned_keep = FALSE,
+                                bucket_name = NULL,
                                 percent_completed = NULL,
-                                checklist_items = NULL,
-                                priority = NULL,
                                 attachment_urls = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
                                 account = planner_connect()) {
@@ -234,6 +253,16 @@ planner_task_update <- function(task,
     body <- c(body, title = title)
   }
   
+  if (!arg_is_empty(startdate)) {
+    if (isFALSE(startdate)) {
+      body <- c(body, list(startDateTime = NULL))
+    } else {
+      if (!inherits(startdate, c("Date", "POSIXct"))) {
+        stop("startdate is not a valid date")
+      }
+      body <- c(body, startDateTime = paste0(format(startdate, "%Y-%m-%d"), "T00:00:00Z"))
+    }
+  }
   if (!arg_is_empty(duedate)) {
     if (isFALSE(duedate)) {
       body <- c(body, list(dueDateTime = NULL))
@@ -404,26 +433,72 @@ planner_task_update <- function(task,
 }
 
 #' @rdname planner
-#' @param category_text text of the category to use
+#' @param search_term search term, can contain regular expressions
+#' @param limit maximum number of tasks to show
+#' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
+#' @importFrom certestyle font_blue format2
 #' @export
-planner_task_request_validation <- function(task,
-                                            category_text = read_secret("planner.label.authorise"),
-                                            account = planner_connect()) {
-  planner_task_update(task, categories = category_text, account = account)
-}
-
-#' @rdname planner
-#' @export
-planner_task_validate <- function(task,
-                                  category_text = read_secret("planner.label.authorised"),
-                                  account = planner_connect()) {
-  planner_task_update(task, categories = category_text, account = account)
+planner_task_search <- function(search_term = ".*", limit = Inf, account = planner_connect()) {
+  tasks <- planner_tasks_list(account = account, plain = FALSE)
+  hits <- vapply(FUN.VALUE = logical(1),
+                 tasks,
+                 function(x) any(c(x$properties$title, x$do_operation("details")$description) %like% search_term &
+                                   x$properties$title != read_secret("planner.dummycard"),
+                                 na.rm = TRUE))
+  if (sum(hits) == 0) {
+    message("No tasks found.")
+    return(NA)
+  } else if (sum(hits) == 1) {
+    return(tasks[[which(hits)]])
+  } else {
+    tasks <- tasks[hits]
+    dates <- as.POSIXct(vapply(FUN.VALUE = double(1), tasks,
+                               function(x) if (is.null(x$properties$startDateTime)) {
+                                 NA_real_ 
+                               } else {
+                                 as.POSIXct(gsub("[TZ]", " ", x$properties$startDateTime))
+                               }))
+    # order on dates
+    tasks_sorted <- tasks[order(dates, decreasing = TRUE)]
+    dates <- dates[order(dates, decreasing = TRUE)]
+    if (!interactive()) {
+      message("Multiple results found, assuming task '", tasks_sorted[[1]]$properties$title, "'")
+      return(tasks_sorted[[1]])
+    } else {
+      if (!is.infinite(limit)) {
+        if (sum(hits) <= limit) {
+          limit <- Inf
+        } else {
+          tasks_sorted <- tasks_sorted[seq_len(limit)]
+          dates <- dates[seq_len(limit)]
+        }
+      }
+      # interactive and more than 1, pick from menu
+      titles <- vapply(FUN.VALUE = character(1), tasks_sorted, function(x) x$properties$title)
+      bucket_ids <- vapply(FUN.VALUE = character(1), tasks_sorted, function(x) x$properties$bucketId)
+      buckets <- planner_buckets_list(account = account)
+      buckets <- data.frame(id = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$id),
+                            name = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$name))
+      buckets <- buckets$name[match(bucket_ids, buckets$id)]
+      texts <- paste0(font_blue(titles, collapse = NULL),
+                      " (", ifelse(is.na(dates), "", paste0(format2(dates, "ddd d mmm yyyy"), ", ")), buckets, ")")
+      choice <- utils::menu(texts, graphics = FALSE, 
+                            title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
+                                           " in '", account$properties$title, "' found with '", font_blue(search_term),
+                                           "' (0 to Cancel):"))
+      if (choice == 0) {
+        NA
+      } else {
+        tasks_sorted[[choice]]
+      }
+    }
+  }
 }
 
 #' @rdname planner
 #' @param task_title title of the task, will be searched with [`%like%`][certetoolbox::like]
 #' @param task_id exact id of the task
-#' @details The [planner_task_find()] returns a [`ms_plan_task`][Microsoft365R::ms_plan_task] object.
+#' @details [planner_task_find()] searches task title or ID, and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. It is used internally b a lot of `planner_*` functions, very fast, and does not support interactive use.
 #' @importFrom Microsoft365R ms_plan_task
 #' @export
 planner_task_find <- function(task_title = NULL, task_id = NULL, account = planner_connect()) {
@@ -452,6 +527,36 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = plann
       return(out)
     }
   }
+}
+
+#' @rdname planner
+#' @details [planner_retrieve_project_id()] retrieves the p-number from the task title and returns it as [integer].
+#' @export
+planner_retrieve_project_id <- function(task, account = planner_connect()) {
+  task <- planner_task_find(task)
+  title <- task$properties$title
+  if (title %like% "p[0-9]+") {
+    as.integer(gsub(".*p([0-9]+).*", "\\1", title))
+  } else {
+    NA_integer_
+  }
+}
+
+#' @rdname planner
+#' @param category_text text of the category to use
+#' @export
+planner_task_request_validation <- function(task,
+                                            category_text = read_secret("planner.label.authorise"),
+                                            account = planner_connect()) {
+  planner_task_update(task, categories = category_text, account = account)
+}
+
+#' @rdname planner
+#' @export
+planner_task_validate <- function(task,
+                                  category_text = read_secret("planner.label.authorised"),
+                                  account = planner_connect()) {
+  planner_task_update(task, categories = category_text, account = account)
 }
 
 #' @rdname planner
@@ -495,23 +600,14 @@ planner_user_property <- function(user,
   users
 }
 
-
-planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
-  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
-  buckets <- account$list_buckets()
-  index <- which(vapply(FUN.VALUE = logical(1), buckets, function(b) b$properties$name == bucket_name))
-  if (length(index) == 0) {
-    stop("Bucket not found")
-  } else {
-    buckets[[index[1L]]]
-  }
-}
-
+#' @rdname planner
+#' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy card.
 #' @importFrom jsonlite fromJSON
 #' @importFrom httr GET add_headers stop_for_status content
-current_highest_card_id <- function(task = read_secret("planner.dummycard"),
-                                    account = planner_connect()) {
-  # this returns the currently highest card number, which is saved to the description
+#' @export
+planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
+                                       account = planner_connect()) {
+  # this returns the currently highest project number, which is saved to the description
   task <- planner_task_find(task)
   task_id <- task$properties$id
   task_title <- task$properties$title
@@ -527,10 +623,22 @@ current_highest_card_id <- function(task = read_secret("planner.dummycard"),
   as.integer(response_body$description)
 }
 
-increase_highest_card_id <- function(task = read_secret("planner.dummycard"),
-                                     account = planner_connect()) {
-  highest <- current_highest_card_id(task = task, account = account)
-  planner_task_update(task = task, description = highest + 1)
+
+planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
+  # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
+  buckets <- account$list_buckets()
+  index <- which(vapply(FUN.VALUE = logical(1), buckets, function(b) b$properties$name == bucket_name))
+  if (length(index) == 0) {
+    stop("Bucket not found")
+  } else {
+    buckets[[index[1L]]]
+  }
+}
+
+increase_highest_project_id <- function(task = read_secret("planner.dummycard"),
+                                        account = planner_connect()) {
+  highest <- planner_highest_project_id(task = task, account = account)
+  planner_task_update(task = task, description = highest + 1, account = account)
 }
 
 get_internal_category <- function(category_name, account = planner_connect()) {
@@ -542,6 +650,7 @@ planner_priority_to_int <- function(priority) {
   # from https://learn.microsoft.com/nl-nl/graph/api/plannertask-update?view=graph-rest-1.0&tabs=http:
   # Planner sets the value 1 for "urgent", 3 for "important", 5 for "medium", and 9 for "low".
   # 0 has the highest priority and 10 has the lowest priority
+  priority <- priority[1]
   if (isFALSE(priority)) {
     return(5) # default setting
   } else if (is.numeric(priority) && priority >= 0 && priority <= 10) {
@@ -564,6 +673,7 @@ planner_priority_to_int <- function(priority) {
 
 generate_guids <- function(length) {
   # required for checklists, they must each have a unique ID in the format of valid GUIDs
+  # didn't know the format was so strict, but luckily ChatGPT did - its script:
   vapply(FUN.VALUE = character(1), seq_len(length), function(x) {
     out <- paste0(sample(c(0:9, letters[1:6]), 30, replace = TRUE), collapse = "")
     paste0(substr(out, 1, 8), "-",

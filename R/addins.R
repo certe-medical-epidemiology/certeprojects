@@ -20,12 +20,6 @@
 addin1_projects_new <- function() {
   project_add()
 }
-addin2_qmd_new <- function() {
-  project_new_qmd()
-}
-addin3_projects_edit <- function() {
-  project_edit()
-}
 addin4_projects_save <- function() {
   project_save_file()
 }
@@ -34,15 +28,6 @@ addin5_projects_open_file <- function() {
 }
 addin6_projects_open_folder <- function() {
   project_open_folder()
-}
-addin7_projects_trellocard <- function() {
-  trello_open_card()
-}
-addin8_projects_trelloboard <- function() {
-  trello_open_board()
-}
-addin9_projects_mine <- function() {
-  trello_my_cards()
 }
 
 #' @importFrom rstudioapi showPrompt filesPaneNavigate showQuestion

@@ -20,6 +20,90 @@
 addin1_projects_new <- function() {
   project_add()
 }
+
+#' @importFrom miniUI miniPage miniContentPanel
+#' @importFrom shiny uiOutput renderUI tagList actionButton h4 p HTML observe runGadget dialogViewer stopApp icon reactiveValuesToList
+#' @importFrom rstudioapi showDialog
+addin2_projects_status_update <- function() {
+  current_task_id <- project_get_current_id()
+  if (is.null(current_task_id)) {
+    return(invisible())
+  }
+  
+  ui <- miniPage(
+    tags$style(paste0(
+      "* {
+        text-align: center;
+     }",
+      ".move_btn {
+        font-size: 14px;
+        margin-bottom: 10px;
+     }",
+      "button .fa-solid {
+      font-size: 20px;
+      display: block;
+    }")),
+    miniContentPanel(
+      uiOutput("task_ui")
+    )
+  )
+  
+  server <- function(input, output, session) {
+    output$task_ui <- renderUI({
+      buckets <- planner_buckets_list()
+      current_task <- planner_task_find(paste0("p", current_task_id))
+      bucket_id <- current_task$properties$bucketId
+      buckets_df <- data.frame(id = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$id),
+                               name = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$name))
+      buckets_df$sorting <- case_when(buckets_df$name %like% "Idee" ~ 1,
+                                      buckets_df$name %like% "Bezig" ~ 2,
+                                      buckets_df$name %like% "Wachten" ~ 3,
+                                      buckets_df$name %like% "Voltooid" ~ 4,
+                                      TRUE ~ 5)
+      buckets_df <- buckets_df[order(buckets_df$sorting), ]
+      current_bucket <- buckets_df$name[match(bucket_id, buckets_df$id)]
+      
+      buttons <- tagList()
+      for (bucket in buckets_df$name) {
+        if (bucket == current_bucket || bucket %like% "nog mee beginnen") next
+        icon <- case_when(bucket %like% "Bezig" ~ "screwdriver-wrench",
+                          bucket %like% "Wachten" ~ "hourglass-start",
+                          bucket %like% "Voltooid" ~ "square-check",
+                          bucket %like% "Idee" ~ "lightbulb",
+                          TRUE ~ "screwdriver-wrench")
+        buttons <- c(buttons,
+                     tagList(
+                       actionButton(inputId = bucket,
+                                    label = paste0("Verplaatsen naar '", bucket, "'"),
+                                    icon = icon(icon, class = "fa-solid"),
+                                    width = "100%",
+                                    class = "move_btn")))
+      }
+      
+      tagList(
+        h4(current_task$properties$title),
+        p(HTML(paste("Huidige bucket:", strong(current_bucket), 
+                     ifelse(is.null(current_task$properties$startDateTime),
+                            "",
+                            paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", current_task$properties$startDateTime)), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
+        buttons
+      )  
+    })
+    observe({
+      contents <- unlist(reactiveValuesToList(input))
+      if (is.null(contents) || all(contents == 0)) return(invisible())
+      move_to <- names(contents)[which(contents == 1)]
+      current_task <- planner_task_find(paste0("p", current_task_id))
+      planner_task_update(current_task, bucket_name = move_to)
+      stopApp()
+      showDialog(title = "Taak verplaatst",  message = paste0("Taak verplaatst naar '", move_to, "'."))
+    })
+  }
+  suppressMessages(
+    runGadget(app = ui, server = server,
+              viewer = dialogViewer(dialogName = "Taak verplaatsen", width = 550, height = 270))
+  )
+}
 addin4_projects_save <- function() {
   project_save_file()
 }
@@ -61,4 +145,3 @@ set_wd <- function(new_dir = NULL) {
     }
   }
 }
-

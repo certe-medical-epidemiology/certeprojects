@@ -63,15 +63,23 @@ project_get_current_id <- function(ask = NULL) {
   }
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
-    id <- planner_retrieve_project_id(planner_task_search(limit = 25))
+    task <- planner_task_search(limit = 25)
+    if (is.null(task) || all(is.na(task))) {
+      return(invisible())
+    }
+    id <- planner_retrieve_project_id(task)
     asked <- TRUE
   }
   
   if (identical(ask, TRUE) && asked == FALSE) {
-    id <- planner_retrieve_project_id(
-      planner_task_search(search_term = ifelse(!is.na(id) & length(id) > 0,
-                                               paste0("p", fix_id(id)),
-                                               "")))
+    task <- planner_task_search(search_term = ifelse(!is.na(id) & length(id) > 0,
+                                                     paste0("p", fix_id(id)),
+                                                     ""),
+                                limit = 25)
+    if (is.null(task) || all(is.na(task))) {
+      return(invisible())
+    }
+    id <- planner_retrieve_project_id(task)
     if (is.null(id) || all(is.na(id))) {
       return(NULL)
     }

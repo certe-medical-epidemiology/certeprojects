@@ -484,8 +484,7 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = plann
                       " (", ifelse(is.na(dates), "", paste0(format2(dates, "ddd d mmm yyyy"), ", ")), buckets, ")")
       choice <- utils::menu(texts, graphics = FALSE, 
                             title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
-                                           " in '", account$properties$title, "' found with '", font_blue(search_term),
-                                           "' (0 to Cancel):"))
+                                           " in '", account$properties$title, "' found (0 to Cancel):"))
       if (choice == 0) {
         NA
       } else {

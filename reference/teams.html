@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.12.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.13.0</span>
       </span>
     </div>
 
@@ -76,7 +76,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span>team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_connect</span><span class="op">(</span>team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>, force <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_projects_channel</span><span class="op">(</span></span>
 <span>  projects_channel <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel"</span><span class="op">)</span>,</span>
@@ -141,7 +141,7 @@
 <span></span>
 <span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">teams_channels</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">teams_channels</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_view_sharepoint</span><span class="op">(</span><span class="va">channel</span>, account <span class="op">=</span> <span class="fu">teams_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -194,6 +194,10 @@
 <dd><p>name of the team</p></dd>
 
 
+<dt>force</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to enforce creating the connection, useful for overwriting an existing connection</p></dd>
+
+
 <dt>...</dt>
 <dd><p>arguments passed on to <code>fun</code></p></dd>
 
@@ -234,6 +238,10 @@
 <dd><p>the files to upload</p></dd>
 
 
+<dt>plain</dt>
+<dd><p>return as plain names, not as <code>Azure</code> objects</p></dd>
+
+
 <dt>body</dt>
 <dd><p>text of the message</p></dd>
 
@@ -272,7 +280,8 @@
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p>The <code>teams_new_project()</code> function:</p><ol><li><p>Checks if there is a Planner task with the correct task title</p></li>
+    <p>When attaching this package using <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code>, and external R process will be run to connect to MS Teams, to increase speed when connecting using <code>teams_connect()</code>.</p>
+<p>The <code>teams_new_project()</code> function:</p><ol><li><p>Checks if there is a Planner task with the correct task title</p></li>
 <li><p>Creates a new folder in Teams in the projects channel</p></li>
 <li><p>Updates the task to contain the project folder URL as an attachment</p></li>
 </ol><p>The <code>teams_download_project_file()</code> function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> or <code><a href="https://rdrr.io/pkg/quarto/man/quarto_render.html" class="external-link">quarto::quarto_render()</a></code> using the <code>teams_download_project_file()</code> function as input.</p>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.12.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.13.0</span>
       </span>
     </div>
 
@@ -79,6 +79,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">planner_connect</span><span class="op">(</span></span>
 <span>  plan <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.name"</span><span class="op">)</span>,</span>
 <span>  team_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"team.name"</span><span class="op">)</span>,</span>
+<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -87,10 +88,6 @@
 <span><span class="fu">planner_bucket_create</span><span class="op">(</span><span class="va">bucket_name</span>, account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_buckets_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">planner_tasks_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">planner_categories_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_task_create</span><span class="op">(</span></span>
 <span>  <span class="va">title</span>,</span>
@@ -126,6 +123,8 @@
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">planner_tasks_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">planner_task_search</span><span class="op">(</span></span>
 <span>  search_term <span class="op">=</span> <span class="st">".*"</span>,</span>
 <span>  limit <span class="op">=</span> <span class="cn">Inf</span>,</span>
@@ -137,6 +136,8 @@
 <span>  task_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_categories_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_retrieve_project_id</span><span class="op">(</span><span class="va">task</span>, account <span class="op">=</span> <span class="fu">planner_connect</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -173,7 +174,11 @@
 
 
 <dt>team_name</dt>
-<dd><p>name of the team</p></dd>
+<dd><p>name of the team, can be left blank to connect to an individual planner</p></dd>
+
+
+<dt>force</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to enforce creating the connection, useful for overwriting an existing connection</p></dd>
 
 
 <dt>...</dt>
@@ -286,7 +291,10 @@
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p><code>planner_task_search()</code> searches the title and description using case-insensitive regular expressions and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. In interactive mode and with multiple hits, a menu will be shown to pick from.</p>
+    <p>To connect to MS Planner with a personal account, retrieve the plan ID (e.g., from the URL of the plan), and pass it to <code>planner_connect()</code> as <code>plan</code>. Make sure that <code>team_name</code> if left blank:</p>
+<p></p><div class="sourceCode r"><pre><code><span>  <span class="fu"><a href="../reference/planner.html">planner_connect</a></span><span class="op">(</span>plan <span class="op">=</span> <span class="st">"AAA-0aa0AaAa-aaaAAAAAAAa"</span>, team_name <span class="op">=</span> <span class="cn">NULL</span>, force <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
+<p>When attaching this package using <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code>, and external R process will be run to connect to MS Planner, to increase speed when connecting using <code>planner_connect()</code>.</p>
+<p><code>planner_task_search()</code> searches the title and description using case-insensitive regular expressions and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. In interactive mode and with multiple hits, a menu will be shown to pick from.</p>
 <p><code>planner_task_find()</code> searches task title or ID, and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. It is used internally b a lot of <code>planner_*</code> functions, very fast, and does not support interactive use.</p>
 <p><code>planner_retrieve_project_id()</code> retrieves the p-number from the task title and returns it as <a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a>.</p>
 <p><code>planner_highest_project_id()</code> retrieves the currently highest project ID from the dummy card.</p>

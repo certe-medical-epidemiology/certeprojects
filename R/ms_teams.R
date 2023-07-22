@@ -23,10 +23,11 @@
 #' @param team_name name of the team
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [teams_connect()] or [Microsoft365R::get_team()].
-#' @param channel name of the Teams channel, such as "General"
+#' @param force a [logical] to enforce creating the connection, useful for overwriting an existing connection
+#' @details When attaching this package using [library()], and external R process will be run to connect to MS Teams, to increase speed when connecting using [teams_connect()].
 #' @rdname teams
 #' @name teams
-#' @importFrom Microsoft365R get_team ms_team
+#' @importFrom Microsoft365R get_team ms_team ms_drive_item
 #' @export
 #' @examples 
 #' \dontrun{
@@ -76,16 +77,30 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_connect <- function(team_name = read_secret("team.name"), ...) {
-  if (is.null(pkg_env$m365_getteam)) {
+teams_connect <- function(team_name = read_secret("team.name"),
+                          force = FALSE,
+                          ...) {
+  if (isTRUE(force) || is.null(pkg_env$teams)) {
     # not yet connected to Teams in Microsoft 365, so set it up
-    suppressMessages(
-      pkg_env$m365_getteam <- create_graph_login(token = get_microsoft365_token(scope = "teams", ...))$
-        get_group(name = team_name)$
-        get_team()
-    )
+    # check the background callr first
+    conn <- tryCatch(pkg_env$callr$get_result()$teams, error = function(e) NULL)
+    if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_team")) {
+      pkg_env$teams <- conn
+      pkg_env$teams_from_callr <- TRUE
+    } else {
+      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "teams", ...)))
+      if (!"get_group" %in% names(login)) {
+        Sys.sleep(1)
+      }
+      login <- login$get_group(name = team_name)
+      if (!"get_team" %in% names(login)) {
+        Sys.sleep(1)
+      }
+      pkg_env$teams <- login$get_team()
+      pkg_env$teams_from_callr <- FALSE
+    }
   }
-  return(invisible(pkg_env$m365_getteam))
+  return(invisible(pkg_env$teams))
 }
 
 
@@ -93,17 +108,37 @@ teams_connect <- function(team_name = read_secret("team.name"), ...) {
 
 #' @rdname teams
 #' @param projects_channel Teams channel name of the projects
+#' @importFrom Microsoft365R ms_drive_item ms_channel
 #' @export
 teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
                                    account = teams_connect()) {
-  channel_name <- find_channel(projects_channel, account = account)
-  if (is.null(pkg_env$project_folder)) {
-    tryCatch(pkg_env$project_folder <- account$
-               get_channel(channel_name = channel_name)$
-               get_folder(),
-             error = function(e) warning("Cannot retrieve Teams project channel", immediate. = TRUE))
+  if (is.null(pkg_env$teams_project_folder)) {
+    # try to get the project channel from callr
+    conn <- tryCatch(pkg_env$callr$get_result()$teams_project_folder, error = function(e) NULL)
+    if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_drive_item")) {
+      pkg_env$teams_project_folder <- conn
+      pkg_env$teams_project_folder_from_callr <- TRUE
+    } else {
+      channels <- account$list_channels()
+      channel <- channels[vapply(FUN.VALUE = logical(1), channels, function(x) x$properties$displayName == projects_channel)]
+      channel_id <- channel[[1]]$properties$id
+      teams_project_folder <- tryCatch(account$get_channel(channel_id = channel_id), error = function(e) NULL)
+      if (is.null(teams_project_folder)) {
+        # went wrong, do it ourselves
+        teams_project_folder <- ms_channel$new(account$token, account$tenant, 
+                                               account$do_operation(file.path("channels/", channel$properties$id)),
+                                               team_id = account$properties$id)
+      }
+      pkg_env$teams_project_folder <- tryCatch(teams_project_folder$get_folder(), error = function(e) NULL)
+      if (is.null(teams_project_folder)) {
+        # went wrong, do it ourselves
+        pkg_env$teams_project_folder <- ms_drive_item$new(teams_project_folder$token, teams_project_folder$tenant, 
+                                                          teams_project_folder$do_operation("filesFolder"))
+      }
+      pkg_env$teams_project_folder_from_callr <- FALSE
+    }
   }
-  return(pkg_env$project_folder)
+  return(pkg_env$teams_project_folder)
 }
 
 #' @rdname teams
@@ -331,15 +366,19 @@ teams_name <- function(account = teams_connect()) {
 }
 
 #' @rdname teams
+#' @param plain return as plain names, not as `Azure` objects
 #' @export
-teams_channels <- function(account = teams_connect()) {
+teams_channels <- function(account = teams_connect(), plain = TRUE) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
-  tryCatch(sort(vapply(FUN.VALUE = character(1),
-                       account$list_channels(), 
-                       function(ch) ch$properties$displayName)),
-           error = function(e) warning("Cannot retrieve Teams channels", immediate. = TRUE))
+  if (plain == FALSE) {
+    account$list_channels()
+  } else {
+    sort(vapply(FUN.VALUE = character(1),
+                account$list_channels(), 
+                function(ch) ch$properties$displayName))
+  }
 }
 
 #' @rdname teams

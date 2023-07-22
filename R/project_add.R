@@ -22,7 +22,7 @@
 #' This is a Shiny app to add a new project: it creates a project folder local [or in Teams][teams_connect()], generates the required Quarto or R Markdown or R files, and creates a [new task in Planner][planner_connect()]. These functions come with RStudio addins to quickly access existing projects.
 #' @param planner Microsoft Planner account, as returned by e.g. [planner_connect()]
 #' @param teams Microsoft Teams account, as returned by e.g. [teams_connect()]
-#' @param projects_channel name of a channel in the Teams account set in `teams`
+#' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
 #' @export
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong
 #' @importFrom shinyjs useShinyjs enable disable
@@ -32,13 +32,18 @@
 #  certestyle for R Markdown:
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
 #' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject showDialog showQuestion
+#' @importFrom Microsoft365R ms_plan ms_team ms_drive_item
 #' @rdname project_shiny
 project_add <- function(planner = planner_connect(),
-                        teams = NULL, #teams_connect(),
-                        projects_channel = read_secret("teams.projects.channel")) {
+                        teams = teams_connect(),
+                        channel = teams_projects_channel(account = teams)) {
   
-  if (inherits(teams, "ms_team")) {
-    channel <- teams_projects_channel(projects_channel = projects_channel, account = teams)
+  if (!inherits(planner, "ms_plan")) {
+    planner <- NULL
+  }
+  if (!inherits(teams, "ms_team") || !inherits(channel, "ms_drive_item")) {
+    teams <- NULL
+    channel <- NULL
   }
   
   # ui ----
@@ -79,13 +84,12 @@ project_add <- function(planner = planner_connect(),
         textAreaInput("description", "Omschrijving", cols = 1, rows = 2, resize = "vertical"),
         textAreaInput("checklist", "Taken", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 taak per regel)"),
         uiOutput("requested_by"),
-        selectInput("priority", "Prioriteit", c("Laag", "Gemiddeld", "Belangrijk", "Dringend"),
-                    ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
-                           "Dringend", # default if card is created on weekend day
-                           "Gemiddeld")),
-        if (as.integer(format(Sys.Date(), "%u")) %in% c(6:7)) {
-          p(HTML("<i>De prioriteit is standaard 'Dringend' in het weekend</i>."))
-        },
+        selectInput("priority",
+                    label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i>(standaard 'Dringend' in het weekend)</i>", ""))),
+                    choices = c("Laag", "Gemiddeld", "Belangrijk", "Dringend"), 
+                    selected = ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
+                                      "Dringend", # default if card is created on weekend day
+                                      "Gemiddeld")),
         tags$label("Deadline"),
         awesomeCheckbox("has_deadline", "Deadline instellen", TRUE),
         uiOutput("deadline"),
@@ -130,10 +134,9 @@ project_add <- function(planner = planner_connect(),
         
         # TEAMS
         img(src = img_teams(), height = "45px", style = "margin-bottom: 10px"),
-        if (!is.null(teams) && !is.null(planner)) { # teams_* project functions rely on planner, so require that too
+        if (!is.null(teams) && !is.null(channel) && !is.null(planner)) { # teams_* project functions rely on planner, so require that too
           awesomeRadio("files_teams_or_local",
                        label = "Projectmap en analysebestand:",
-                       # status = "primary",
                        choices =  stats::setNames(c("teams",
                                                     "local"),
                                                   c(paste0("In Teams-kanaal '", teams$properties$displayName, "/", channel$properties$name,
@@ -146,7 +149,7 @@ project_add <- function(planner = planner_connect(),
                        inline = TRUE,
                        width = "100%")
         } else {
-          uiOutput("teams_connect")
+          uiOutput("teamconnect")
         },
         width = 6
       )
@@ -158,7 +161,7 @@ project_add <- function(planner = planner_connect(),
     
     is_active_project <- !is.null(getActiveProject())
     
-    output$teams_connect <- renderUI({
+    output$teamconnect <- renderUI({
       tagList(
         p(strong("Niet verbonden met Teams."), "Bestanden worden aangemaakt in de map:",
           ifelse(suppressWarnings(read_secret("projects.path")) == "",
@@ -169,12 +172,14 @@ project_add <- function(planner = planner_connect(),
     })
     
     observeEvent(input$connect_to_teams, {
-      teams <<- tryCatch(teams_connect(), error = function(e) NULL)
+      if (is.null(teams)) {
+        teams <<- tryCatch(teams_connect(), error = function(e) NULL)
+      }
       if (inherits(teams, "ms_team")) {
-        channel <- teams_projects_channel(projects_channel = projects_channel, account = teams)
+        channel <- teams_projects_channel(account = teams)
       }
       if (!is.null(teams) && !is.null(planner)) { # teams_* project functions rely on planner, so require that too
-        output$teams_connect <- renderUI({
+        output$teamconnect <- renderUI({
           awesomeRadio("files_teams_or_local",
                        label = "Projectmap en analysebestand:",
                        # status = "primary",
@@ -196,7 +201,7 @@ project_add <- function(planner = planner_connect(),
     output$requested_by <- renderUI({
       # retrieve user list with names and job titles
       users <- get_user()
-      if (!is.null(users)) {
+      if (!is.null(users) && !identical(users, "")) {
         suppressWarnings(tagList(
           selectizeInput("requested_by",
                          label = "Aanvrager(s)",

@@ -6,8 +6,8 @@
 \usage{
 project_add(
   planner = planner_connect(),
-  teams = NULL,
-  projects_channel = read_secret("teams.projects.channel")
+  teams = teams_connect(),
+  channel = teams_projects_channel(account = teams)
 )
 }
 \arguments{
@@ -15,7 +15,7 @@ project_add(
 
 \item{teams}{Microsoft Teams account, as returned by e.g. \code{\link[=teams_connect]{teams_connect()}}}
 
-\item{projects_channel}{name of a channel in the Teams account set in \code{teams}}
+\item{channel}{Microsoft Teams Channel folder, as returned by e.g. \code{\link[=teams_projects_channel]{teams_projects_channel()}}}
 }
 \description{
 This is a Shiny app to add a new project: it creates a project folder local \link[=teams_connect]{or in Teams}, generates the required Quarto or R Markdown or R files, and creates a \link[=planner_connect]{new task in Planner}. These functions come with RStudio addins to quickly access existing projects.

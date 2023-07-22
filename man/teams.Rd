@@ -23,7 +23,7 @@
 \alias{teams_get_link}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
-teams_connect(team_name = read_secret("team.name"), ...)
+teams_connect(team_name = read_secret("team.name"), force = FALSE, ...)
 
 teams_projects_channel(
   projects_channel = read_secret("teams.projects.channel"),
@@ -88,7 +88,7 @@ teams_upload_project_file(
 
 teams_name(account = teams_connect())
 
-teams_channels(account = teams_connect())
+teams_channels(account = teams_connect(), plain = TRUE)
 
 teams_view_sharepoint(channel, account = teams_connect())
 
@@ -137,6 +137,8 @@ teams_get_link(
 \arguments{
 \item{team_name}{name of the team}
 
+\item{force}{a \link{logical} to enforce creating the connection, useful for overwriting an existing connection}
+
 \item{...}{arguments passed on to \code{fun}}
 
 \item{projects_channel}{Teams channel name of the projects}
@@ -156,6 +158,8 @@ teams_get_link(
 \item{fun}{function to use for rendering. Can be e.g. \link[rmarkdown:render]{rmarkdown::render} or \link[quarto:quarto_render]{quarto::quarto_render}.}
 
 \item{files}{the files to upload}
+
+\item{plain}{return as plain names, not as \code{Azure} objects}
 
 \item{body}{text of the message}
 
@@ -179,6 +183,8 @@ teams_get_link(
 These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.
 }
 \details{
+When attaching this package using \code{\link[=library]{library()}}, and external R process will be run to connect to MS Teams, to increase speed when connecting using \code{\link[=teams_connect]{teams_connect()}}.
+
 The \code{\link[=teams_new_project]{teams_new_project()}} function:
 \enumerate{
 \item Checks if there is a Planner task with the correct task title

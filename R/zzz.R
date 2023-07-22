@@ -17,9 +17,17 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-.onLoad <- function(...) {
-  if (interactive()) {
-    # connect on load, so Planner will initialize much faster
-    try(planner_connect(), silent = TRUE)
-  }
+#' @importFrom callr r_bg
+.onAttach <- function(...) {
+  # connect on attach with a background R process
+  # this will make sure that using Planner or Teams can be done instantly
+  # this must be in .onAttach() and not .onLoad() as it would otherwise lead to a loop
+  try(pkg_env$callr <- r_bg(function() 
+    list(planner = tryCatch(certeprojects::planner_connect(),
+                            error = function(e) NULL),
+         teams = tryCatch(certeprojects::teams_connect(),
+                          error = function(e) NULL),
+         teams_project_folder = tryCatch(certeprojects::teams_projects_channel(),
+                                         error = function(e) NULL))),
+    silent = TRUE)
 }

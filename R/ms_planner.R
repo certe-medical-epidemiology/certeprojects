@@ -20,32 +20,56 @@
 #' Connect to Microsoft Planner via Microsoft 365
 #'
 #' These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `planner_*()` functions allow to work with this connection.
-#' @param team_name name of the team
+#' @param team_name name of the team, can be left blank to connect to an individual planner
 #' @param plan name of the team's plan if `team_name` is not empty. Otherwise, a plan ID (for individual use).
+#' @param force a [logical] to enforce creating the connection, useful for overwriting an existing connection
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()]`$get_group(name)$get_plan(plan_title)`.
+#' @details To connect to MS Planner with a personal account, retrieve the plan ID (e.g., from the URL of the plan), and pass it to [planner_connect()] as `plan`. Make sure that `team_name` if left blank:
+#' 
+#' ```r
+#'   planner_connect(plan = "AAA-0aa0AaAa-aaaAAAAAAAa", team_name = NULL, force = TRUE)
+#' ```
+#' 
+#' When attaching this package using [library()], and external R process will be run to connect to MS Planner, to increase speed when connecting using [planner_connect()].
 #' @rdname planner
 #' @name planner
 #' @importFrom AzureGraph create_graph_login call_graph_endpoint
 #' @importFrom Microsoft365R ms_plan
 #' @export
-planner_connect <- function(plan = read_secret("planner.name"), team_name = read_secret("team.name"), ...) {
-  if (is.null(pkg_env$m365_getplan)) {
+planner_connect <- function(plan = read_secret("planner.name"), team_name = read_secret("team.name"), force = FALSE, ...) {
+  if (isTRUE(force) || is.null(pkg_env$planner)) {
     # not yet connected to Planner in Microsoft 365, so set it up
     if (!is.null(team_name) && team_name != "") {
-      suppressMessages(
-        pkg_env$m365_getplan <- create_graph_login(token = get_microsoft365_token(scope = "planner", ...))$
-          get_group(name = team_name)$
-          get_plan(plan_title = plan)
-      )
+      # check the background callr first
+      conn <- tryCatch(pkg_env$callr$get_result()$planner, error = function(e) NULL)
+      if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_plan")) {
+        login <- conn
+        pkg_env$planner_from_callr <- TRUE
+      } else {
+        login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "planner", ...)))
+        if (!"get_group" %in% names(login)) {
+          Sys.sleep(1)
+        }
+        login <- login$get_group(name = team_name)
+        pkg_env$planner_members <- tryCatch(login$list_members(), error = function(e) NULL)
+        pkg_env$planner_owners <- tryCatch(login$list_owners(), error = function(e) NULL)
+        if (!"get_plan" %in% names(login)) {
+          Sys.sleep(1)
+        }
+        login <- login$get_plan(plan_title = plan)
+        pkg_env$planner_from_callr <- FALSE
+      }
+      pkg_env$planner <- login
     } else {
+      # this part is for a personal planner:
       # team_name can be empty, but then plan must be a plan_id
       token <- get_microsoft365_token(scope = "tasks", ...)
       res <- call_graph_endpoint(token = token, file.path("planner/plans", plan))
-      pkg_env$m365_getplan <- ms_plan$new(token, token$tenant, res)
+      pkg_env$planner <- ms_plan$new(token, token$tenant, res)
     }
   }
-  return(invisible(pkg_env$m365_getplan))
+  return(invisible(pkg_env$planner))
 }
 
 #' @rdname planner
@@ -81,22 +105,6 @@ planner_buckets_list <- function(account = planner_connect(), plain = FALSE) {
   } else {
     account$list_buckets()
   }
-}
-
-#' @rdname planner
-#' @export
-planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
-  if (plain == TRUE) {
-    sort(vapply(FUN.VALUE = character(1), account$list_tasks(), function(x) x$properties$title))
-  } else {
-    account$list_tasks()
-  }
-}
-
-#' @rdname planner
-#' @export
-planner_categories_list <- function(account = planner_connect()) {
-  unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
 }
 
 #' @rdname planner
@@ -197,7 +205,7 @@ planner_task_create <- function(title,
     tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
     if (is.null(tsk)) {
       # sync the fields
-      try(pkg_env$m365_getplan$sync_fields(), silent = TRUE)
+      try(pkg_env$planner$sync_fields(), silent = TRUE)
       tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
     }
     if (is.null(tsk)) {
@@ -433,6 +441,16 @@ planner_task_update <- function(task,
 }
 
 #' @rdname planner
+#' @export
+planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
+  if (plain == TRUE) {
+    sort(vapply(FUN.VALUE = character(1), account$list_tasks(), function(x) x$properties$title))
+  } else {
+    account$list_tasks()
+  }
+}
+
+#' @rdname planner
 #' @param search_term search term, can contain regular expressions
 #' @param limit maximum number of tasks to show
 #' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
@@ -529,6 +547,12 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = plann
 }
 
 #' @rdname planner
+#' @export
+planner_categories_list <- function(account = planner_connect()) {
+  unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
+}
+
+#' @rdname planner
 #' @details [planner_retrieve_project_id()] retrieves the p-number from the task title and returns it as [integer].
 #' @export
 planner_retrieve_project_id <- function(task, account = planner_connect()) {
@@ -570,11 +594,17 @@ planner_user_property <- function(user,
                                   account = planner_connect(),
                                   property = "id",
                                   as_list = FALSE) {
-  members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
-  owners <- character(0)
+  if (is.null(pkg_env$planner_members)) {
+    pkg_env$planner_members <- create_graph_login(token = account$token)$get_group(name = team_name)$list_members()
+  }
+  members <- pkg_env$planner_members
+  if (is.null(pkg_env$planner_owners)) {
+    pkg_env$planner_owners <- create_graph_login(token = account$token)$get_group(name = team_name)$list_owners()
+  }
+  owners <- pkg_env$planner_owners
   if (as_list == TRUE) {
     owners <- vapply(FUN.VALUE = character(1),
-                     create_graph_login(token = account$token)$get_group(name = "Medische Epidemiologie")$list_owners(),
+                     owners,
                      function(x) x$properties$displayName)
   }
   df <- lapply(members, function(m) {

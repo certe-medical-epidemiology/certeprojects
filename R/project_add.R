@@ -64,15 +64,15 @@ project_add <- function(planner = planner_connect(),
                       a { color: ", colourpicker("certeblauw"), "; }
                       certeblauw, .certeblauw { color: ", colourpicker("certeblauw"), "; }
                       certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
-                      .results_count { margin-left: 10px; }
                       label[for=title] { font-size: 16px; }
-                      #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
-                      #create:hover { background-color: ", colourpicker("certegroen2"), "; border-color: ", colourpicker("certegroen"), "; }
-                      #cancel { background-color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
-                      #cancel:hover { background-color: ", colourpicker("certeroze2"), "; border-color: ", colourpicker("certeroze"), ";}
+                      #create { background-color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), "; }
+                      #create:hover { background-color: ", colourpicker("certeblauw2"), "; border-color: ", colourpicker("certeblauw"), "; }
+                      #cancel { background-color: white; color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), ";}
+                      #cancel:hover { background-color: ", colourpicker("certeblauw5"), "; color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }",
                       '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), " ;}",
+                      ".datepicker .active { color: white !important; background-color: ", colourpicker("certeblauw"), " !important; }",
                       '.radio-primary input[type="radio"]:checked+label::before { border-color: ', colourpicker("certeblauw"), ";}",
                       '.radio-primary input[type="radio"]:checked+label::after { background-color: ', colourpicker("certeblauw"), ";}",
                       '.awesome-radio input[type="radio"]:focus+label::before, .awesome-checkbox input[type="checkbox"]:focus+label::before { outline: none; }',
@@ -93,7 +93,6 @@ project_add <- function(planner = planner_connect(),
         tags$label("Deadline"),
         awesomeCheckbox("has_deadline", "Deadline instellen", TRUE),
         uiOutput("deadline"),
-        textInput("topdesk", "Meldingsnummer TOPDesk", placeholder = ""),
         br(),
         br(),
         actionButton("create", "Aanmaken", width = "49%", icon = icon("check"), class = "btn-success"),
@@ -101,9 +100,7 @@ project_add <- function(planner = planner_connect(),
         width = 6),
       
       mainPanel(
-        img(src = img_rstudio(), height = "45px"),
-        br(),
-        br(),
+        img(src = img_rstudio(), height = "40px", style = "margin-bottom: 10px"),
         awesomeRadio("filetype",
                      label = "Bestandstype",
                      status = "primary",
@@ -121,10 +118,10 @@ project_add <- function(planner = planner_connect(),
         hr(),
         
         # PLANNER
-        img(src = img_planner(), height = "45px", style = "margin-bottom: 10px"),
+        img(src = img_planner(), height = "40px", style = "margin-bottom: 10px"),
         if (!is.null(planner)) {
           tagList(
-            awesomeCheckbox("planner_upload", paste0("Taak aanmaken in Plan '", planner$properties$title, "'"), value = TRUE, width = "100%"),
+            awesomeCheckbox("planner_upload", HTML(paste0("Taak aanmaken in '", a(get_azure_property(planner, "title"), href = planner_url(planner)), "'")), value = TRUE, width = "100%"),
             uiOutput("planner_settings")
           )
         } else {
@@ -133,13 +130,13 @@ project_add <- function(planner = planner_connect(),
         hr(),
         
         # TEAMS
-        img(src = img_teams(), height = "45px", style = "margin-bottom: 10px"),
+        img(src = img_teams(), height = "40px", style = "margin-bottom: 10px"),
         if (!is.null(teams) && !is.null(channel) && !is.null(planner)) { # teams_* project functions rely on planner, so require that too
           awesomeRadio("files_teams_or_local",
                        label = "Projectmap en analysebestand:",
                        choices =  stats::setNames(c("teams",
                                                     "local"),
-                                                  c(paste0("In Teams-kanaal '", teams$properties$displayName, "/", channel$properties$name,
+                                                  c(paste0("In '", get_azure_property(teams, "displayName"), "/", get_azure_property(channel, "name"),
                                                            "' aanmaken"),
                                                     paste0("In map '", shorten_folder(ifelse(suppressWarnings(read_secret("projects.path")) == "",
                                                                                              getwd(),
@@ -185,7 +182,8 @@ project_add <- function(planner = planner_connect(),
                        # status = "primary",
                        choices =  stats::setNames(c("teams",
                                                     "local"),
-                                                  c(paste0("In Teams-kanaal '", teams$properties$displayName, "/", channel$properties$name,
+                                                  c(paste0("In '",
+                                                           get_azure_property(teams, "displayName"), "/", get_azure_property(channel, "name"),
                                                            "' aanmaken"),
                                                     paste0("In map '", shorten_folder(ifelse(suppressWarnings(read_secret("projects.path")) == "",
                                                                                              getwd(),
@@ -336,16 +334,6 @@ project_add <- function(planner = planner_connect(),
       on.exit(disable("cancel"))
       
       description <- trimws(input$description)
-      if (!is.null(input$topdesk)) {
-        topdesk <- trimws(input$topdesk)
-        if (topdesk != "") {
-          description <- paste0("TOPDesk-nummer: [",
-                                topdesk,
-                                "](https://topdesk.in.certe.nl/tas/public/ssp/content/search?q=",
-                                topdesk, ")\n\n",
-                                description)
-        }
-      }
       if (length(description) == 0) {
         description <- ""
       }
@@ -565,9 +553,11 @@ project_add <- function(planner = planner_connect(),
     })
   }
   
-  viewer <- dialogViewer(dialogName = paste("Nieuw project -", read_secret("department.name")),
-                         width = 850,
-                         height = 780)
+  viewer <- dialogViewer(dialogName = paste("Nieuw project -", ifelse(!is.null(teams),
+                                                                      get_azure_property(teams, "displayName"),
+                                                                      read_secret("department.name"))),
+                         width = 800,
+                         height = 680)
   
   suppressMessages(
     runGadget(app = ui,

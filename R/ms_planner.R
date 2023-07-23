@@ -72,12 +72,17 @@ planner_connect <- function(plan = read_secret("planner.name"), team_name = read
   return(invisible(pkg_env$planner))
 }
 
+planner_url <- function(account = planner_connect()) {
+  paste0("https://tasks.office.com/", account$token$tenant, 
+         "/nl-NL/Home/Planner/#/plantaskboard?planId=",
+         get_azure_property(account, "id"))
+}
+
 #' @rdname planner
 #' @param bucket_name name of the bucket
 #' @export
 planner_browse <- function(account = planner_connect()) {
-  utils::browseURL(paste0("https://tasks.office.com/", account$token$tenant, 
-                          "/nl-NL/Home/Planner/#/plantaskboard?planId=", account$properties$id))
+  utils::browseURL(planner_url(account = account))
 }
 
 #' @rdname planner
@@ -91,7 +96,7 @@ planner_bucket_create <- function(bucket_name, account = planner_connect()) {
                                                                  account$token$credentials$access_token),
                                            `Content-type` = "application/json"),
                       body = list(name = bucket_name,
-                                  planId = account$properties$id,
+                                  planId = get_azure_property(account, "id"),
                                   orderHint = " !"))
   stop_for_status(request_add, task = paste("add bucket", bucket_name))
 }
@@ -101,7 +106,7 @@ planner_bucket_create <- function(bucket_name, account = planner_connect()) {
 #' @export
 planner_buckets_list <- function(account = planner_connect(), plain = FALSE) {
   if (plain == TRUE) {
-    sort(vapply(FUN.VALUE = character(1), account$list_buckets(), function(x) x$properties$name))
+    sort(get_azure_property(account$list_buckets(), "name"))
   } else {
     account$list_buckets()
   }
@@ -150,8 +155,8 @@ planner_task_create <- function(title,
   
   # does not work with Microsoft365R yet, so we do it manually
   body <- list(title = title,
-               planId = account$properties$id,
-               bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id,
+               planId = get_azure_property(account, "id"),
+               bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"),
                startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
   
   if (!arg_is_empty(startdate)) {
@@ -249,8 +254,8 @@ planner_task_update <- function(task,
   # does not work with Microsoft365R yet, so we do it manually
   
   task <- planner_task_find(task)
-  task_id <- task$properties$id
-  task_title <- task$properties$title
+  task_id <- get_azure_property(task, "id")
+  task_title <- get_azure_property(task, "title")
   
   # UPDATE TASK ITSELF ----
   
@@ -292,13 +297,13 @@ planner_task_update <- function(task,
   
   if (!arg_is_empty(bucket_name)) {
     # new bucket
-    body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account)$properties$id)
+    body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"))
   }
   
   if (!arg_is_empty(categories)) {
     apply_categories <- list()
     # these are all existing categories
-    categories_current <- names(task$properties$appliedCategories)
+    categories_current <- names(get_azure_property(task, "appliedCategories"))
     # get internal name of given categories
     categories_new <- get_internal_category(categories)
     for (category in unique(c(categories_new, categories_current))) {
@@ -316,7 +321,7 @@ planner_task_update <- function(task,
   if (!arg_is_empty(assigned)) {
     apply_assigned <- list()
     # these are all existing assigned
-    assigned_current <- names(task$properties$assignments)
+    assigned_current <- names(get_azure_property(task, "assignments"))
     # get internal name of given assigned
     assigned_new <- planner_user_property(assigned)
     for (assign in unique(c(assigned_new, assigned_current))) {
@@ -347,7 +352,7 @@ planner_task_update <- function(task,
                             config = add_headers(Authorization = paste(account$token$credentials$token_type,
                                                                        account$token$credentials$access_token),
                                                  # this one is required for updating tasks:
-                                                 `If-Match` = task$properties$`@odata.etag`,
+                                                 `If-Match` = get_azure_property(task, "@odata.etag"),
                                                  Prefer = "return=representation",
                                                  `Content-type` = "application/json"),
                             body = body)
@@ -444,7 +449,7 @@ planner_task_update <- function(task,
 #' @export
 planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
   if (plain == TRUE) {
-    sort(vapply(FUN.VALUE = character(1), account$list_tasks(), function(x) x$properties$title))
+    sort(get_azure_property(account$list_tasks(), "title"))
   } else {
     account$list_tasks()
   }
@@ -470,17 +475,12 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = plann
     return(tasks[[which(hits)]])
   } else {
     tasks <- tasks[hits]
-    dates <- as.POSIXct(vapply(FUN.VALUE = double(1), tasks,
-                               function(x) if (is.null(x$properties$startDateTime)) {
-                                 NA_real_ 
-                               } else {
-                                 as.POSIXct(gsub("[TZ]", " ", x$properties$startDateTime))
-                               }))
+    dates <- as.POSIXct(gsub("[TZ]", " ", get_azure_property(tasks, "startDateTime")))
     # order on dates
     tasks_sorted <- tasks[order(dates, decreasing = TRUE)]
     dates <- dates[order(dates, decreasing = TRUE)]
     if (!interactive()) {
-      message("Multiple results found, assuming task '", tasks_sorted[[1]]$properties$title, "'")
+      message("Multiple results found, assuming task '", get_azure_property(tasks_sorted[[1]], "title"), "'")
       return(tasks_sorted[[1]])
     } else {
       if (!is.infinite(limit)) {
@@ -492,17 +492,17 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = plann
         }
       }
       # interactive and more than 1, pick from menu
-      titles <- vapply(FUN.VALUE = character(1), tasks_sorted, function(x) x$properties$title)
-      bucket_ids <- vapply(FUN.VALUE = character(1), tasks_sorted, function(x) x$properties$bucketId)
+      titles <- get_azure_property(tasks_sorted, "title")
+      bucket_ids <- get_azure_property(tasks_sorted, "bucketId")
       buckets <- planner_buckets_list(account = account)
-      buckets <- data.frame(id = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$id),
-                            name = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$name))
+      buckets <- data.frame(id = get_azure_property(buckets, "id"),
+                            name = get_azure_property(buckets, "name"))
       buckets <- buckets$name[match(bucket_ids, buckets$id)]
       texts <- paste0(font_blue(titles, collapse = NULL),
                       " (", ifelse(is.na(dates), "", paste0(format2(dates, "ddd d mmm yyyy"), ", ")), buckets, ")")
       choice <- utils::menu(texts, graphics = FALSE, 
                             title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
-                                           " in '", account$properties$title, "' found (0 to Cancel):"))
+                                           " in '", get_azure_property(account, "title"), "' found (0 to Cancel):"))
       if (choice == 0) {
         NA
       } else {
@@ -527,20 +527,19 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = plann
   }
   # account$get_bucket() does not work yet in Microsoft365R, returns error 'Invalid bucket name', so do it manually:
   tasks <- account$list_tasks()
-  out <- which(vapply(FUN.VALUE = logical(1), tasks, function(b) ifelse(!arg_is_empty(task_id), # this prioritises ID over title
-                                                                        b$properties$id == task_id,
-                                                                        b$properties$title %like% task_title)))
+  out <- which(get_azure_property(tasks, "id") == task_id | get_azure_property(tasks, "title") %like% task_title)
+  
   if (length(out) == 0) {
     stop("Task not found: '", task_title, "'", call. = FALSE)
   } else if (length(out) == 1) {
     return(tasks[[out[1]]])
   } else {
-    titles <- vapply(FUN.VALUE = character(1), tasks[out], function(t) t$properties$title)
+    titles <- get_azure_property(tasks[out], "title")
     if (any(titles == task_title)) {
       return(tasks[[out[which(titles == task_title)]]])
     } else {
       out <- tasks[[out[1]]]
-      message("Assuming task '", out$properties$title,  "' for searching with text '", task_title, "'")
+      message("Assuming task '", get_azure_property(out, "title"),  "' for searching with text '", task_title, "'")
       return(out)
     }
   }
@@ -557,7 +556,7 @@ planner_categories_list <- function(account = planner_connect()) {
 #' @export
 planner_retrieve_project_id <- function(task, account = planner_connect()) {
   task <- planner_task_find(task)
-  title <- task$properties$title
+  title <- get_azure_property(task, "title")
   if (title %like% "p[0-9]+") {
     as.integer(gsub(".*p([0-9]+).*", "\\1", title))
   } else {
@@ -603,17 +602,13 @@ planner_user_property <- function(user,
   }
   owners <- pkg_env$planner_owners
   if (as_list == TRUE) {
-    owners <- vapply(FUN.VALUE = character(1),
-                     owners,
-                     function(x) x$properties$displayName)
+    owners <- get_azure_property(owners, "displayName")
   }
-  df <- lapply(members, function(m) {
-    data.frame(certe_login = gsub("@certe.nl", "", m$properties$userPrincipalName),
-               name = m$properties$displayName,
-               mail = m$properties$mail,
-               id = m$properties$id,
-               role = ifelse(m$properties$displayName %in% owners, "Eigenaar", "Lid"))
-  }) |>
+  df <- data.frame(certe_login = gsub("@certe.nl", "", get_azure_property(members, "userPrincipalName")),
+                   name = get_azure_property(members, "displayName"),
+                   mail = get_azure_property(members, "mail"),
+                   id = get_azure_property(members, "id"),
+                   role = ifelse(get_azure_property(members, "displayName") %in% owners, "Eigenaar", "Lid")) |>
     bind_rows() |> 
     filter(name != "Azure Connect")
   
@@ -638,8 +633,8 @@ planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
                                        account = planner_connect()) {
   # this returns the currently highest project number, which is saved to the description
   task <- planner_task_find(task)
-  task_id <- task$properties$id
-  task_title <- task$properties$title
+  task_id <- get_azure_property(task, "id")
+  task_title <- get_azure_property(task, "title")
   
   get_task <- GET(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id, "/details"),
                   config = add_headers(Authorization = paste(account$token$credentials$token_type,
@@ -656,7 +651,7 @@ planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
 planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
   # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
   buckets <- account$list_buckets()
-  index <- which(vapply(FUN.VALUE = logical(1), buckets, function(b) b$properties$name == bucket_name))
+  index <- which(get_azure_property(buckets, "name") == bucket_name)
   if (length(index) == 0) {
     stop("Bucket not found")
   } else {

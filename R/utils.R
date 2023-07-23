@@ -20,6 +20,31 @@
 # this is the package environment. The Microsoft 365 connection will be saved to this env.
 pkg_env <- new.env(hash = FALSE)
 
+
+#' Get Azure Property
+#' 
+#' This function retrieves a property from an Azure object, such as [`ms_plan`][Microsoft365R::ms_plan], [`ms_plan_task`][Microsoft365R::ms_plan_task], [`ms_team`][Microsoft365R::ms_team], [`ms_team_member`][Microsoft365R::ms_team_member], [`ms_drive_item`][Microsoft365R::ms_drive_item].
+#' @param x an Azure object
+#' @param property the name of the property, such as `"id"` or `"displayName`. This must exist in `x` or in `x$properties`, and will return `NA` otherwise.
+#' @export
+get_azure_property <- function(x, property) {
+  if (is.list(x) && length(x) > 1) {
+    return(unlist(lapply(x, get_azure_property, property = property), use.names = FALSE))
+  }
+  out <- NULL
+  if (!is.null(x$properties) && property %in% names(x$properties)) {
+    out <- x$properties[[property]]
+  } else if (property %in% names(x)) {
+    out <- x[[property]]
+  }
+  if (is.null(out) || length(out) == 0) {
+    NA
+  } else {
+    out
+  }
+}
+
+
 globalVariables(c(".",
                   "checkItems",
                   "closed",

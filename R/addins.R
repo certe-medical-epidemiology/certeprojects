@@ -52,9 +52,9 @@ addin2_projects_status_update <- function() {
     output$task_ui <- renderUI({
       buckets <- planner_buckets_list()
       current_task <- planner_task_find(paste0("p", current_task_id))
-      bucket_id <- current_task$properties$bucketId
-      buckets_df <- data.frame(id = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$id),
-                               name = vapply(FUN.VALUE = character(1), buckets, function(x) x$properties$name))
+      bucket_id <- get_azure_property(current_task, "bucketId")
+      buckets_df <- data.frame(id = get_azure_property(buckets, "id"),
+                               name = get_azure_property(buckets, "name"))
       buckets_df$sorting <- case_when(buckets_df$name %like% "Idee" ~ 1,
                                       buckets_df$name %like% "Bezig" ~ 2,
                                       buckets_df$name %like% "Wachten" ~ 3,
@@ -81,11 +81,11 @@ addin2_projects_status_update <- function() {
       }
       
       tagList(
-        h4(current_task$properties$title),
+        h4(get_azure_property(current_task, "title")),
         p(HTML(paste("Huidige bucket:", strong(current_bucket), 
-                     ifelse(is.null(current_task$properties$startDateTime),
+                     ifelse(is.na(get_azure_property(current_task, "startDateTime")),
                             "",
-                            paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", current_task$properties$startDateTime)), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
+                            paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "startDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
         buttons
       )  
     })

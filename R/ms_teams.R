@@ -119,15 +119,16 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
       pkg_env$teams_project_folder <- conn
       pkg_env$teams_project_folder_from_callr <- TRUE
     } else {
+      message("Retrieving Teams channel...", appendLF = FALSE)
       channels <- account$list_channels()
-      channel <- channels[vapply(FUN.VALUE = logical(1), channels, function(x) x$properties$displayName == projects_channel)]
-      channel_id <- channel[[1]]$properties$id
+      channel <- channels[get_azure_property(channels, "displayName") == projects_channel]
+      channel_id <- get_azure_property(channel[[1]], "id")
       teams_project_folder <- tryCatch(account$get_channel(channel_id = channel_id), error = function(e) NULL)
       if (is.null(teams_project_folder)) {
         # went wrong, do it ourselves
         teams_project_folder <- ms_channel$new(account$token, account$tenant, 
-                                               account$do_operation(file.path("channels/", channel$properties$id)),
-                                               team_id = account$properties$id)
+                                               account$do_operation(file.path("channels/", get_azure_property(channel, "id"))),
+                                               team_id = get_azure_property(account, "id"))
       }
       pkg_env$teams_project_folder <- tryCatch(teams_project_folder$get_folder(), error = function(e) NULL)
       if (is.null(teams_project_folder)) {
@@ -136,6 +137,7 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
                                                           teams_project_folder$do_operation("filesFolder"))
       }
       pkg_env$teams_project_folder_from_callr <- FALSE
+      message("OK.")
     }
   }
   return(pkg_env$teams_project_folder)
@@ -155,7 +157,7 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
 teams_new_project <- function(task, channel = teams_projects_channel(), planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
-  task_title <- task$properties$title
+  task_title <- get_azure_property(task, "title")
   # create the folder
   if (task_title %in% channel$list_files()$name) {
     message("Project folder already exists, skipping.")
@@ -163,7 +165,7 @@ teams_new_project <- function(task, channel = teams_projects_channel(), planner 
     channel$create_folder(path = task_title)
   }
   # add link to Planner task
-  link <- c(Projectmap = channel$get_item(task_title)$properties$webUrl)
+  link <- c(Projectmap = channel$get_item(task_title) |> get_azure_property("webUrl"))
   planner_task_update(task = task_title, attachment_urls = link)
 }
 
@@ -173,7 +175,7 @@ teams_browse_project <- function(task, channel = teams_projects_channel(), plann
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   # open in the browser
-  channel$get_item(task$properties$title)$open()
+  channel$get_item(get_azure_property(task, "title"))$open()
 }
 
 #' @rdname teams
@@ -186,12 +188,12 @@ teams_download_project_file <- function(file, task, channel = teams_projects_cha
   file_teams <- teams_get_project_file(file = file, task = task, channel = channel, planner = planner)
   
   # download to temporary file
-  file_local <- paste0(tempdir(), "/", file_teams$properties$name)
+  file_local <- paste0(tempdir(), "/", get_azure_property(file_teams, "name"))
   try(unlink(file_local, force = TRUE), silent = TRUE)
   
   tryCatch(
     file_teams$download(dest = file_local, overwrite = TRUE),
-    error = function(e) stop("Error while downloading file '", file_teams$properties$name, "' from '", task$properties$title, ":\n", e$message))
+    error = function(e) stop("Error while downloading file '", get_azure_property(file_teams, "name"), "' from '", get_azure_property(task, "title"), ":\n", e$message))
   if (file.exists(file_local)) {
     # download succeeded - return the file
     return(invisible(file_local))
@@ -206,7 +208,7 @@ teams_download_project_file <- function(file, task, channel = teams_projects_cha
 teams_get_project_file <- function(file, task, channel = teams_projects_channel(), planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
-  file_teams <- channel$get_item(task$properties$title)$list_items()
+  file_teams <- channel$get_item(get_azure_property(task, "title"))$list_items()
   files_found <- file_teams$name[which(file_teams$name %like% file)]
   sizes <- vapply(FUN.VALUE = character(1),
                   file_teams$size,
@@ -219,7 +221,7 @@ teams_get_project_file <- function(file, task, channel = teams_projects_channel(
     return(NA_character_)
   } else if (interactive()) {
     choice <- utils::menu(choices = paste0(font_bold(files_found, collapse = NULL), " (", sizes, ")"),
-                          title = paste0("Files found in ", task$properties$title, " (0 to cancel):\n"))
+                          title = paste0("Files found in ", get_azure_property(task, "title"), " (0 to cancel):\n"))
     if (choice == 0) {
       return(NA_character_)
     }
@@ -229,7 +231,7 @@ teams_get_project_file <- function(file, task, channel = teams_projects_channel(
             "\nSelecting first match.")
     filename <- files_found[1L]
   }
-  channel$get_item(task$properties$title)$get_item(filename)
+  channel$get_item(get_azure_property(task, "title"))$get_item(filename)
 }
 
 #' @rdname teams
@@ -240,7 +242,7 @@ teams_open_project_analysis_file <- function(task, channel = teams_projects_chan
   path <- teams_download_project_file(file = ".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$",
                                       task = task, channel = channel, planner = planner)
   if (is.na(path)) {
-    stop("No syntax files found in project '", task$properties$title, "'")
+    stop("No syntax files found in project '", get_azure_property(task, "title"), "'")
   } else {
     invisible(navigateToFile(path))
     showDialog(title = "Temporary File",
@@ -296,7 +298,7 @@ teams_render_project_file <- function(file,
     # upload to Teams again
     # validate that the task exists
     task <- planner_task_find(task, account = planner)
-    task_title <- task$properties$title
+    task_title <- get_azure_property(task, "title")
     message(format(Sys.time()), " - Uploading file '", basename(output_file), "'... ", appendLF = FALSE)
     new_file <- NULL
     tryCatch({
@@ -307,7 +309,7 @@ teams_render_project_file <- function(file,
       url <- new_file$get_path()
       if (interactive()) {
         # this will create a clickable link in the console, it was taken from cli::style_hyperlink
-        url <- paste0("\033]8;;", new_file$properties$webUrl, "\a", "Teams-link", "\033]8;;\a")
+        url <- paste0("\033]8;;", get_azure_property(new_file, "webUrl"), "\a", "Teams-link", "\033]8;;\a")
       }
       message("OK (", url, ", ",
               format(structure(file.size(output_file), class = "object_size"), units = "auto"),
@@ -330,7 +332,7 @@ teams_view_project_file <- function(file,
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   # open in the browser
-  channel$get_item(task$properties$title)$get_item(file)$open()
+  channel$get_item(get_azure_property(task, "title"))$get_item(file)$open()
 }
 
 #' @rdname teams
@@ -342,7 +344,7 @@ teams_upload_project_file <- function(files,
                                       planner = planner_connect()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
-  task_title <- task$properties$title
+  task_title <- get_azure_property(task, "title")
   # open in the browser
   folder <- channel$get_item(task_title)
   for (f in files) {
@@ -375,9 +377,7 @@ teams_channels <- function(account = teams_connect(), plain = TRUE) {
   if (plain == FALSE) {
     account$list_channels()
   } else {
-    sort(vapply(FUN.VALUE = character(1),
-                account$list_channels(), 
-                function(ch) ch$properties$displayName))
+    sort(get_azure_property(account$list_channels(), "displayName"))
   }
 }
 

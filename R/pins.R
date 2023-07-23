@@ -101,7 +101,7 @@ pins_board <- function(projects_channel = read_secret("teams.projects.channel"),
                        delete_by_item = TRUE) {
   if (is.null(pkg_env$microsoft365_pins)) {
     drives <- account$list_drives()
-    drive <- drives[[which(vapply(FUN.VALUE = logical(1), drives, function(x) x$properties$name %unlike% "Wiki"))[1]]]
+    drive <- drives[[which(get_azure_property(drives, "name") %unlike% "Wiki")[1]]]
     projects <- teams_projects_channel(projects_channel = projects_channel, account = account)
     pkg_env$microsoft365_pins <- board_ms365(drive = drive,
                                              path = projects$get_item("pins"),

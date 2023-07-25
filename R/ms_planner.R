@@ -644,9 +644,26 @@ planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
     content(type = "text", encoding = "UTF-8") |>
     fromJSON(flatten = TRUE)
   
-  as.integer(response_body$description)
+  as.integer(gsub("[^0-9]+", "", response_body$description))
 }
 
+#' @method as.data.frame ms_object
+#' @importFrom dplyr bind_rows
+#' @noRd
+#' @export
+as.data.frame.ms_object <- function(x, ...) {
+  # if merging multiple, like from planner_tasks_list():
+  # bind_rows(lapply(xx, as.data.frame))
+  as.data.frame(lapply(x$properties, paste0, collapse = ", "))
+}
+
+#' @method as_tibble ms_object
+#' @importFrom dplyr as_tibble
+#' @noRd
+#' @export
+as_tibble.ms_object <- function(x, ...) {
+  as_tibble(as.data.frame(x, ...))
+}
 
 planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
   # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:

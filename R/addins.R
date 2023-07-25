@@ -24,6 +24,8 @@ addin1_projects_new <- function() {
 #' @importFrom miniUI miniPage miniContentPanel
 #' @importFrom shiny uiOutput renderUI tagList actionButton h4 p HTML observe runGadget dialogViewer stopApp icon reactiveValuesToList
 #' @importFrom rstudioapi showDialog
+#' @importFrom certestyle colourpicker
+#' @importFrom dplyr case_when
 addin2_projects_status_update <- function() {
   current_task_id <- project_get_current_id()
   if (is.null(current_task_id)) {
@@ -32,11 +34,15 @@ addin2_projects_status_update <- function() {
   
   ui <- miniPage(
     tags$style(paste0(
+      "body {
+        background-color: ", colourpicker("certeblauw6"), ";
+     }",
       "* {
         text-align: center;
      }",
       ".move_btn {
         font-size: 14px;
+        background-color: white;
         margin-bottom: 10px;
      }",
       "button .fa-solid {
@@ -101,7 +107,7 @@ addin2_projects_status_update <- function() {
   }
   suppressMessages(
     runGadget(app = ui, server = server,
-              viewer = dialogViewer(dialogName = "Taak verplaatsen", width = 550, height = 270))
+              viewer = dialogViewer(dialogName = paste("Taak verplaatsen -", get_azure_property(pkg_env$planner, "title")), width = 550, height = 270))
   )
 }
 addin4_projects_save <- function() {

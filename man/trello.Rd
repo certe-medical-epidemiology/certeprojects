@@ -261,7 +261,7 @@ trello_move_card(
 \item{list_id}{ID of the Trello board list}
 }
 \description{
-These functions call the \href{https://api.trello.com}{Trello API}. It was replaced with \link[=planner_connect]{Microsoft Planner functions}.
+These functions call the \href{https://api.trello.com}{Trello API}. It was replaced with \link[=connect_planner]{Microsoft Planner functions}.
 }
 \details{
 The \code{\link[=trello_upload]{trello_upload()}} returns the newly created Trello card number if the upload was successful.

@@ -2,7 +2,6 @@
 % Please edit documentation in R/ms_teams.R
 \name{teams}
 \alias{teams}
-\alias{teams_connect}
 \alias{teams_projects_channel}
 \alias{teams_new_project}
 \alias{teams_browse_project}
@@ -23,43 +22,42 @@
 \alias{teams_get_link}
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
-teams_connect(team_name = read_secret("team.name"), force = FALSE, ...)
-
 teams_projects_channel(
   projects_channel = read_secret("teams.projects.channel"),
-  account = teams_connect()
+  overwrite = FALSE,
+  account = connect_teams()
 )
 
 teams_new_project(
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_browse_project(
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_download_project_file(
   file,
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_get_project_file(
   file,
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_open_project_analysis_file(
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_render_project_file(
@@ -69,35 +67,35 @@ teams_render_project_file(
   fun = rmarkdown::render,
   ...,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_view_project_file(
   file,
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
 teams_upload_project_file(
   files,
   task,
   channel = teams_projects_channel(),
-  planner = planner_connect()
+  planner = connect_planner()
 )
 
-teams_name(account = teams_connect())
+teams_name(account = connect_teams())
 
-teams_channels(account = teams_connect(), plain = TRUE)
+teams_channels(account = connect_teams(), plain = TRUE)
 
-teams_view_sharepoint(channel, account = teams_connect())
+teams_view_sharepoint(channel, account = connect_teams())
 
 teams_send_message(
   body,
   channel,
   content_type = c("text", "html"),
   attachments = NULL,
-  account = teams_connect()
+  account = connect_teams()
 )
 
 teams_upload(
@@ -105,7 +103,7 @@ teams_upload(
   teams_path = basename(local_path),
   card_number = project_get_current_id(ask = FALSE),
   channel = NULL,
-  account = teams_connect()
+  account = connect_teams()
 )
 
 teams_download(
@@ -113,17 +111,17 @@ teams_download(
   local_path = basename(teams_path),
   card_number = project_get_current_id(ask = FALSE),
   channel = NULL,
-  account = teams_connect()
+  account = connect_teams()
 )
 
 teams_import(
   teams_path,
   card_number = project_get_current_id(ask = FALSE),
   channel = NULL,
-  account = teams_connect()
+  account = connect_teams()
 )
 
-teams_open(teams_path, channel = NULL, account = teams_connect())
+teams_open(teams_path, channel = NULL, account = connect_teams())
 
 teams_get_link(
   teams_path,
@@ -131,31 +129,29 @@ teams_get_link(
   expire_after = "1 month",
   password = NULL,
   channel = NULL,
-  account = teams_connect()
+  account = connect_teams()
 )
 }
 \arguments{
-\item{team_name}{name of the team}
-
-\item{force}{a \link{logical} to enforce creating the connection, useful for overwriting an existing connection}
-
-\item{...}{arguments passed on to \code{fun}}
-
 \item{projects_channel}{Teams channel name of the projects}
 
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=teams_connect]{teams_connect()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+\item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
+
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
 \item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 
 \item{channel}{a Teams folder object. This has to be an object as returned by \code{\link[=teams_projects_channel]{teams_projects_channel()}}.}
 
-\item{planner}{a Microsoft 365 account for Planner. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}}.}
+\item{planner}{a Microsoft 365 account for Planner. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}}.}
 
 \item{file}{the file name to open}
 
 \item{output_file}{path of the output file}
 
 \item{fun}{function to use for rendering. Can be e.g. \link[rmarkdown:render]{rmarkdown::render} or \link[quarto:quarto_render]{quarto::quarto_render}.}
+
+\item{...}{arguments passed on to \code{fun}}
 
 \item{files}{the files to upload}
 
@@ -180,11 +176,9 @@ teams_get_link(
 \item{password}{password to set for share link, defaults to blank}
 }
 \description{
-These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{teams_*()} functions allow to work with this connection.
+These functions use the connection to Microsoft Teams set up with \code{\link[=connect_teams]{connect_teams()}}.
 }
 \details{
-When attaching this package using \code{\link[=library]{library()}}, and external R process will be run to connect to MS Teams, to increase speed when connecting using \code{\link[=teams_connect]{teams_connect()}}.
-
 The \code{\link[=teams_new_project]{teams_new_project()}} function:
 \enumerate{
 \item Checks if there is a Planner task with the correct task title

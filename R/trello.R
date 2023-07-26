@@ -19,7 +19,7 @@
 
 #' Work with Trello Cards
 #' 
-#' These functions call the [Trello API](https://api.trello.com). It was replaced with [Microsoft Planner functions][planner_connect()].
+#' These functions call the [Trello API](https://api.trello.com). It was replaced with [Microsoft Planner functions][connect_planner()].
 #' @param title card title
 #' @param desc card description
 #' @param requested_by name of requester

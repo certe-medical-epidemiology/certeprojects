@@ -19,11 +19,10 @@
 
 #' Add Project Using Shiny
 #' 
-#' This is a Shiny app to add a new project: it creates a project folder local [or in Teams][teams_connect()], generates the required Quarto or R Markdown or R files, and creates a [new task in Planner][planner_connect()]. These functions come with RStudio addins to quickly access existing projects.
-#' @param planner Microsoft Planner account, as returned by e.g. [planner_connect()]
-#' @param teams Microsoft Teams account, as returned by e.g. [teams_connect()]
+#' This is a Shiny app to add a new project: it creates a project folder local [or in Teams][connect_teams()], generates the required Quarto or R Markdown or R files, and creates a [new task in Planner][connect_planner()]. These functions come with RStudio addins to quickly access existing projects.
+#' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
+#' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
-#' @export
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong
 #' @importFrom shinyjs useShinyjs enable disable
 #' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
@@ -33,9 +32,9 @@
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
 #' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject showDialog showQuestion
 #' @importFrom Microsoft365R ms_plan ms_team ms_drive_item
-#' @rdname project_shiny
-project_add <- function(planner = planner_connect(),
-                        teams = teams_connect(),
+#' @export
+project_add <- function(planner = connect_planner(),
+                        teams = connect_teams(),
                         channel = teams_projects_channel(account = teams)) {
   
   if (!inherits(planner, "ms_plan")) {
@@ -125,7 +124,7 @@ project_add <- function(planner = planner_connect(),
             uiOutput("planner_settings")
           )
         } else {
-          h5(HTML("Verbind eerst met MS Planner via <code>planner_connect()</code>."))
+          h5(HTML("Verbind eerst met MS Planner via <code>connect_planner()</code>."))
         },
         hr(),
         
@@ -170,7 +169,7 @@ project_add <- function(planner = planner_connect(),
     
     observeEvent(input$connect_to_teams, {
       if (is.null(teams)) {
-        teams <<- tryCatch(teams_connect(), error = function(e) NULL)
+        teams <<- tryCatch(connect_teams(), error = function(e) NULL)
       }
       if (inherits(teams, "ms_team")) {
         channel <- teams_projects_channel(account = teams)

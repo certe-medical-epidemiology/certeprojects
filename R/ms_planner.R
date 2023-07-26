@@ -19,60 +19,18 @@
 
 #' Connect to Microsoft Planner via Microsoft 365
 #'
-#' These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `planner_*()` functions allow to work with this connection.
+#' These functions use the connection to Microsoft Planner set up with [connect_planner()].
 #' @param team_name name of the team, can be left blank to connect to an individual planner
-#' @param plan name of the team's plan if `team_name` is not empty. Otherwise, a plan ID (for individual use).
-#' @param force a [logical] to enforce creating the connection, useful for overwriting an existing connection
-#' @param ... arguments passed on to [get_microsoft365_token()]
-#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [planner_connect()] or via [AzureGraph::create_graph_login()]`$get_group(name)$get_plan(plan_title)`.
-#' @details To connect to MS Planner with a personal account, retrieve the plan ID (e.g., from the URL of the plan), and pass it to [planner_connect()] as `plan`. Make sure that `team_name` if left blank:
-#' 
-#' ```r
-#'   planner_connect(plan = "AAA-0aa0AaAa-aaaAAAAAAAa", team_name = NULL, force = TRUE)
-#' ```
-#' 
-#' When attaching this package using [library()], and external R process will be run to connect to MS Planner, to increase speed when connecting using [planner_connect()].
+#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [connect_planner()] or via [AzureGraph::create_graph_login()]`$get_group(name)$get_plan(plan_title)`.
+#' @param bucket_name name of the bucket
 #' @rdname planner
 #' @name planner
-#' @importFrom AzureGraph create_graph_login call_graph_endpoint
-#' @importFrom Microsoft365R ms_plan
 #' @export
-planner_connect <- function(plan = read_secret("planner.name"), team_name = read_secret("team.name"), force = FALSE, ...) {
-  if (isTRUE(force) || is.null(pkg_env$planner)) {
-    # not yet connected to Planner in Microsoft 365, so set it up
-    if (!is.null(team_name) && team_name != "") {
-      # check the background callr first
-      conn <- tryCatch(pkg_env$callr$get_result()$planner, error = function(e) NULL)
-      if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_plan")) {
-        login <- conn
-        pkg_env$planner_from_callr <- TRUE
-      } else {
-        login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "planner", ...)))
-        if (!"get_group" %in% names(login)) {
-          Sys.sleep(1)
-        }
-        login <- login$get_group(name = team_name)
-        pkg_env$planner_members <- tryCatch(login$list_members(), error = function(e) NULL)
-        pkg_env$planner_owners <- tryCatch(login$list_owners(), error = function(e) NULL)
-        if (!"get_plan" %in% names(login)) {
-          Sys.sleep(1)
-        }
-        login <- login$get_plan(plan_title = plan)
-        pkg_env$planner_from_callr <- FALSE
-      }
-      pkg_env$planner <- login
-    } else {
-      # this part is for a personal planner:
-      # team_name can be empty, but then plan must be a plan_id
-      token <- get_microsoft365_token(scope = "tasks", ...)
-      res <- call_graph_endpoint(token = token, file.path("planner/plans", plan))
-      pkg_env$planner <- ms_plan$new(token, token$tenant, res)
-    }
-  }
-  return(invisible(pkg_env$planner))
+planner_browse <- function(account = connect_planner()) {
+  utils::browseURL(planner_url(account = account))
 }
 
-planner_url <- function(account = planner_connect()) {
+planner_url <- function(account = connect_planner()) {
   paste0("https://tasks.office.com/", account$token$tenant, 
          "/nl-NL/Home/Planner/#/plantaskboard?planId=",
          get_azure_property(account, "id"))
@@ -80,16 +38,9 @@ planner_url <- function(account = planner_connect()) {
 
 #' @rdname planner
 #' @param bucket_name name of the bucket
-#' @export
-planner_browse <- function(account = planner_connect()) {
-  utils::browseURL(planner_url(account = account))
-}
-
-#' @rdname planner
-#' @param bucket_name name of the bucket
 #' @importFrom httr add_headers
 #' @export
-planner_bucket_create <- function(bucket_name, account = planner_connect()) {
+planner_bucket_create <- function(bucket_name, account = connect_planner()) {
   request_add <- POST(url = "https://graph.microsoft.com/v1.0/planner/buckets",
                       encode = "json",
                       config = add_headers(Authorization = paste(account$token$credentials$token_type,
@@ -104,7 +55,7 @@ planner_bucket_create <- function(bucket_name, account = planner_connect()) {
 #' @rdname planner
 #' @param plain return as plain names, not as `Azure` objects
 #' @export
-planner_buckets_list <- function(account = planner_connect(), plain = FALSE) {
+planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
   if (plain == TRUE) {
     sort(get_azure_property(account$list_buckets(), "name"))
   } else {
@@ -139,7 +90,7 @@ planner_task_create <- function(title,
                                 assigned = NULL,
                                 bucket_name = read_secret("planner.default.bucket"),
                                 attachment_urls = NULL,
-                                account = planner_connect(),
+                                account = connect_planner(),
                                 project_number = planner_highest_project_id() + 1) {
   # see this for all the possible fields: https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0
   
@@ -250,7 +201,7 @@ planner_task_update <- function(task,
                                 percent_completed = NULL,
                                 attachment_urls = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
-                                account = planner_connect()) {
+                                account = connect_planner()) {
   # does not work with Microsoft365R yet, so we do it manually
   
   task <- planner_task_find(task)
@@ -447,7 +398,7 @@ planner_task_update <- function(task,
 
 #' @rdname planner
 #' @export
-planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
+planner_tasks_list <- function(account = connect_planner(), plain = FALSE) {
   if (plain == TRUE) {
     sort(get_azure_property(account$list_tasks(), "title"))
   } else {
@@ -461,7 +412,7 @@ planner_tasks_list <- function(account = planner_connect(), plain = FALSE) {
 #' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
 #' @importFrom certestyle font_blue format2
 #' @export
-planner_task_search <- function(search_term = ".*", limit = Inf, account = planner_connect()) {
+planner_task_search <- function(search_term = ".*", limit = Inf, account = connect_planner()) {
   tasks <- planner_tasks_list(account = account, plain = FALSE)
   hits <- vapply(FUN.VALUE = logical(1),
                  tasks,
@@ -518,7 +469,7 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = plann
 #' @details [planner_task_find()] searches task title or ID, and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. It is used internally b a lot of `planner_*` functions, very fast, and does not support interactive use.
 #' @importFrom Microsoft365R ms_plan_task
 #' @export
-planner_task_find <- function(task_title = NULL, task_id = NULL, account = planner_connect()) {
+planner_task_find <- function(task_title = NULL, task_id = NULL, account = connect_planner()) {
   if (inherits(task_title, "ms_plan_task")) {
     return(task_title)
   }
@@ -547,14 +498,14 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = plann
 
 #' @rdname planner
 #' @export
-planner_categories_list <- function(account = planner_connect()) {
+planner_categories_list <- function(account = connect_planner()) {
   unlist(account$do_operation("details")$categoryDescriptions, use.names = TRUE)
 }
 
 #' @rdname planner
 #' @details [planner_retrieve_project_id()] retrieves the p-number from the task title and returns it as [integer].
 #' @export
-planner_retrieve_project_id <- function(task, account = planner_connect()) {
+planner_retrieve_project_id <- function(task, account = connect_planner()) {
   task <- planner_task_find(task)
   title <- get_azure_property(task, "title")
   if (title %like% "p[0-9]+") {
@@ -569,7 +520,7 @@ planner_retrieve_project_id <- function(task, account = planner_connect()) {
 #' @export
 planner_task_request_validation <- function(task,
                                             category_text = read_secret("planner.label.authorise"),
-                                            account = planner_connect()) {
+                                            account = connect_planner()) {
   planner_task_update(task, categories = category_text, account = account)
 }
 
@@ -577,7 +528,7 @@ planner_task_request_validation <- function(task,
 #' @export
 planner_task_validate <- function(task,
                                   category_text = read_secret("planner.label.authorised"),
-                                  account = planner_connect()) {
+                                  account = connect_planner()) {
   planner_task_update(task, categories = category_text, account = account)
 }
 
@@ -590,7 +541,7 @@ planner_task_validate <- function(task,
 #' @export
 planner_user_property <- function(user,
                                   team_name = read_secret("team.name"),
-                                  account = planner_connect(),
+                                  account = connect_planner(),
                                   property = "id",
                                   as_list = FALSE) {
   if (is.null(pkg_env$planner_members)) {
@@ -630,7 +581,7 @@ planner_user_property <- function(user,
 #' @importFrom httr GET add_headers stop_for_status content
 #' @export
 planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
-                                       account = planner_connect()) {
+                                       account = connect_planner()) {
   # this returns the currently highest project number, which is saved to the description
   task <- planner_task_find(task)
   task_id <- get_azure_property(task, "id")
@@ -665,7 +616,7 @@ as_tibble.ms_object <- function(x, ...) {
   as_tibble(as.data.frame(x, ...))
 }
 
-planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = planner_connect()) {
+planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = connect_planner()) {
   # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
   buckets <- account$list_buckets()
   index <- which(get_azure_property(buckets, "name") == bucket_name)
@@ -677,12 +628,12 @@ planner_bucket_object <- function(bucket_name = read_secret("planner.default.buc
 }
 
 increase_highest_project_id <- function(task = read_secret("planner.dummycard"),
-                                        account = planner_connect()) {
+                                        account = connect_planner()) {
   highest <- planner_highest_project_id(task = task, account = account)
   planner_task_update(task = task, description = highest + 1, account = account)
 }
 
-get_internal_category <- function(category_name, account = planner_connect()) {
+get_internal_category <- function(category_name, account = connect_planner()) {
   categories <- planner_categories_list(account = account)
   names(which(categories == category_name))
 }

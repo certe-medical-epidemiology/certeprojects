@@ -19,15 +19,14 @@
 
 #' Connect to Microsoft Teams via Microsoft 365
 #'
-#' These functions create a connection to Microsoft Teams via Microsoft 365 and saves the connection to the `certeprojects` package environment. The `teams_*()` functions allow to work with this connection.
-#' @param team_name name of the team
+#' These functions use the connection to Microsoft Teams set up with [connect_teams()].
 #' @param ... arguments passed on to [get_microsoft365_token()]
-#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [teams_connect()] or [Microsoft365R::get_team()].
-#' @param force a [logical] to enforce creating the connection, useful for overwriting an existing connection
-#' @details When attaching this package using [library()], and external R process will be run to connect to MS Teams, to increase speed when connecting using [teams_connect()].
+#' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [connect_teams()] or [Microsoft365R::get_team()].
+#' @inheritParams connect
+#' @param projects_channel Teams channel name of the projects
 #' @rdname teams
 #' @name teams
-#' @importFrom Microsoft365R get_team ms_team ms_drive_item
+#' @importFrom Microsoft365R get_team ms_team ms_drive_item ms_channel
 #' @export
 #' @examples 
 #' \dontrun{
@@ -77,45 +76,13 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_connect <- function(team_name = read_secret("team.name"),
-                          force = FALSE,
-                          ...) {
-  if (isTRUE(force) || is.null(pkg_env$teams)) {
-    # not yet connected to Teams in Microsoft 365, so set it up
-    # check the background callr first
-    conn <- tryCatch(pkg_env$callr$get_result()$teams, error = function(e) NULL)
-    if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_team")) {
-      pkg_env$teams <- conn
-      pkg_env$teams_from_callr <- TRUE
-    } else {
-      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "teams", ...)))
-      if (!"get_group" %in% names(login)) {
-        Sys.sleep(1)
-      }
-      login <- login$get_group(name = team_name)
-      if (!"get_team" %in% names(login)) {
-        Sys.sleep(1)
-      }
-      pkg_env$teams <- login$get_team()
-      pkg_env$teams_from_callr <- FALSE
-    }
-  }
-  return(invisible(pkg_env$teams))
-}
-
-
-# PROJECT FUNCTIONS -----------------------------------------------------------
-
-#' @rdname teams
-#' @param projects_channel Teams channel name of the projects
-#' @importFrom Microsoft365R ms_drive_item ms_channel
-#' @export
 teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
-                                   account = teams_connect()) {
+                                   overwrite = FALSE,
+                                   account = connect_teams()) {
   if (is.null(pkg_env$teams_project_folder)) {
     # try to get the project channel from callr
     conn <- tryCatch(pkg_env$callr$get_result()$teams_project_folder, error = function(e) NULL)
-    if (!isTRUE(force) && !is.null(conn) && inherits(conn, "ms_drive_item")) {
+    if (!isTRUE(overwrite) && !is.null(conn) && inherits(conn, "ms_drive_item")) {
       pkg_env$teams_project_folder <- conn
       pkg_env$teams_project_folder_from_callr <- TRUE
     } else {
@@ -146,7 +113,7 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
 #' @rdname teams
 #' @param task any task title, task ID, or [`ms_plan_task`][Microsoft365R::ms_plan_task] object (e.g. from [planner_task_find()])
 #' @param channel a Teams folder object. This has to be an object as returned by [teams_projects_channel()].
-#' @param planner a Microsoft 365 account for Planner. This has to be an object as returned by [planner_connect()].
+#' @param planner a Microsoft 365 account for Planner. This has to be an object as returned by [connect_planner()].
 #' @details
 #' The [teams_new_project()] function:
 #' 1. Checks if there is a Planner task with the correct task title
@@ -154,7 +121,7 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
 #' 3. Updates the task to contain the project folder URL as an attachment
 #' 
 #' @export
-teams_new_project <- function(task, channel = teams_projects_channel(), planner = planner_connect()) {
+teams_new_project <- function(task, channel = teams_projects_channel(), planner = connect_planner()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   task_title <- get_azure_property(task, "title")
@@ -171,7 +138,7 @@ teams_new_project <- function(task, channel = teams_projects_channel(), planner 
 
 #' @rdname teams
 #' @export
-teams_browse_project <- function(task, channel = teams_projects_channel(), planner = planner_connect()) {
+teams_browse_project <- function(task, channel = teams_projects_channel(), planner = connect_planner()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   # open in the browser
@@ -183,7 +150,7 @@ teams_browse_project <- function(task, channel = teams_projects_channel(), plann
 #' @details
 #' The [teams_download_project_file()] function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use [source()], [rmarkdown::render()] or [quarto::quarto_render()] using the [teams_download_project_file()] function as input.
 #' @export
-teams_download_project_file <- function(file, task, channel = teams_projects_channel(), planner = planner_connect()) {
+teams_download_project_file <- function(file, task, channel = teams_projects_channel(), planner = connect_planner()) {
   task <- planner_task_find(task, account = planner)
   file_teams <- teams_get_project_file(file = file, task = task, channel = channel, planner = planner)
   
@@ -205,7 +172,7 @@ teams_download_project_file <- function(file, task, channel = teams_projects_cha
 #' @rdname teams
 #' @importFrom certestyle font_bold
 #' @export
-teams_get_project_file <- function(file, task, channel = teams_projects_channel(), planner = planner_connect()) {
+teams_get_project_file <- function(file, task, channel = teams_projects_channel(), planner = connect_planner()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   file_teams <- channel$get_item(get_azure_property(task, "title"))$list_items()
@@ -237,7 +204,7 @@ teams_get_project_file <- function(file, task, channel = teams_projects_channel(
 #' @rdname teams
 #' @importFrom rstudioapi navigateToFile showDialog
 #' @export
-teams_open_project_analysis_file <- function(task, channel = teams_projects_channel(), planner = planner_connect()) {
+teams_open_project_analysis_file <- function(task, channel = teams_projects_channel(), planner = connect_planner()) {
   task <- planner_task_find(task, account = planner)
   path <- teams_download_project_file(file = ".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$",
                                       task = task, channel = channel, planner = planner)
@@ -264,7 +231,7 @@ teams_render_project_file <- function(file,
                                       fun = rmarkdown::render,
                                       ...,
                                       channel = teams_projects_channel(),
-                                      planner = planner_connect()) {
+                                      planner = connect_planner()) {
   temp_file <- teams_download_project_file(file = file, task = task, channel = channel, planner = planner)
   temp_dir <- dirname(temp_file)
   
@@ -328,7 +295,7 @@ teams_render_project_file <- function(file,
 teams_view_project_file <- function(file,
                                     task,
                                     channel = teams_projects_channel(),
-                                    planner = planner_connect()) {
+                                    planner = connect_planner()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   # open in the browser
@@ -341,7 +308,7 @@ teams_view_project_file <- function(file,
 teams_upload_project_file <- function(files,
                                       task,
                                       channel = teams_projects_channel(),
-                                      planner = planner_connect()) {
+                                      planner = connect_planner()) {
   # validate that the task exists
   task <- planner_task_find(task, account = planner)
   task_title <- get_azure_property(task, "title")
@@ -363,14 +330,14 @@ teams_upload_project_file <- function(files,
 
 #' @rdname teams
 #' @export
-teams_name <- function(account = teams_connect()) {
+teams_name <- function(account = connect_teams()) {
   get_teams_property(account, "displayName")
 }
 
 #' @rdname teams
 #' @param plain return as plain names, not as `Azure` objects
 #' @export
-teams_channels <- function(account = teams_connect(), plain = TRUE) {
+teams_channels <- function(account = connect_teams(), plain = TRUE) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
@@ -383,7 +350,7 @@ teams_channels <- function(account = teams_connect(), plain = TRUE) {
 
 #' @rdname teams
 #' @export
-teams_view_sharepoint <- function(channel, account = teams_connect()) {
+teams_view_sharepoint <- function(channel, account = connect_teams()) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
@@ -407,7 +374,7 @@ teams_send_message <- function(body,
                                channel,
                                content_type = c("text", "html"),
                                attachments = NULL,
-                               account = teams_connect()) {
+                               account = connect_teams()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -428,7 +395,7 @@ teams_upload <- function(local_path,
                          teams_path = basename(local_path),
                          card_number = project_get_current_id(ask = FALSE),
                          channel = NULL,
-                         account = teams_connect()) {
+                         account = connect_teams()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -482,7 +449,7 @@ teams_download <- function(teams_path,
                            local_path = basename(teams_path),
                            card_number = project_get_current_id(ask = FALSE),
                            channel = NULL,
-                           account = teams_connect()) {
+                           account = connect_teams()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -523,7 +490,7 @@ teams_download <- function(teams_path,
 teams_import <- function(teams_path,
                          card_number = project_get_current_id(ask = FALSE),
                          channel = NULL,
-                         account = teams_connect()) {
+                         account = connect_teams()) {
   suppressMessages(
     tempfile <- teams_download(teams_path = teams_path,
                                local_path = paste0(tempdir(), "/", basename(teams_path)),
@@ -536,7 +503,7 @@ teams_import <- function(teams_path,
 
 #' @rdname teams
 #' @export
-teams_open <- function(teams_path, channel = NULL, account = teams_connect()) {
+teams_open <- function(teams_path, channel = NULL, account = connect_teams()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -567,7 +534,7 @@ teams_get_link <- function(teams_path,
                            expire_after = "1 month",
                            password = NULL,
                            channel = NULL,
-                           account = teams_connect()) {
+                           account = connect_teams()) {
   if (!is_valid_teams(account)) {
     stop("No valid Teams account")
   }
@@ -625,7 +592,7 @@ get_teams_property <- function(account, property_names, account_fn = NULL) {
   return(out)
 }
 
-find_channel <- function(path, account = teams_connect()) {
+find_channel <- function(path, account = connect_teams()) {
   channels <- teams_channels(account = account)
   if (path %in% channels) {
     return(path)

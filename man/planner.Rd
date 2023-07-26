@@ -2,7 +2,6 @@
 % Please edit documentation in R/ms_planner.R
 \name{planner}
 \alias{planner}
-\alias{planner_connect}
 \alias{planner_browse}
 \alias{planner_bucket_create}
 \alias{planner_buckets_list}
@@ -19,18 +18,11 @@
 \alias{planner_highest_project_id}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
-planner_connect(
-  plan = read_secret("planner.name"),
-  team_name = read_secret("team.name"),
-  force = FALSE,
-  ...
-)
+planner_browse(account = connect_planner())
 
-planner_browse(account = planner_connect())
+planner_bucket_create(bucket_name, account = connect_planner())
 
-planner_bucket_create(bucket_name, account = planner_connect())
-
-planner_buckets_list(account = planner_connect(), plain = FALSE)
+planner_buckets_list(account = connect_planner(), plain = FALSE)
 
 planner_task_create(
   title,
@@ -44,7 +36,7 @@ planner_task_create(
   assigned = NULL,
   bucket_name = read_secret("planner.default.bucket"),
   attachment_urls = NULL,
-  account = planner_connect(),
+  account = connect_planner(),
   project_number = planner_highest_project_id() + 1
 )
 
@@ -63,62 +55,54 @@ planner_task_update(
   bucket_name = NULL,
   percent_completed = NULL,
   attachment_urls = NULL,
-  account = planner_connect()
+  account = connect_planner()
 )
 
-planner_tasks_list(account = planner_connect(), plain = FALSE)
+planner_tasks_list(account = connect_planner(), plain = FALSE)
 
 planner_task_search(
   search_term = ".*",
   limit = Inf,
-  account = planner_connect()
+  account = connect_planner()
 )
 
 planner_task_find(
   task_title = NULL,
   task_id = NULL,
-  account = planner_connect()
+  account = connect_planner()
 )
 
-planner_categories_list(account = planner_connect())
+planner_categories_list(account = connect_planner())
 
-planner_retrieve_project_id(task, account = planner_connect())
+planner_retrieve_project_id(task, account = connect_planner())
 
 planner_task_request_validation(
   task,
   category_text = read_secret("planner.label.authorise"),
-  account = planner_connect()
+  account = connect_planner()
 )
 
 planner_task_validate(
   task,
   category_text = read_secret("planner.label.authorised"),
-  account = planner_connect()
+  account = connect_planner()
 )
 
 planner_user_property(
   user,
   team_name = read_secret("team.name"),
-  account = planner_connect(),
+  account = connect_planner(),
   property = "id",
   as_list = FALSE
 )
 
 planner_highest_project_id(
   task = read_secret("planner.dummycard"),
-  account = planner_connect()
+  account = connect_planner()
 )
 }
 \arguments{
-\item{plan}{name of the team's plan if \code{team_name} is not empty. Otherwise, a plan ID (for individual use).}
-
-\item{team_name}{name of the team, can be left blank to connect to an individual planner}
-
-\item{force}{a \link{logical} to enforce creating the connection, useful for overwriting an existing connection}
-
-\item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
-
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=planner_connect]{planner_connect()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
 
 \item{bucket_name}{name of the bucket}
 
@@ -166,21 +150,16 @@ planner_highest_project_id(
 
 \item{user}{a user name, mail adress, or Certe login name}
 
+\item{team_name}{name of the team, can be left blank to connect to an individual planner}
+
 \item{property}{property to return, can be "id", "name" or "mail"}
 
 \item{as_list}{return the full list of members as \link{list}, split into Eigenaars (Owners) / Leden (Members). This ignores \code{user}.}
 }
 \description{
-These functions create a connection to Microsoft Planner via Microsoft 365 and saves the connection to the \code{certeprojects} package environment. The \verb{planner_*()} functions allow to work with this connection.
+These functions use the connection to Microsoft Planner set up with \code{\link[=connect_planner]{connect_planner()}}.
 }
 \details{
-To connect to MS Planner with a personal account, retrieve the plan ID (e.g., from the URL of the plan), and pass it to \code{\link[=planner_connect]{planner_connect()}} as \code{plan}. Make sure that \code{team_name} if left blank:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{  planner_connect(plan = "AAA-0aa0AaAa-aaaAAAAAAAa", team_name = NULL, force = TRUE)
-}\if{html}{\out{</div>}}
-
-When attaching this package using \code{\link[=library]{library()}}, and external R process will be run to connect to MS Planner, to increase speed when connecting using \code{\link[=planner_connect]{planner_connect()}}.
-
 \code{\link[=planner_task_search]{planner_task_search()}} searches the title and description using case-insensitive regular expressions and returns an \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object. In interactive mode and with multiple hits, a menu will be shown to pick from.
 
 \code{\link[=planner_task_find]{planner_task_find()}} searches task title or ID, and returns an \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object. It is used internally b a lot of \verb{planner_*} functions, very fast, and does not support interactive use.

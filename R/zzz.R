@@ -20,12 +20,14 @@
 #' @importFrom callr r_bg
 .onAttach <- function(...) {
   # connect on attach with a background R process
-  # this will make sure that using Planner or Teams can be done instantly
+  # this will make sure that using Outlook, Planner, or Teams can be done instantly
   # this must be in .onAttach() and not .onLoad() as it would otherwise lead to a loop
   try(pkg_env$callr <- r_bg(function() 
-    list(planner = tryCatch(certeprojects::planner_connect(),
+    list(outlook = tryCatch(certeprojects::connect_outlook(),
                             error = function(e) NULL),
-         teams = tryCatch(certeprojects::teams_connect(),
+         planner = tryCatch(certeprojects::connect_planner(),
+                            error = function(e) NULL),
+         teams = tryCatch(certeprojects::connect_teams(),
                           error = function(e) NULL),
          teams_project_folder = tryCatch(certeprojects::teams_projects_channel(),
                                          error = function(e) NULL))),

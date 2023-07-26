@@ -89,7 +89,7 @@ remove_pin <- function(name,
   }
 }
 
-#' @inheritParams teams_projects_channel
+#' @inheritParams teams
 #' @inheritParams pins::board_ms365
 #' @details The [pins_board()] function returns a [pins::board_ms365] object based on the `"pins"` folder in the Teams channel*Projects*, which is retrieved with [teams_projects_channel()].
 #' @importFrom pins board_ms365
@@ -97,7 +97,7 @@ remove_pin <- function(name,
 #' @name pins
 #' @export
 pins_board <- function(projects_channel = read_secret("teams.projects.channel"),
-                       account = teams_connect(),
+                       account = connect_teams(),
                        delete_by_item = TRUE) {
   if (is.null(pkg_env$microsoft365_pins)) {
     drives <- account$list_drives()

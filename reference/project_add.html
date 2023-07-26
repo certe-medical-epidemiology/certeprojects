@@ -68,17 +68,17 @@
     <div class="page-header">
     <h1>Add Project Using Shiny</h1>
     <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/project_add.R" class="external-link"><code>R/project_add.R</code></a></small>
-    <div class="hidden name"><code>project_shiny.Rd</code></div>
+    <div class="hidden name"><code>project_add.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This is a Shiny app to add a new project: it creates a project folder local <a href="teams.html">or in Teams</a>, generates the required Quarto or R Markdown or R files, and creates a <a href="planner.html">new task in Planner</a>. These functions come with RStudio addins to quickly access existing projects.</p>
+    <p>This is a Shiny app to add a new project: it creates a project folder local <a href="connect.html">or in Teams</a>, generates the required Quarto or R Markdown or R files, and creates a <a href="connect.html">new task in Planner</a>. These functions come with RStudio addins to quickly access existing projects.</p>
     </div>
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">project_add</span><span class="op">(</span></span>
-<span>  planner <span class="op">=</span> <span class="fu"><a href="planner.html">planner_connect</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  teams <span class="op">=</span> <span class="fu"><a href="teams.html">teams_connect</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  teams <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  channel <span class="op">=</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span>account <span class="op">=</span> <span class="va">teams</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -86,11 +86,11 @@
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>planner</dt>
-<dd><p>Microsoft Planner account, as returned by e.g. <code><a href="planner.html">planner_connect()</a></code></p></dd>
+<dd><p>Microsoft Planner account, as returned by e.g. <code><a href="connect.html">connect_planner()</a></code></p></dd>
 
 
 <dt>teams</dt>
-<dd><p>Microsoft Teams account, as returned by e.g. <code><a href="teams.html">teams_connect()</a></code></p></dd>
+<dd><p>Microsoft Teams account, as returned by e.g. <code><a href="connect.html">connect_teams()</a></code></p></dd>
 
 
 <dt>channel</dt>

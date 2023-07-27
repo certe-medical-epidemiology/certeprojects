@@ -94,7 +94,7 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
       if (is.null(teams_project_folder)) {
         # went wrong, do it ourselves
         teams_project_folder <- ms_channel$new(account$token, account$tenant, 
-                                               account$do_operation(file.path("channels/", get_azure_property(channel, "id"))),
+                                               account$do_operation(file.path("channels/", channel_id)),
                                                team_id = get_azure_property(account, "id"))
       }
       pkg_env$teams_project_folder <- tryCatch(teams_project_folder$get_folder(), error = function(e) NULL)

@@ -91,7 +91,7 @@ remove_pin <- function(name,
 
 #' @inheritParams teams
 #' @inheritParams pins::board_ms365
-#' @details The [pins_board()] function returns a [pins::board_ms365] object based on the `"pins"` folder in the Teams channel*Projects*, which is retrieved with [teams_projects_channel()].
+#' @details The [pins_board()] function returns a [pins::board_ms365] object based on the `"pins"` folder in the Teams channel *Projects*, which is retrieved with [teams_projects_channel()].
 #' @importFrom pins board_ms365
 #' @rdname pins
 #' @name pins

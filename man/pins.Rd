@@ -77,5 +77,5 @@ For Pins functions of the \code{pins} package, use \code{\link[=pins_board]{pins
 
 The following \code{pins} functions are re-exported by this package: \code{\link[=pin_list]{pin_list()}}, \code{\link[=pin_meta]{pin_meta()}}, and \code{\link[=pin_versions]{pin_versions()}}.
 
-The \code{\link[=pins_board]{pins_board()}} function returns a \link[pins:board_ms365]{pins::board_ms365} object based on the \code{"pins"} folder in the Teams channel\emph{Projects}, which is retrieved with \code{\link[=teams_projects_channel]{teams_projects_channel()}}.
+The \code{\link[=pins_board]{pins_board()}} function returns a \link[pins:board_ms365]{pins::board_ms365} object based on the \code{"pins"} folder in the Teams channel \emph{Projects}, which is retrieved with \code{\link[=teams_projects_channel]{teams_projects_channel()}}.
 }

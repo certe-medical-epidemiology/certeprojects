@@ -14,6 +14,7 @@ get_microsoft365_token(
   app_id = read_secret("azure.app_id"),
   auth_type = read_secret("azure.auth_type"),
   ...,
+  overwrite = FALSE,
   error_on_fail = TRUE
 )
 
@@ -39,11 +40,11 @@ connect_teams(team_name = read_secret("team.name"), overwrite = FALSE, ...)
 
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 
+\item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
+
 \item{error_on_fail}{a \link{logical} to indicate whether an error must be thrown if no connection can be made}
 
 \item{email}{email address of the user, or a shared mailbox}
-
-\item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
 
 \item{plan}{name of the team's plan if \code{team_name} is not empty. Otherwise, a plan ID (for individual use).}
 
@@ -55,11 +56,10 @@ These functions create a connection to Microsoft 365 and saves the connection to
 \details{
 \subsection{Microsoft Outlook}{
 
-To switch between different Outlook accounts, run \code{\link[=connect_outlook]{connect_outlook()}} with \code{overwrite = TRUE}. This will allow all \code{certemail} functions to use the newly set account.
+To switch between different Outlook accounts, run \code{\link[=connect_outlook]{connect_outlook()}} with another email address. This will allow all \code{certemail} functions to use the newly set account.
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{connect_outlook("department@certe.nl")
-connect_outlook("user@certe.nl")               # does nothing
-connect_outlook("user@certe.nl", overwrite = TRUE) # sets user account
+connect_outlook("user@certe.nl") # switches to user account
 }\if{html}{\out{</div>}}
 }
 

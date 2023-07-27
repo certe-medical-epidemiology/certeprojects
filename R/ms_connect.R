@@ -34,12 +34,11 @@
 #' @details
 #' ### Microsoft Outlook
 #' 
-#' To switch between different Outlook accounts, run [connect_outlook()] with `overwrite = TRUE`. This will allow all `certemail` functions to use the newly set account.
+#' To switch between different Outlook accounts, run [connect_outlook()] with another email address. This will allow all `certemail` functions to use the newly set account.
 #' 
 #' ```r
 #' connect_outlook("department@certe.nl")
-#' connect_outlook("user@certe.nl")               # does nothing
-#' connect_outlook("user@certe.nl", overwrite = TRUE) # sets user account
+#' connect_outlook("user@certe.nl") # switches to user account
 #' ```
 #' 
 #' ### Microsoft Planner
@@ -66,6 +65,7 @@ get_microsoft365_token <- function(scope,
                                    app_id = read_secret("azure.app_id"),
                                    auth_type = read_secret("azure.auth_type"),
                                    ...,
+                                   overwrite = FALSE,
                                    error_on_fail = TRUE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
   scope_options <- c("mail", "outlook", "teams", "planner", "tasks", "sharepoint")
@@ -120,7 +120,9 @@ get_microsoft365_token <- function(scope,
     stop("Invalid scope - must be one of ", toString(scope_options))
   }
 
-  if (is.null(suppressMessages(pkg_env[[scope]]))) {
+  scope <- paste0("token_", scope)
+
+  if (isTRUE(overwrite) || is.null(suppressMessages(pkg_env[[scope]]))) {
     # not yet connected to Microsoft 365, so set it up
     tryCatch({
       # try to get existing login first - this will prevent that the device code must be given every time
@@ -154,15 +156,16 @@ get_microsoft365_token <- function(scope,
 connect_outlook <- function(email = read_secret("mail.auto_from"),
                             overwrite = FALSE,
                             ...) {
-  if (isTRUE(overwrite) || is.null(pkg_env$outlook)) {
-    # not yet connected to Outlook in Microsoft 365, so set it up
+  different_account <- !is.null(pkg_env$outlook) && !identical(email, get_azure_property(pkg_env$outlook, "mail"))
+  if (isTRUE(overwrite) || is.null(pkg_env$outlook) || different_account) {
+    # not yet connected to Outlook in Microsoft 365 or nowvusing a different account, so set it up
     # check the background callr first
     conn <- tryCatch(pkg_env$callr$get_result()$outlook, error = function(e) NULL)
-    if (!isTRUE(overwrite) && !is.null(conn) && inherits(conn, "ms_outlook")) {
+    if (!isTRUE(overwrite) && !is.null(conn) && !different_account && inherits(conn, "ms_outlook")) {
       pkg_env$outlook <- conn
       pkg_env$outlook_from_callr <- TRUE
     } else {
-      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "outlook", ...)))
+      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "outlook", overwrite = overwrite, ...)))
       pkg_env$outlook <- login$get_user(email = email)$get_outlook()
       pkg_env$outlook_from_callr <- FALSE
     }
@@ -184,7 +187,7 @@ connect_planner <- function(plan = read_secret("planner.name"), team_name = read
         login <- conn
         pkg_env$planner_from_callr <- TRUE
       } else {
-        login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "planner", ...)))
+        login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "planner", overwrite = overwrite, ...)))
         if (!"get_group" %in% names(login)) {
           Sys.sleep(1)
         }
@@ -201,7 +204,8 @@ connect_planner <- function(plan = read_secret("planner.name"), team_name = read
     } else {
       # this part is for a personal planner:
       # team_name can be empty, but then plan must be a plan_id
-      token <- get_microsoft365_token(scope = "tasks", ...)
+      token <- get_microsoft365_token(scope = "tasks", overwrite = overwrite
+, ...)
       res <- call_graph_endpoint(token = token, file.path("planner/plans", plan))
       pkg_env$planner <- ms_plan$new(token, token$tenant, res)
     }
@@ -223,7 +227,8 @@ connect_teams <- function(team_name = read_secret("team.name"),
       pkg_env$teams <- conn
       pkg_env$teams_from_callr <- TRUE
     } else {
-      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "teams", ...)))
+      login <- suppressMessages(create_graph_login(token = get_microsoft365_token(scope = "teams", overwrite = overwrite
+, ...)))
       if (!"get_group" %in% names(login)) {
         Sys.sleep(1)
       }

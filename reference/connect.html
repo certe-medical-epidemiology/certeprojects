@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.2</span>
       </span>
     </div>
 
@@ -147,9 +147,14 @@
 <h3 id="microsoft-outlook">Microsoft Outlook<a class="anchor" aria-label="anchor" href="#microsoft-outlook"></a></h3>
 
 
-<p>To switch between different Outlook accounts, run <code>connect_outlook()</code> with another email address. This will allow all <code>certemail</code> functions to use the newly set account.</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="fu"><a href="../reference/connect.html">connect_outlook</a></span><span class="op">(</span><span class="st">"department@certe.nl"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/connect.html">connect_outlook</a></span><span class="op">(</span><span class="st">"user@certe.nl"</span><span class="op">)</span> <span class="co"># switches to user account</span></span></code></pre><p></p></div>
+<p>To switch between different Outlook accounts, run <code>connect_outlook()</code> with another email address, and set <code>overwrite = TRUE</code>. This will allow all <code>certemail</code> functions to use the newly set account.</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="co"># at default connects to the department mailbox:</span></span>
+<span><span class="fu"><a href="../reference/connect.html">connect_outlook</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co"># afterwards, this does nothing since `overwrite` is not set:</span></span>
+<span><span class="fu"><a href="../reference/connect.html">connect_outlook</a></span><span class="op">(</span><span class="st">"user@certe.nl"</span><span class="op">)</span></span>
+<span><span class="co"># this switches to the user account:</span></span>
+<span><span class="fu"><a href="../reference/connect.html">connect_outlook</a></span><span class="op">(</span><span class="st">"user@certe.nl"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
+<p>Using <code>overwrite</code> is needed, because running just <code>connect_outlook()</code> afterwards again (which many <code>certemail</code> functions do) will otherwise change back to the default account.</p>
 </div>
 
 <div class="section">

@@ -34,12 +34,18 @@
 #' @details
 #' ### Microsoft Outlook
 #' 
-#' To switch between different Outlook accounts, run [connect_outlook()] with another email address. This will allow all `certemail` functions to use the newly set account.
+#' To switch between different Outlook accounts, run [connect_outlook()] with another email address, and set `overwrite = TRUE`. This will allow all `certemail` functions to use the newly set account.
 #' 
 #' ```r
-#' connect_outlook("department@certe.nl")
-#' connect_outlook("user@certe.nl") # switches to user account
+#' # at default connects to the department mailbox:
+#' connect_outlook()
+#' # afterwards, this does nothing since `overwrite` is not set:
+#' connect_outlook("user@certe.nl")
+#' # this switches to the user account:
+#' connect_outlook("user@certe.nl", overwrite = TRUE)
 #' ```
+#' 
+#' Using `overwrite` is needed, because running just [connect_outlook()] afterwards again (which many `certemail` functions do) will otherwise change back to the default account.
 #' 
 #' ### Microsoft Planner
 #' 
@@ -156,12 +162,15 @@ get_microsoft365_token <- function(scope,
 connect_outlook <- function(email = read_secret("mail.auto_from"),
                             overwrite = FALSE,
                             ...) {
-  different_account <- !is.null(pkg_env$outlook) && !identical(email, get_azure_property(pkg_env$outlook, "mail"))
-  if (isTRUE(overwrite) || is.null(pkg_env$outlook) || different_account) {
-    # not yet connected to Outlook in Microsoft 365 or nowvusing a different account, so set it up
+  if (!is.null(pkg_env$outlook) && !isTRUE(overwrite) && !missing(email) && !identical(email, get_azure_property(pkg_env$outlook, "mail"))) {
+    warning("Currently connected as ", get_azure_property(pkg_env$outlook, "mail"), " - add `overwrite = TRUE` to switch accounts")
+  }
+    
+  if (isTRUE(overwrite) || is.null(pkg_env$outlook)) {
+    # not yet connected to Outlook in Microsoft 365 or using a different account, so set it up
     # check the background callr first
     conn <- tryCatch(pkg_env$callr$get_result()$outlook, error = function(e) NULL)
-    if (!isTRUE(overwrite) && !is.null(conn) && !different_account && inherits(conn, "ms_outlook")) {
+    if (!isTRUE(overwrite) && !is.null(conn) && inherits(conn, "ms_outlook")) {
       pkg_env$outlook <- conn
       pkg_env$outlook_from_callr <- TRUE
     } else {

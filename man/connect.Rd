@@ -56,11 +56,17 @@ These functions create a connection to Microsoft 365 and saves the connection to
 \details{
 \subsection{Microsoft Outlook}{
 
-To switch between different Outlook accounts, run \code{\link[=connect_outlook]{connect_outlook()}} with another email address. This will allow all \code{certemail} functions to use the newly set account.
+To switch between different Outlook accounts, run \code{\link[=connect_outlook]{connect_outlook()}} with another email address, and set \code{overwrite = TRUE}. This will allow all \code{certemail} functions to use the newly set account.
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{connect_outlook("department@certe.nl")
-connect_outlook("user@certe.nl") # switches to user account
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# at default connects to the department mailbox:
+connect_outlook()
+# afterwards, this does nothing since `overwrite` is not set:
+connect_outlook("user@certe.nl")
+# this switches to the user account:
+connect_outlook("user@certe.nl", overwrite = TRUE)
 }\if{html}{\out{</div>}}
+
+Using \code{overwrite} is needed, because running just \code{\link[=connect_outlook]{connect_outlook()}} afterwards again (which many \code{certemail} functions do) will otherwise change back to the default account.
 }
 
 \subsection{Microsoft Planner}{

@@ -23,7 +23,7 @@
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [connect_teams()] or [Microsoft365R::get_team()].
 #' @inheritParams connect
-#' @param projects_channel Teams channel name of the projects
+#' @param projects_channel_id Teams channel ID of the projects
 #' @rdname teams
 #' @name teams
 #' @importFrom Microsoft365R get_team ms_team ms_drive_item ms_channel
@@ -76,10 +76,10 @@
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
 #' }
-teams_projects_channel <- function(projects_channel = read_secret("teams.projects.channel"),
+teams_projects_channel <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
                                    overwrite = FALSE,
                                    account = connect_teams()) {
-  if (is.null(pkg_env$teams_project_folder)) {
+  if (isTRUE(overwrite) || is.null(pkg_env$teams_project_folder)) {
     # try to get the project channel from callr
     conn <- tryCatch(pkg_env$callr$get_result()$teams_project_folder, error = function(e) NULL)
     if (!isTRUE(overwrite) && !is.null(conn) && inherits(conn, "ms_drive_item")) {
@@ -87,22 +87,15 @@ teams_projects_channel <- function(projects_channel = read_secret("teams.project
       pkg_env$teams_project_folder_from_callr <- TRUE
     } else {
       message("Retrieving Teams channel...", appendLF = FALSE)
-      channels <- account$list_channels()
-      channel <- channels[get_azure_property(channels, "displayName") == projects_channel]
-      channel_id <- get_azure_property(channel[[1]], "id")
-      teams_project_folder <- tryCatch(account$get_channel(channel_id = channel_id), error = function(e) NULL)
-      if (is.null(teams_project_folder)) {
-        # went wrong, do it ourselves
-        teams_project_folder <- ms_channel$new(account$token, account$tenant, 
-                                               account$do_operation(file.path("channels/", channel_id)),
-                                               team_id = get_azure_property(account, "id"))
-      }
-      pkg_env$teams_project_folder <- tryCatch(teams_project_folder$get_folder(), error = function(e) NULL)
-      if (is.null(teams_project_folder)) {
-        # went wrong, do it ourselves
-        pkg_env$teams_project_folder <- ms_drive_item$new(teams_project_folder$token, teams_project_folder$tenant, 
-                                                          teams_project_folder$do_operation("filesFolder"))
-      }
+      # this manual way is by far the fastest:
+      folder <- tryCatch(ms_drive_item$new(token = account$token,
+                                           tenant = account$tenant,
+                                           properties = ms_channel$new(token = account$token,
+                                                                       tenant = account$tenant,
+                                                                       properties = account$do_operation(file.path("channels/", projects_channel_id)),
+                                                                       team_id = get_azure_property(account, "id"))$do_operation("filesFolder")),
+                         error = function(e) stop("Could not retrieve Channel list: ", e$message))
+      pkg_env$teams_project_folder <- folder
       pkg_env$teams_project_folder_from_callr <- FALSE
       message("OK.")
     }
@@ -337,7 +330,7 @@ teams_name <- function(account = connect_teams()) {
 #' @rdname teams
 #' @param plain return as plain names, not as `Azure` objects
 #' @export
-teams_channels <- function(account = connect_teams(), plain = TRUE) {
+teams_channels_list <- function(account = connect_teams(), plain = TRUE) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
@@ -593,7 +586,7 @@ get_teams_property <- function(account, property_names, account_fn = NULL) {
 }
 
 find_channel <- function(path, account = connect_teams()) {
-  channels <- teams_channels(account = account)
+  channels <- teams_channels_list(account = account)
   if (path %in% channels) {
     return(path)
   }

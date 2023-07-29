@@ -399,10 +399,12 @@ planner_task_update <- function(task,
 #' @rdname planner
 #' @export
 planner_tasks_list <- function(account = connect_planner(), plain = FALSE) {
+  tasks <- account$list_tasks()
+  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummycard")]
   if (plain == TRUE) {
-    sort(get_azure_property(account$list_tasks(), "title"))
+    sort(get_azure_property(tasks, "title"))
   } else {
-    account$list_tasks()
+    tasks
   }
 }
 
@@ -411,53 +413,64 @@ planner_tasks_list <- function(account = connect_planner(), plain = FALSE) {
 #' @param limit maximum number of tasks to show
 #' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
 #' @importFrom certestyle font_blue format2
+#' @importFrom dplyr bind_rows arrange desc
+#' @importFrom rstudioapi isAvailable
 #' @export
 planner_task_search <- function(search_term = ".*", limit = Inf, account = connect_planner()) {
   tasks <- planner_tasks_list(account = account, plain = FALSE)
-  hits <- vapply(FUN.VALUE = logical(1),
-                 tasks,
-                 function(x) any(c(x$properties$title, x$do_operation("details")$description) %like% search_term &
-                                   x$properties$title != read_secret("planner.dummycard"),
-                                 na.rm = TRUE))
-  if (sum(hits) == 0) {
-    message("No tasks found.")
+  tasks_df <- tasks |> lapply(as.data.frame, account = account) |> bind_rows()
+  tasks_df$search_col <- do.call(paste, tasks_df)
+  tasks_df$project_number <- suppressWarnings(as.integer(gsub(".*p([0-9]+).*", "\\1", tasks_df$title)))
+  tasks_df$is_like <- tasks_df$search_col %like% search_term | tasks_df$description %like% search_term
+  tasks_df$levenshtein_distance <- as.double(utils::adist(tasks_df$search_col, search_term, fixed = TRUE))
+  tasks_df$levenshtein_delta <- nchar(tasks_df$search_col) - tasks_df$levenshtein_distance
+  tasks_df <- tasks_df |> arrange(desc(is_like), levenshtein_delta)
+  
+  if (sum(tasks_df$is_like) == 0) {
+    message("No tasks found resembling '", search_term, "'.")
     return(NA)
-  } else if (sum(hits) == 1) {
-    return(tasks[[which(hits)]])
+  } else if (sum(tasks_df$is_like) == 1 && !interactive()) {
+    return(tasks[[which(tasks_df$is_like)]])
   } else {
-    tasks <- tasks[hits]
-    dates <- as.POSIXct(gsub("[TZ]", " ", get_azure_property(tasks, "startDateTime")))
-    # order on dates
-    tasks_sorted <- tasks[order(dates, decreasing = TRUE)]
-    dates <- dates[order(dates, decreasing = TRUE)]
     if (!interactive()) {
-      message("Multiple results found, assuming task '", get_azure_property(tasks_sorted[[1]], "title"), "'")
-      return(tasks_sorted[[1]])
+      message("Multiple results found, assuming task '", tasks_df$title[1], "'")
+      return(tasks[[which(get_azure_property(tasks, "id") == tasks_df$id[1])]])
     } else {
       if (!is.infinite(limit)) {
-        if (sum(hits) <= limit) {
+        if (sum(tasks_df$is_like) <= limit) {
           limit <- Inf
         } else {
-          tasks_sorted <- tasks_sorted[seq_len(limit)]
-          dates <- dates[seq_len(limit)]
+          tasks_df <- tasks_df[seq_len(limit), ]
         }
       }
       # interactive and more than 1, pick from menu
-      titles <- get_azure_property(tasks_sorted, "title")
-      bucket_ids <- get_azure_property(tasks_sorted, "bucketId")
-      buckets <- planner_buckets_list(account = account)
-      buckets <- data.frame(id = get_azure_property(buckets, "id"),
-                            name = get_azure_property(buckets, "name"))
-      buckets <- buckets$name[match(bucket_ids, buckets$id)]
-      texts <- paste0(font_blue(titles, collapse = NULL),
-                      " (", ifelse(is.na(dates), "", paste0(format2(dates, "ddd d mmm yyyy"), ", ")), buckets, ")")
-      choice <- utils::menu(texts, graphics = FALSE, 
-                            title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
-                                           " in '", get_azure_property(account, "title"), "' found (0 to Cancel):"))
+      buckets <- planner_buckets_list(account = account) |> 
+        lapply(as.data.frame, account = account) |> 
+        bind_rows()
+      tasks_df$bucket <- buckets$name[match(tasks_df$bucketId, buckets$id)]
+      texts <- paste0(font_blue(tasks_df$title, collapse = NULL),
+                      " (", ifelse(is.na(tasks_df$createdDateTime),
+                                   "",
+                                   paste0(format2(tasks_df$createdDateTime, "ddd d mmm yyyy"), ", ")),
+                      tasks_df$bucket, ")")
+      if (rstudioapi::isAvailable()) {
+        # use RStudio and Shiny to pick a project
+        task_id <- NULL
+        task_id <- shiny_item_picker(tasks_df$title |> stats::setNames(tasks_df$id), oversized = which(tasks_df$is_like))
+        if (is.null(task_id)) {
+          return(NA)
+        } else {
+          return(tasks[[which(get_azure_property(tasks, "id") == task_id)]])
+        }
+      } else {
+        choice <- utils::menu(texts, graphics = FALSE, 
+                              title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
+                                             " in '", get_azure_property(account, "title"), "' found (0 to Cancel):"))
+      }
       if (choice == 0) {
         NA
       } else {
-        tasks_sorted[[choice]]
+        return(tasks[[which(get_azure_property(tasks, "id") == tasks_df$id[choice])]])
       }
     }
   }
@@ -476,10 +489,13 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = conne
   if (arg_is_empty(task_title) && arg_is_empty(task_id)) {
     stop("task_title or task_id must be given")
   }
-  # account$get_bucket() does not work yet in Microsoft365R, returns error 'Invalid bucket name', so do it manually:
-  tasks <- account$list_tasks()
-  out <- which(get_azure_property(tasks, "id") == task_id | get_azure_property(tasks, "title") %like% task_title)
-  
+  tasks <- account$list_tasks() # this will also include the dummy card
+  if (!arg_is_empty(task_id)) {
+    out <- which(get_azure_property(tasks, "id") == task_id)
+  } else {
+    out <- which(get_azure_property(tasks, "title") %like% task_title)
+  }
+
   if (length(out) == 0) {
     stop("Task not found: '", task_title, "'", call. = FALSE)
   } else if (length(out) == 1) {
@@ -509,10 +525,21 @@ planner_retrieve_project_id <- function(task, account = connect_planner()) {
   task <- planner_task_find(task)
   title <- get_azure_property(task, "title")
   if (title %like% "p[0-9]+") {
-    as.integer(gsub(".*p([0-9]+).*", "\\1", title))
+    structure(as.integer(gsub(".*p([0-9]+).*", "\\1", title)),
+              task = task,
+              class = c("integer_task", "integer"))
   } else {
-    NA_integer_
+    structure(NA_integer_,
+              class = c("integer_task", "integer"))
   }
+}
+
+#' @noRd
+#' @method print integer_task
+#' @export
+print.integer_task <- function(x, ...) {
+  cat("Planner Task/Project IDs\n")
+  print(as.integer(x))
 }
 
 #' @rdname planner
@@ -570,7 +597,7 @@ planner_user_property <- function(user,
   
   users <- character(0)
   for (usr in user) {
-    users <- c(users, df[[property]][which(df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
+    users <- c(users, df[[property]][which(df$id == usr | df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
   }
   users
 }
@@ -598,22 +625,59 @@ planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
   as.integer(gsub("[^0-9]+", "", response_body$description))
 }
 
+#' @rdname planner
 #' @method as.data.frame ms_object
+#' @param x an `ms_object`
+#' @inheritParams base::as.data.frame
+#' @details Using [as.data.frame()] or [as_tibble()] on an `ms_object`, such as `ms_plan_task`, will return the properties and details of the object as a [data.frame]. For transforming many `ms_object`s to a data.frame, use [as.data.frame()] or [as_tibble()] in [lapply()] and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
+#' 
+#' ```r
+#' library(dplyr)
+#' planner_tasks_list() |> 
+#'   lapply(as_tibble) |> 
+#'   bind_rows()
+#' 
+#' # also works for other 'ms_object's, such as 'ms_channel':
+#' teams_channels_list(plain = FALSE) |> 
+#'   lapply(as_tibble) |> 
+#'   bind_rows()
+#' ```
 #' @importFrom dplyr bind_rows
-#' @noRd
 #' @export
-as.data.frame.ms_object <- function(x, ...) {
-  # if merging multiple, like from planner_tasks_list():
-  # bind_rows(lapply(xx, as.data.frame))
-  as.data.frame(lapply(x$properties, paste0, collapse = ", "))
+as.data.frame.ms_object <- function(x, row.names = NULL, optional = FALSE, account = connect_planner(), ...) {
+  object <- x$properties
+  details <- tryCatch(x$do_operation("details"), error = function(e) NULL)
+  if (!is.null(details)) {
+    object <- c(object, details[!names(details) %in% names(x$properties)])
+  }
+  names(object) <- gsub("@", "", names(object), fixed = TRUE)
+  as.data.frame(lapply(object, function(y) {
+    if (is.null(y) || length(y) == 0) {
+      NA
+    } else if (all(y %like% "[TZ]" & y %like% "^[0-9TZ.: -]+$", na.rm = TRUE)) {
+      # dates
+      as.POSIXct(gsub("T", " ", y, fixed = TRUE))
+    } else if (!tryCatch(is.null(y$user$id), error = function(e) TRUE)) {
+      # has one user, such as createdBy and completedBy
+      tryCatch(paste0(planner_user_property(y$user$id, property = "name", account = account), collapse = ", "),
+               error = function(e) paste0(y, collapse = ", "))
+    } else if (!is.null(names(y)) && all(names(y) %like% "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{10}", na.rm = TRUE)) {
+      tryCatch(paste0(planner_user_property(names(y), property = "name", account = account), collapse = ", "),
+               error = function(e) paste0(y, collapse = ", "))
+    } else {
+      paste0(y, collapse = ", ")
+    }}),
+    row.names = row.names,
+    optional = optional
+  )
 }
 
+#' @rdname planner
 #' @method as_tibble ms_object
 #' @importFrom dplyr as_tibble
-#' @noRd
 #' @export
-as_tibble.ms_object <- function(x, ...) {
-  as_tibble(as.data.frame(x, ...))
+as_tibble.ms_object <- function(x, account = connect_planner(), ...) {
+  as_tibble(as.data.frame(x = x, account = account, ...))
 }
 
 planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = connect_planner()) {

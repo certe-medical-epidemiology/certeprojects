@@ -3,7 +3,7 @@ Binding: addin1_projects_new
 Interactive: true
 
 Name: ✅ Taak verplaatsen...
-Binding: addin2_projects_status_update
+Binding: addin2_projects_update
 Interactive: true
 
 Name: 💾 Opslaan in projectmap...

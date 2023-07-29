@@ -35,7 +35,9 @@ project_get_current_id <- function(ask = NULL) {
   # /folder/p123 Name.Rmd
   # /p123 folder/Name.Rmd
   fix_id <- function(id) {
-    id <- gsub("[^0-9]", "", id)
+    if (isTRUE(suppressWarnings(id %like% "[^0-9]"))) {
+      id <- gsub("[^0-9]", "", id)
+    }
     if (all(is.na(id) | length(id) == 0) || identical(id, "")) {
       NULL
     } else {
@@ -64,7 +66,7 @@ project_get_current_id <- function(ask = NULL) {
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
     task <- planner_task_search(limit = 25)
-    if (is.null(task) || all(is.na(task))) {
+    if (is.null(task) || suppressWarnings(all(is.na(task)))) {
       return(invisible())
     }
     id <- planner_retrieve_project_id(task)
@@ -76,7 +78,7 @@ project_get_current_id <- function(ask = NULL) {
                                                      paste0("p", fix_id(id)),
                                                      ""),
                                 limit = 25)
-    if (is.null(task) || all(is.na(task))) {
+    if (is.null(task) || suppressWarnings(all(is.na(task)))) {
       return(invisible())
     }
     id <- planner_retrieve_project_id(task)

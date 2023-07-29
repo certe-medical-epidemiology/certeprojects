@@ -16,6 +16,8 @@
 \alias{planner_task_validate}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
+\alias{as.data.frame.ms_object}
+\alias{as_tibble.ms_object}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_browse(account = connect_planner())
@@ -100,6 +102,16 @@ planner_highest_project_id(
   task = read_secret("planner.dummycard"),
   account = connect_planner()
 )
+
+\method{as.data.frame}{ms_object}(
+  x,
+  row.names = NULL,
+  optional = FALSE,
+  account = connect_planner(),
+  ...
+)
+
+\method{as_tibble}{ms_object}(x, account = connect_planner(), ...)
 }
 \arguments{
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
@@ -155,6 +167,21 @@ planner_highest_project_id(
 \item{property}{property to return, can be "id", "name" or "mail"}
 
 \item{as_list}{return the full list of members as \link{list}, split into Eigenaars (Owners) / Leden (Members). This ignores \code{user}.}
+
+\item{x}{an \code{ms_object}}
+
+\item{row.names}{\code{NULL} or a character vector giving the row
+    names for the data frame.  Missing values are not allowed.}
+
+\item{optional}{logical. If \code{TRUE}, setting row names and
+    converting column names (to syntactic names: see
+    \code{\link[base]{make.names}}) is optional.  Note that all of \R's
+    \pkg{base} package \code{as.data.frame()} methods use
+    \code{optional} only for column names treatment, basically with the
+    meaning of \code{\link[base]{data.frame}(*, check.names = !optional)}.
+    See also the \code{make.names} argument of the \code{matrix} method.}
+
+\item{...}{additional arguments to be passed to or from methods.}
 }
 \description{
 These functions use the connection to Microsoft Planner set up with \code{\link[=connect_planner]{connect_planner()}}.
@@ -167,4 +194,17 @@ These functions use the connection to Microsoft Planner set up with \code{\link[
 \code{\link[=planner_retrieve_project_id]{planner_retrieve_project_id()}} retrieves the p-number from the task title and returns it as \link{integer}.
 
 \code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy card.
+
+Using \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} on an \code{ms_object}, such as \code{ms_plan_task}, will return the properties and details of the object as a \link{data.frame}. For transforming many \code{ms_object}s to a data.frame, use \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} in \code{\link[=lapply]{lapply()}} and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{library(dplyr)
+planner_tasks_list() |> 
+  lapply(as_tibble) |> 
+  bind_rows()
+
+# also works for other 'ms_object's, such as 'ms_channel':
+teams_channels_list(plain = FALSE) |> 
+  lapply(as_tibble) |> 
+  bind_rows()
+}\if{html}{\out{</div>}}
 }

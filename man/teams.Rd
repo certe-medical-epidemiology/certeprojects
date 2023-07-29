@@ -12,7 +12,7 @@
 \alias{teams_view_project_file}
 \alias{teams_upload_project_file}
 \alias{teams_name}
-\alias{teams_channels}
+\alias{teams_channels_list}
 \alias{teams_view_sharepoint}
 \alias{teams_send_message}
 \alias{teams_upload}
@@ -23,7 +23,7 @@
 \title{Connect to Microsoft Teams via Microsoft 365}
 \usage{
 teams_projects_channel(
-  projects_channel = read_secret("teams.projects.channel"),
+  projects_channel_id = read_secret("teams.projects.channel_id"),
   overwrite = FALSE,
   account = connect_teams()
 )
@@ -86,7 +86,7 @@ teams_upload_project_file(
 
 teams_name(account = connect_teams())
 
-teams_channels(account = connect_teams(), plain = TRUE)
+teams_channels_list(account = connect_teams(), plain = TRUE)
 
 teams_view_sharepoint(channel, account = connect_teams())
 
@@ -133,7 +133,7 @@ teams_get_link(
 )
 }
 \arguments{
-\item{projects_channel}{Teams channel name of the projects}
+\item{projects_channel_id}{Teams channel ID of the projects}
 
 \item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
 

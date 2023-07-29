@@ -32,6 +32,7 @@
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
 #' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject showDialog showQuestion
 #' @importFrom Microsoft365R ms_plan ms_team ms_drive_item
+#' @rdname planner_add
 #' @export
 project_add <- function(planner = connect_planner(),
                         teams = connect_teams(),
@@ -65,9 +66,9 @@ project_add <- function(planner = connect_planner(),
                       certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
                       label[for=title] { font-size: 16px; }
                       #create { background-color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), "; }
-                      #create:hover { background-color: ", colourpicker("certeblauw2"), "; border-color: ", colourpicker("certeblauw"), "; }
+                      #create:hover { background-color: ", colourpicker("certeblauw0"), "; border-color: ", colourpicker("certeblauw"), "; }
                       #cancel { background-color: white; color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), ";}
-                      #cancel:hover { background-color: ", colourpicker("certeblauw5"), "; color: ", colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), ";}
+                      #cancel:hover { color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certeblauw6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certeblauw"), " !important; }",
                       '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certeblauw"), "; border-color: ", colourpicker("certeblauw"), " ;}",
@@ -84,14 +85,18 @@ project_add <- function(planner = connect_planner(),
         textAreaInput("checklist", "Taken", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 taak per regel)"),
         uiOutput("requested_by"),
         selectInput("priority",
-                    label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i>(standaard 'Dringend' in het weekend)</i>", ""))),
+                    label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i style='font-weight:normal !important;'>(standaard 'Dringend' in het weekend)</i>", ""))),
                     choices = c("Laag", "Gemiddeld", "Belangrijk", "Dringend"), 
                     selected = ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
                                       "Dringend", # default if card is created on weekend day
                                       "Gemiddeld")),
-        tags$label("Deadline"),
-        awesomeCheckbox("has_deadline", "Deadline instellen", TRUE),
-        uiOutput("deadline"),
+        dateInput("duedate", "Deadline",
+                  value = Sys.Date() + 14,
+                  min = Sys.Date(),
+                  format = "DD d MM yyyy",
+                  language = "nl",
+                  startview = "month",
+                  weekstart = 1), # Monday
         br(),
         br(),
         actionButton("create", "Aanmaken", width = "49%", icon = icon("check"), class = "btn-success"),
@@ -218,20 +223,6 @@ project_add <- function(planner = connect_planner(),
       }
     })
     
-    output$deadline <- renderUI({
-      if (input$has_deadline == TRUE) {
-        tagList(
-          dateInput("deadline", NULL,
-                    value = Sys.Date() + 14,
-                    min = Sys.Date(),
-                    format = "DD d MM yyyy",
-                    language = "nl",
-                    startview = "month",
-                    weekstart = 1), # Monday
-        )
-      }
-    })
-    
     output$planner_settings <- renderUI({
       if (input$planner_upload == TRUE) {
         members <- planner_user_property(property = "name", as_list = TRUE, account = planner)
@@ -348,18 +339,13 @@ project_add <- function(planner = connect_planner(),
         # Planner ----
         if (input$planner_upload == TRUE) {
           incProgress(1 / progress_items, detail = "MS Planner: taak aanmaken")
-          if (is.null(input$deadline) || input$has_deadline == FALSE) {
-            deadline <- NULL
-          } else {
-            deadline <- input$deadline
-          }
           new_task <- planner_task_create(account = planner,
                                           title = title,
                                           bucket_name = input$planner_bucket,
                                           assigned = input$planner_members,
                                           requested_by = requested_by,
                                           priority = input$priority,
-                                          duedate = deadline,
+                                          duedate = input$duedate,
                                           checklist_items = checklist |> strsplit("\n") |> unlist(),
                                           categories = input$planner_categories,
                                           description = description)
@@ -546,7 +532,6 @@ project_add <- function(planner = connect_planner(),
       stopApp()
     })
     
-    # CANCEL ----
     observeEvent(input$cancel, {
       stopApp()
     })
@@ -556,13 +541,176 @@ project_add <- function(planner = connect_planner(),
                                                                       get_azure_property(teams, "displayName"),
                                                                       read_secret("department.name"))),
                          width = 800,
-                         height = 680)
+                         height = 660)
   
   suppressMessages(
     runGadget(app = ui,
               server = server,
               viewer = viewer,
               stopOnCancel = FALSE))
+}
+
+#' @importFrom miniUI miniPage miniContentPanel
+#' @importFrom shiny uiOutput renderUI tagList actionButton h4 p HTML observe runGadget dialogViewer stopApp icon reactiveValuesToList
+#' @importFrom rstudioapi showDialog
+#' @importFrom certestyle colourpicker
+#' @importFrom dplyr case_when
+#' @param current_task_id Project (p-)number of the project to update
+#' @rdname planner_add
+#' @export
+project_update <- function(current_task_id = project_get_current_id(ask = TRUE), planner = connect_planner()) {
+  if (is.null(current_task_id) || isTRUE(current_task_id %in% c("", NA))) {
+    return(invisible())
+  }
+  
+  ui <- miniPage(
+    tags$style(paste0(
+      "body {
+        background-color: ", colourpicker("certeblauw6"), ";
+     }",
+      "* {
+        text-align: center;
+     }",
+      ".move_btn {
+        font-size: 14px;
+        background-color: white;
+        margin-bottom: 10px;
+        color: ", colourpicker("certeblauw"), ";
+     }",
+      ".move_btn:hover {
+        color: ", colourpicker("certeblauw"), ";
+        border-color: ", colourpicker("certeblauw"), ";
+        background-color: white;
+     }",
+      "button .fa-solid {
+      font-size: 20px;
+      display: block;
+    }")),
+    miniContentPanel(
+      uiOutput("task_ui")
+    )
+  )
+  
+  server <- function(input, output, session) {
+    output$task_ui <- renderUI({
+      buckets <- planner_buckets_list(account = planner)
+      if (!is.null(attributes(current_task_id)$task)) {
+        current_task <- attributes(current_task_id)$task
+      } else {
+        current_task <- planner_task_find(paste0("p", current_task_id), account = planner)
+      }
+      bucket_id <- get_azure_property(current_task, "bucketId")
+      buckets_df <- data.frame(id = get_azure_property(buckets, "id"),
+                               name = get_azure_property(buckets, "name"))
+      buckets_df$sorting <- case_when(buckets_df$name %like% "Idee" ~ 1,
+                                      buckets_df$name %like% "Bezig" ~ 2,
+                                      buckets_df$name %like% "Wachten" ~ 3,
+                                      buckets_df$name %like% "Voltooid" ~ 4,
+                                      TRUE ~ 5)
+      buckets_df <- buckets_df[order(buckets_df$sorting), ]
+      current_bucket <- buckets_df$name[match(bucket_id, buckets_df$id)]
+      
+      buttons <- tagList()
+      for (bucket in buckets_df$name) {
+        if (bucket == current_bucket || bucket %like% "nog mee beginnen") next
+        icon <- case_when(bucket %like% "Bezig" ~ "screwdriver-wrench",
+                          bucket %like% "Wachten" ~ "hourglass-start",
+                          bucket %like% "Voltooid" ~ "square-check",
+                          bucket %like% "Idee" ~ "lightbulb",
+                          TRUE ~ "screwdriver-wrench")
+        buttons <- c(buttons,
+                     tagList(
+                       actionButton(inputId = bucket,
+                                    label = paste0("Verplaatsen naar '", bucket, "'"),
+                                    icon = icon(icon, class = "fa-solid"),
+                                    width = "100%",
+                                    class = "move_btn")))
+      }
+      
+      tagList(
+        h4(get_azure_property(current_task, "title")),
+        p(HTML(paste("Huidige bucket:", strong(current_bucket), 
+                     ifelse(is.na(get_azure_property(current_task, "startDateTime")),
+                            "",
+                            paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "startDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
+        buttons
+      )  
+    })
+    observe({
+      contents <- unlist(reactiveValuesToList(input))
+      if (is.null(contents) || all(contents == 0)) return(invisible())
+      move_to <- names(contents)[which(contents == 1)]
+      current_task <- planner_task_find(paste0("p", current_task_id), account = planner)
+      planner_task_update(current_task, bucket_name = move_to, account = planner)
+      stopApp(returnValue = 0)
+      showDialog(title = "Taak verplaatst",  message = paste0("Taak verplaatst naar '", move_to, "'."))
+    })
+  }
+  suppressMessages(
+    runGadget(app = ui, server = server,
+              viewer = dialogViewer(dialogName = paste("Taak verplaatsen -", get_azure_property(planner, "title")), width = 550, height = 270),
+              port = 4123)
+  )
+}
+
+#' @importFrom miniUI miniPage miniContentPanel
+#' @importFrom shiny actionButton observe runApp paneViewer stopApp reactiveValuesToList
+#' @importFrom certestyle colourpicker
+shiny_item_picker <- function(values, oversized = character(0)) {
+  if (length(oversized) == length(values)) {
+    # they are all oversized, so turn that off
+    oversized <- character(0)
+  }
+  ui <- miniPage(
+    tags$style(paste0(
+      "body {
+        background-color: ", colourpicker("certeblauw6"), ";
+     }
+     * {
+        text-align: center;
+     }
+     .oversized {
+        height: 60px !important;
+        font-weight: bold;
+     }
+     .pick_btn {
+        font-size: 14px;
+        background-color: white;
+        margin-bottom: 5px;
+        color: ", colourpicker("certeblauw"), ";
+     }
+     .pick_btn:hover {
+        color: ", colourpicker("certeblauw"), ";
+        border-color: ", colourpicker("certeblauw"), ";
+        background-color: white;
+     }")),
+    miniContentPanel(
+      lapply(seq_along(values), function (i) {
+        btn_class <- "pick_btn"
+        if (i %in% oversized) {
+          btn_class <- c("oversized", btn_class)
+        }
+        if (!is.null(names(values)) && names(values)[i] != "") {
+          actionButton(inputId = names(values)[i], label = values[i], width = "100%", class = btn_class)
+        } else {
+          actionButton(inputId = values[i], label = values[i], width = "100%", class = btn_class)
+        }
+      })
+    )
+  )
+  
+  server <- function(input, output, session) {
+    observe({
+      contents <- unlist(reactiveValuesToList(input))
+      if (is.null(contents) || all(contents == 0)) return(invisible())
+      button <- names(contents)[which(contents == 1)]
+      stopApp(returnValue = button)
+    })
+  }
+  
+  suppressMessages(
+    runApp(list(ui = ui, server = server), launch.browser = paneViewer())
+  )
 }
 
 shorten_folder <- function(folder) {

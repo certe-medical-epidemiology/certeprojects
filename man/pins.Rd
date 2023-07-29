@@ -54,8 +54,6 @@ find out which versions are available and when they were created.}
 you expect. You can find the hash of an existing pin by looking for
 \code{pin_hash} in \code{\link[pins:pin_meta]{pin_meta()}}.}
 
-\item{projects_channel}{Teams channel name of the projects}
-
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 
 \item{delete_by_item}{Whether to handle folder deletions on an item-by-item

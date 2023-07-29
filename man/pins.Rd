@@ -22,7 +22,7 @@ import_pin(name, version = NULL, hash = NULL, board = pins_board())
 remove_pin(name, version = NULL, board = pins_board())
 
 pins_board(
-  projects_channel = read_secret("teams.projects.channel"),
+  projects_channel_id = read_secret("teams.projects.channel_id"),
   account = connect_teams(),
   delete_by_item = TRUE
 )
@@ -53,6 +53,8 @@ find out which versions are available and when they were created.}
 \item{hash}{Specify a hash to verify that you get exactly the dataset that
 you expect. You can find the hash of an existing pin by looking for
 \code{pin_hash} in \code{\link[pins:pin_meta]{pin_meta()}}.}
+
+\item{projects_channel_id}{Teams channel ID of the projects}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 

@@ -96,13 +96,13 @@ remove_pin <- function(name,
 #' @rdname pins
 #' @name pins
 #' @export
-pins_board <- function(projects_channel = read_secret("teams.projects.channel"),
+pins_board <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
                        account = connect_teams(),
                        delete_by_item = TRUE) {
   if (is.null(pkg_env$microsoft365_pins)) {
     drives <- account$list_drives()
     drive <- drives[[which(get_azure_property(drives, "name") %unlike% "Wiki")[1]]]
-    projects <- teams_projects_channel(projects_channel = projects_channel, account = account)
+    projects <- teams_projects_channel(projects_channel_id = projects_channel_id, account = account)
     pkg_env$microsoft365_pins <- board_ms365(drive = drive,
                                              path = projects$get_item("pins"),
                                              delete_by_item = delete_by_item)

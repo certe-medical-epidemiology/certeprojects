@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.3</span>
       </span>
     </div>
 
@@ -157,7 +157,19 @@
 <span><span class="fu">planner_highest_project_id</span><span class="op">(</span></span>
 <span>  task <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.dummycard"</span><span class="op">)</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for ms_object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  optional <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for ms_object</span></span>
+<span><span class="fu">as_tibble</span><span class="op">(</span><span class="va">x</span>, account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -269,6 +281,29 @@
 <dt>as_list</dt>
 <dd><p>return the full list of members as <a href="https://rdrr.io/r/base/list.html" class="external-link">list</a>, split into Eigenaars (Owners) / Leden (Members). This ignores <code>user</code>.</p></dd>
 
+
+<dt>x</dt>
+<dd><p>an <code>ms_object</code></p></dd>
+
+
+<dt>row.names</dt>
+<dd><p><code>NULL</code> or a character vector giving the row
+    names for the data frame.  Missing values are not allowed.</p></dd>
+
+
+<dt>optional</dt>
+<dd><p>logical. If <code>TRUE</code>, setting row names and
+    converting column names (to syntactic names: see
+    <code><a href="https://rdrr.io/r/base/make.names.html" class="external-link">make.names</a></code>) is optional.  Note that all of <span style="R">R</span>'s
+    <span class="pkg">base</span> package <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> methods use
+    <code>optional</code> only for column names treatment, basically with the
+    meaning of <code><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>(*, check.names = !optional)</code>.
+    See also the <code>make.names</code> argument of the <code>matrix</code> method.</p></dd>
+
+
+<dt>...</dt>
+<dd><p>additional arguments to be passed to or from methods.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -276,6 +311,16 @@
 <p><code>planner_task_find()</code> searches task title or ID, and returns an <code><a href="https://rdrr.io/pkg/Microsoft365R/man/ms_plan_task.html" class="external-link">ms_plan_task</a></code> object. It is used internally b a lot of <code>planner_*</code> functions, very fast, and does not support interactive use.</p>
 <p><code>planner_retrieve_project_id()</code> retrieves the p-number from the task title and returns it as <a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a>.</p>
 <p><code>planner_highest_project_id()</code> retrieves the currently highest project ID from the dummy card.</p>
+<p>Using <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code>as_tibble()</code> on an <code>ms_object</code>, such as <code>ms_plan_task</code>, will return the properties and details of the object as a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>. For transforming many <code>ms_object</code>s to a data.frame, use <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code>as_tibble()</code> in <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/planner.html">planner_tasks_list</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># also works for other 'ms_object's, such as 'ms_channel':</span></span>
+<span><span class="fu"><a href="../reference/teams.html">teams_channels_list</a></span><span class="op">(</span>plain <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="op">)</span></span></code></pre><p></p></div>
     </div>
 
   </div>

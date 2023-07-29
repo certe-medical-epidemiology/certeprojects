@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.3</span>
       </span>
     </div>
 
@@ -67,8 +67,8 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Add Project Using Shiny</h1>
-    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/project_add.R" class="external-link"><code>R/project_add.R</code></a></small>
-    <div class="hidden name"><code>project_add.Rd</code></div>
+    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/shiny.R" class="external-link"><code>R/shiny.R</code></a></small>
+    <div class="hidden name"><code>planner_add.Rd</code></div>
     </div>
 
     <div class="ref-description">
@@ -80,6 +80,11 @@
 <span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  teams <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  channel <span class="op">=</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span>account <span class="op">=</span> <span class="va">teams</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">project_update</span><span class="op">(</span></span>
+<span>  current_task_id <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -95,6 +100,10 @@
 
 <dt>channel</dt>
 <dd><p>Microsoft Teams Channel folder, as returned by e.g. <code><a href="teams.html">teams_projects_channel()</a></code></p></dd>
+
+
+<dt>current_task_id</dt>
+<dd><p>Project (p-)number of the project to update</p></dd>
 
 </dl></div>
 

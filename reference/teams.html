@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.3</span>
       </span>
     </div>
 
@@ -77,7 +77,7 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">teams_projects_channel</span><span class="op">(</span></span>
-<span>  projects_channel <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel"</span><span class="op">)</span>,</span>
+<span>  projects_channel_id <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"teams.projects.channel_id"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -140,7 +140,7 @@
 <span></span>
 <span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">teams_channels</span><span class="op">(</span>account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu">teams_channels_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_view_sharepoint</span><span class="op">(</span><span class="va">channel</span>, account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -189,8 +189,8 @@
 
     <div id="arguments">
     <h2>Arguments</h2>
-    <dl><dt>projects_channel</dt>
-<dd><p>Teams channel name of the projects</p></dd>
+    <dl><dt>projects_channel_id</dt>
+<dd><p>Teams channel ID of the projects</p></dd>
 
 
 <dt>overwrite</dt>

@@ -329,6 +329,8 @@ planner_task_update <- function(task,
   }
   
   if (!arg_is_empty(checklist_items)) {
+    # reverse the order, since the first item in the vector will otherwise become last on the card
+    checklist_items <- rev(checklist_items)
     check_items <- list()
     for (check_item in checklist_items) {
       check_items <- c(check_items, 

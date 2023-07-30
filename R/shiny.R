@@ -81,8 +81,8 @@ project_add <- function(planner = connect_planner(),
     sidebarLayout(
       sidebarPanel(
         textInput("title", "Titel", placeholder = ""),
-        textAreaInput("description", "Omschrijving", cols = 1, rows = 2, resize = "vertical"),
-        textAreaInput("checklist", "Taken", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 taak per regel)"),
+        textAreaInput("description", "Notities", cols = 1, rows = 2, resize = "vertical"),
+        textAreaInput("checklist", "Controlelijst", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 item per regel)"),
         uiOutput("requested_by"),
         selectInput("priority",
                     label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i style='font-weight:normal !important;'>(standaard 'Dringend' in het weekend)</i>", ""))),
@@ -90,8 +90,9 @@ project_add <- function(planner = connect_planner(),
                     selected = ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
                                       "Dringend", # default if card is created on weekend day
                                       "Gemiddeld")),
-        dateInput("duedate", "Deadline",
-                  value = Sys.Date() + 14,
+        dateInput("duedate",
+                  label = HTML("Einddatum <i style='font-weight:normal !important;'>(standaard volgende week donderdag)</i>"),
+                  value = Sys.Date() - as.numeric(format(Sys.Date(), format = "%u")) + 11,
                   min = Sys.Date(),
                   format = "DD d MM yyyy",
                   language = "nl",
@@ -317,6 +318,8 @@ project_add <- function(planner = connect_planner(),
       if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
       filetype <- input$filetype
       if (empty_field("Bestandstype", filetype)) return(invisible())
+      duedate <- input$duedate
+      if (empty_field("Einddatum", duedate)) return(invisible())
       
       disable("create")
       disable("cancel")
@@ -326,6 +329,8 @@ project_add <- function(planner = connect_planner(),
       description <- trimws(input$description)
       if (length(description) == 0) {
         description <- ""
+      } else {
+        description <- gsub("[.][.]", ".", paste0(description, "."))
       }
       checklist <- input$checklist
       if (is.null(checklist) || length(checklist) == 0) {
@@ -345,7 +350,7 @@ project_add <- function(planner = connect_planner(),
                                           assigned = input$planner_members,
                                           requested_by = requested_by,
                                           priority = input$priority,
-                                          duedate = input$duedate,
+                                          duedate = duedate,
                                           checklist_items = checklist |> strsplit("\n") |> unlist(),
                                           categories = input$planner_categories,
                                           description = description)
@@ -642,7 +647,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
       move_to <- names(contents)[which(contents == 1)]
       current_task <- planner_task_find(paste0("p", current_task_id), account = planner)
       planner_task_update(current_task, bucket_name = move_to, account = planner)
-      stopApp(returnValue = 0)
+      stopApp(returnValue = invisible(0))
       showDialog(title = "Taak verplaatst",  message = paste0("Taak verplaatst naar '", move_to, "'."))
     })
   }

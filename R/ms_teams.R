@@ -334,10 +334,11 @@ teams_channels_list <- function(account = connect_teams(), plain = TRUE) {
   if (!is_valid_teams(account)) {
     return(NA_character_)
   }
+  channels <- try_with_retry(account$list_channels())
   if (plain == FALSE) {
-    account$list_channels()
+    channels
   } else {
-    sort(get_azure_property(account$list_channels(), "displayName"))
+    sort(get_azure_property(channels, "displayName"))
   }
 }
 
@@ -351,16 +352,20 @@ teams_view_sharepoint <- function(channel, account = connect_teams()) {
   if (is.na(channel)) {
     return(NA_character_)
   } else {
-    account$
-      get_channel(channel)$
-      get_folder()$
-      open()
+    try_with_retry(
+      account$
+        get_channel(channel)$
+        get_folder()$
+        open()
+    )
   }
 }
 
 #' @param body text of the message
 #' @param content_type type of content, must be "text" or "html"
 #' @param attachments vector of file locations of attachments to add to the message
+#' @details [teams_send_message()] can also take a [data.frame], which will be converted to HTML with [plain_html_table()][certestyle::plain_html_table()]. If the input is a vector length > 1, the input will be collapsed with linebreaks.
+#' @importFrom certestyle plain_html_table
 #' @rdname teams
 #' @export
 teams_send_message <- function(body,
@@ -372,12 +377,27 @@ teams_send_message <- function(body,
     stop("No valid Teams account")
   }
   channel <- find_channel(path = channel, account = account)
-  out <- account$
-    get_channel(channel)$
-    send_message(body = body,
-                 content_type = content_type[1],
-                 attachments = attachments)
-  invisible(out)
+  
+  if (is.data.frame(body)) {
+    body <- plain_html_table(body)
+    content_type <- "html"
+  } else {
+    body <- as.character(body)
+    if (length(body) > 1) {
+      body <- paste(body, collapse = "<br>")
+      content_type <- "html"
+    }
+  }
+  
+  invisible(
+    try_with_retry(
+      account$
+        get_channel(channel)$
+        send_message(body = body,
+                     content_type = content_type[1],
+                     attachments = attachments)
+    )
+  )
 }
 
 #' @param local_path file location on the local system, can also be a [data.frame] which will then be saved locally to the temp folder first
@@ -510,11 +530,13 @@ teams_open <- function(teams_path, channel = NULL, account = connect_teams()) {
       stop("No valid channel set")
     }
   }
-  account$
-    get_channel(channel)$
-    get_folder()$
-    get_item(teams_path)$
-    open()
+  try_with_retry(
+    account$
+      get_channel(channel)$
+      get_folder()$
+      get_item(teams_path)$
+      open()
+  )
 }
 
 #' @rdname teams
@@ -541,13 +563,15 @@ teams_get_link <- function(teams_path,
       stop("No valid channel set")
     }
   }
-  account$
-    get_channel(channel)$
-    get_folder()$
-    get_item(teams_path)$
-    create_share_link(type = share_type[1L],
-                      expiry = expire_after,
-                      password = password)
+  try_with_retry(
+    account$
+      get_channel(channel)$
+      get_folder()$
+      get_item(teams_path)$
+      create_share_link(type = share_type[1L],
+                        expiry = expire_after,
+                        password = password)
+  )
 }
 
 
@@ -602,4 +626,12 @@ find_channel <- function(path, account = connect_teams()) {
     out <- channels[channels_plain %like% path_plain][1L]
   }
   out
+}
+
+try_with_retry <- function(expr) {
+  tryCatch(expr,
+           error = function(e) {
+             Sys.sleep(2)
+             expr
+           })
 }

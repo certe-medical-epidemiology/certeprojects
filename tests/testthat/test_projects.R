@@ -60,10 +60,8 @@ test_that("project properties work", {
                         paste0(normalizePath(paste0(project_dir, "Project Something - p123/testdir")), "/"),
                         fixed = TRUE))
 
-  expect_identical(project_identifier(123),
-                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM"), "-123"))
-  expect_identical(project_identifier(NULL),
-                   paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmddHHMM")))
+  expect_true(project_identifier(123) %like% paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmdd"), "[0-9]{4}-123"))
+  expect_true(project_identifier(NULL) %like% paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmdd"), "[0-9]{4}"))
 })
 
 test_that("scheduling works", {

@@ -189,6 +189,8 @@ The \code{\link[=teams_new_project]{teams_new_project()}} function:
 The \code{\link[=teams_download_project_file]{teams_download_project_file()}} function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use \code{\link[=source]{source()}}, \code{\link[rmarkdown:render]{rmarkdown::render()}} or \code{\link[quarto:quarto_render]{quarto::quarto_render()}} using the \code{\link[=teams_download_project_file]{teams_download_project_file()}} function as input.
 
 The \code{\link[=teams_render_project_file]{teams_render_project_file()}} function allows to render a Teams file. It downloads the Teams file using \code{\link[=teams_download_project_file]{teams_download_project_file()}}, runs the rendering function set in \code{fun}, and uploads the resulting output file back to Teams using the same file name a \code{file}, but with the new file extension (such as pdf, html, or docx). It \strong{invisibly returns} the temporary local file location, so that the output of \code{\link[=teams_render_project_file]{teams_render_project_file()}} can be given to e.g. \code{\link[certemail:mail]{certemail::mail()}} as an attachment.
+
+\code{\link[=teams_send_message]{teams_send_message()}} can also take a \link{data.frame}, which will be converted to HTML with \link[certestyle:plain_html_table]{plain_html_table()}. If the input is a vector length > 1, the input will be collapsed with linebreaks.
 }
 \examples{
 \dontrun{

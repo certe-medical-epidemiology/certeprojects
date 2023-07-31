@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.8</span>
       </span>
     </div>
 
@@ -191,7 +191,7 @@
 
 
 <dt>description</dt>
-<dd><p>a description for the task. A vector will be add as one text separated by white lines.</p></dd>
+<dd><p>a description for the task. A vector of length &gt; 1 will be added as one text separated by white lines.</p></dd>
 
 
 <dt>startdate</dt>
@@ -203,7 +203,7 @@
 
 
 <dt>requested_by</dt>
-<dd><p>name of the person(s) who requested the task</p></dd>
+<dd><p>name of the person(s) who requested the task, this will be added as first line to <code>description</code></p></dd>
 
 
 <dt>priority</dt>
@@ -215,15 +215,15 @@
 
 
 <dt>categories</dt>
-<dd><p>names of categories to add</p></dd>
+<dd><p>names of categories to add, can be multiple, but must exactly match existing category names</p></dd>
 
 
 <dt>assigned</dt>
-<dd><p>names of members within the plan - use <code>NULL</code> to not add members in <code>planner_task_create()</code>, and use <code>FALSE</code> to remove all existing member in <code>planner_task_update()</code></p></dd>
+<dd><p>names of members within the plan - use <code>NULL</code> to not add members in <code>planner_task_create()</code>, and use <code>FALSE</code> to remove all existing members in <code>planner_task_update()</code></p></dd>
 
 
 <dt>attachment_urls</dt>
-<dd><p>URLs to add as attachment, can be named characters to give the URLs a title</p></dd>
+<dd><p>URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task card.</p></dd>
 
 
 <dt>project_number</dt>

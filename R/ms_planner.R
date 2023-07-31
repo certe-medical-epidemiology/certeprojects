@@ -65,15 +65,15 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
 
 #' @rdname planner
 #' @param title title of the task
-#' @param description a description for the task. A vector will be add as one text separated by white lines.
+#' @param description a description for the task. A vector of length > 1 will be added as one text separated by white lines.
 #' @param startdate a date to use as start date, use `FALSE` to remove it. Defaults to today.
 #' @param duedate a date to use as due date, use `FALSE` to remove it
-#' @param requested_by name of the person(s) who requested the task
+#' @param requested_by name of the person(s) who requested the task, this will be added as first line to `description`
 #' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
 #' @param checklist_items character vector of checklist items
-#' @param assigned names of members within the plan - use `NULL` to not add members in [planner_task_create()], and use `FALSE` to remove all existing member in [planner_task_update()]
-#' @param categories names of categories to add
-#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title
+#' @param assigned names of members within the plan - use `NULL` to not add members in [planner_task_create()], and use `FALSE` to remove all existing members in [planner_task_update()]
+#' @param categories names of categories to add, can be multiple, but must exactly match existing category names
+#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task card.
 #' @param project_number the new project number to assign. Use `NULL` or `FALSE` to not assign a project number. Defaults to the currently highest project ID + 1.
 #' @importFrom httr add_headers stop_for_status POST
 #' @importFrom jsonlite toJSON
@@ -349,14 +349,14 @@ planner_task_update <- function(task,
   
   if (!arg_is_empty(attachment_urls)) {
     attachment_items <- list()
+    attachment_types <- case_when(attachment_urls %like% "[.]xlsx?$" ~ "Excel",
+                                  attachment_urls %like% "[.]docx?$" ~ "Word",
+                                  attachment_urls %like% "[.]pptx?$" ~ "PowerPoint",
+                                  TRUE ~ "Other")
     for (i in seq_len(length(attachment_urls))) {
       attachment_item <- attachment_urls[i]
       names(attachment_item) <- names(attachment_urls[i])
-      type <- case_when(attachment_item %like% "[.]xlsx?$" ~ "Excel",
-                        attachment_item %like% "[.]docx?$" ~ "Word",
-                        attachment_item %like% "[.]pptx?$" ~ "PowerPoint",
-                        TRUE ~ "Other",
-      )
+      
       url <- unname(attachment_item)
       alias <- names(attachment_item)
       if (is.null(alias) || alias == "") {
@@ -372,11 +372,18 @@ planner_task_update <- function(task,
       attachment_items <- c(attachment_items, 
                             stats::setNames(list(list(`@odata.type` = "microsoft.graph.plannerExternalReference",
                                                       alias = alias,
-                                                      type = type)),
+                                                      type = attachment_types[i])),
                                             url))
     }
     if (length(attachment_items) > 0) {
       body <- c(body, list(references = attachment_items))
+      if (any(attachment_types != "Other")) {
+        # show the attachments, such as PowerPoint files
+        body$previewType <- "reference"
+      } else if (body$previewType == "automatic") {
+        # if the preview is automatic and all are website, preview type will turn to "reference" to show the website, we don't want that
+        body$previewType <- "noPreview"
+      }
     }
   }
   

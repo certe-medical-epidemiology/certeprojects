@@ -122,23 +122,23 @@ planner_highest_project_id(
 
 \item{title}{title of the task}
 
-\item{description}{a description for the task. A vector will be add as one text separated by white lines.}
+\item{description}{a description for the task. A vector of length > 1 will be added as one text separated by white lines.}
 
 \item{startdate}{a date to use as start date, use \code{FALSE} to remove it. Defaults to today.}
 
 \item{duedate}{a date to use as due date, use \code{FALSE} to remove it}
 
-\item{requested_by}{name of the person(s) who requested the task}
+\item{requested_by}{name of the person(s) who requested the task, this will be added as first line to \code{description}}
 
 \item{priority}{a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: \code{"urgent"} or \code{"dringend"} for 1, \code{"important"} or \code{"belangrijk"} for 3, \code{"medium"} or \code{"gemiddeld"} or \code{FALSE} for 5, \code{"low"} or \code{"laag"} for 9. Priorities cannot be removed - the default setting is 5.}
 
 \item{checklist_items}{character vector of checklist items}
 
-\item{categories}{names of categories to add}
+\item{categories}{names of categories to add, can be multiple, but must exactly match existing category names}
 
-\item{assigned}{names of members within the plan - use \code{NULL} to not add members in \code{\link[=planner_task_create]{planner_task_create()}}, and use \code{FALSE} to remove all existing member in \code{\link[=planner_task_update]{planner_task_update()}}}
+\item{assigned}{names of members within the plan - use \code{NULL} to not add members in \code{\link[=planner_task_create]{planner_task_create()}}, and use \code{FALSE} to remove all existing members in \code{\link[=planner_task_update]{planner_task_update()}}}
 
-\item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title}
+\item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task card.}
 
 \item{project_number}{the new project number to assign. Use \code{NULL} or \code{FALSE} to not assign a project number. Defaults to the currently highest project ID + 1.}
 

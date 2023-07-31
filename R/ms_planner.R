@@ -256,7 +256,7 @@ planner_task_update <- function(task,
     # these are all existing categories
     categories_current <- names(get_azure_property(task, "appliedCategories"))
     # get internal name of given categories
-    categories_new <- get_internal_category(categories)
+    categories_new <- get_internal_category_name(categories)
     for (category in unique(c(categories_new, categories_current))) {
       if (category %in% categories_new) {
         # add it as defined here: https://learn.microsoft.com/en-us/graph/api/resources/plannerappliedcategories
@@ -699,9 +699,9 @@ increase_highest_project_id <- function(task = read_secret("planner.dummycard"),
   planner_task_update(task = task, description = highest + 1, account = account)
 }
 
-get_internal_category <- function(category_name, account = connect_planner()) {
+get_internal_category_name <- function(category_name, account = connect_planner()) {
   categories <- planner_categories_list(account = account)
-  names(which(categories == category_name))
+  names(categories[categories %in% category_name])
 }
 
 planner_priority_to_int <- function(priority) {

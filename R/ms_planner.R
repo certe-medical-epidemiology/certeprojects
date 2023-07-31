@@ -107,8 +107,7 @@ planner_task_create <- function(title,
   # does not work with Microsoft365R yet, so we do it manually
   body <- list(title = title,
                planId = get_azure_property(account, "id"),
-               bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"),
-               startDateTime = paste0(format(Sys.Date(), "%Y-%m-%d"), "T00:00:00Z"))
+               bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"))
   
   if (!arg_is_empty(startdate)) {
     if (isFALSE(startdate)) {

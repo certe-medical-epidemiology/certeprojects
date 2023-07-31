@@ -661,7 +661,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
 #' @importFrom miniUI miniPage miniContentPanel
 #' @importFrom shiny actionButton observe runApp paneViewer stopApp reactiveValuesToList
 #' @importFrom certestyle colourpicker
-shiny_item_picker <- function(values, oversized = character(0)) {
+shiny_item_picker <- function(values, oversized = character(0), title = "", subtitle = "") {
   if (length(oversized) == length(values)) {
     # they are all oversized, so turn that off
     oversized <- character(0)
@@ -673,6 +673,13 @@ shiny_item_picker <- function(values, oversized = character(0)) {
      }
      * {
         text-align: center;
+     }
+     h4 {
+        color: ", colourpicker("certeblauw"), ";
+     }
+     h5 {
+        color: ", colourpicker("certeblauw"), ";
+        font-weight: normal;
      }
      .oversized {
         height: 60px !important;
@@ -690,6 +697,12 @@ shiny_item_picker <- function(values, oversized = character(0)) {
         background-color: white;
      }")),
     miniContentPanel(
+      if (title != "") {
+        h4(title)
+      },
+      if (subtitle != "") {
+        h5(subtitle)
+      },
       lapply(seq_along(values), function (i) {
         btn_class <- "pick_btn"
         if (i %in% oversized) {

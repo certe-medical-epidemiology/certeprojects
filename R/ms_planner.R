@@ -104,11 +104,20 @@ planner_task_create <- function(title,
     project_number <- NULL
   }
   
+  if (title %in% planner_tasks_list(plain = TRUE, account = account)) {
+    stop("Task '", title, "' already exists. Make sure to keep task titles unique.", call. = FALSE)
+  }
+  
   # does not work with Microsoft365R yet, so we do it manually
   body <- list(title = title,
                planId = get_azure_property(account, "id"),
                bucketId  = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"))
   
+  if (inherits(startdate, c("Date", "POSIXct")) && inherits(duedate, c("Date", "POSIXct"))) {
+    if (startdate > duedate) {
+      stop("'startdate' cannot be later than 'duedate'")
+    }
+  }
   if (!arg_is_empty(startdate)) {
     if (isFALSE(startdate)) {
       body <- c(body, list(startDateTime = NULL))
@@ -157,11 +166,11 @@ planner_task_create <- function(title,
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   if (!arg_is_empty(description) || !arg_is_empty(categories) || !arg_is_empty(checklist_items) ||
       !arg_is_empty(assigned) || !arg_is_empty(attachment_urls)) {
-    tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
+    tsk <- tryCatch(planner_task_find(title, account = account), error = function(e) NULL)
     if (is.null(tsk)) {
       # sync the fields
-      try(pkg_env$planner$sync_fields(), silent = TRUE)
-      tsk <- tryCatch(planner_task_find(title), error = function(e) NULL)
+      try(account$sync_fields(), silent = TRUE)
+      tsk <- tryCatch(planner_task_find(title, account = account), error = function(e) NULL)
     }
     if (is.null(tsk)) {
       # still cannot be found yet, wait a sec
@@ -170,7 +179,8 @@ planner_task_create <- function(title,
       title <- tsk
     }
     planner_task_update(title, description = description, checklist_items = checklist_items,
-                        assigned = assigned, categories = categories, attachment_urls = attachment_urls)
+                        assigned = assigned, categories = categories, attachment_urls = attachment_urls,
+                        account = account)
   }
   
   return(invisible(list(id = project_number, title = title)))
@@ -216,6 +226,11 @@ planner_task_update <- function(task,
     body <- c(body, title = title)
   }
   
+  if (inherits(startdate, c("Date", "POSIXct")) && inherits(duedate, c("Date", "POSIXct"))) {
+    if (startdate > duedate) {
+      stop("'startdate' cannot be later than 'duedate'")
+    }
+  }
   if (!arg_is_empty(startdate)) {
     if (isFALSE(startdate)) {
       body <- c(body, list(startDateTime = NULL))
@@ -322,7 +337,7 @@ planner_task_update <- function(task,
   
   body <- list()
   if (!arg_is_empty(description)) {
-    body <- c(body, description = paste(description, collapse = "\n\n"), previewType = "description")
+    body <- c(body, description = paste(description, collapse = "\n"), previewType = "description")
   } else {
     body <- c(body, previewType = "automatic")
   }
@@ -464,7 +479,10 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = conne
       if (rstudioapi::isAvailable()) {
         # use RStudio and Shiny to pick a project
         task_id <- NULL
-        task_id <- shiny_item_picker(tasks_df$title |> stats::setNames(tasks_df$id), oversized = which(tasks_df$is_like))
+        task_id <- shiny_item_picker(tasks_df$title |> stats::setNames(tasks_df$id),
+                                     oversized = which(tasks_df$is_like),
+                                     title = "Kies een taak uit de lijst:",
+                                     subtitle = "(vetgedrukte taken hebben een tekstovereenkomst met de zoekterm)")
         if (is.null(task_id)) {
           return(NA)
         } else {
@@ -502,8 +520,12 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = conne
     out <- which(get_azure_property(tasks, "id") == task_id)
   } else {
     out <- which(get_azure_property(tasks, "title") %like% task_title)
+    if (length(out) == 0) {
+      # perhaps regex made it fail, so:
+      out <- which(grepl(task_title, get_azure_property(tasks, "title"), fixed = TRUE))
+    }
   }
-
+  
   if (length(out) == 0) {
     stop("Task not found: '", task_title, "'", call. = FALSE)
   } else if (length(out) == 1) {
@@ -511,7 +533,14 @@ planner_task_find <- function(task_title = NULL, task_id = NULL, account = conne
   } else {
     titles <- get_azure_property(tasks[out], "title")
     if (any(titles == task_title)) {
-      return(tasks[[out[which(titles == task_title)]]])
+      out <- tasks[[out[which(titles == task_title)][1]]]
+      if (sum(titles == task_title, na.rm = TRUE) > 1) {
+        warning("There are ", sum(titles == task_title, na.rm = TRUE), " tasks with the title '", task_title, 
+                "'. Make sure to keep them unique!\nNow assuming task ID: ", get_azure_property(out, "id"),
+                ", created on ", format(as.POSIXct(gsub("T", " ", get_azure_property(out, "createdDateTime")))), ".",
+                call. = FALSE)
+      }
+      return(out)
     } else {
       out <- tasks[[out[1]]]
       message("Assuming task '", get_azure_property(out, "title"),  "' for searching with text '", task_title, "'")

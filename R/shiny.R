@@ -39,7 +39,7 @@ project_add <- function(planner = connect_planner(),
                         channel = teams_projects_channel(account = teams)) {
   
   if (!inherits(planner, "ms_plan")) {
-    planner <- NULL
+    stop("Maak eerst verbinding met Planner via connect_planner().")
   }
   if (!inherits(teams, "ms_team") || !inherits(channel, "ms_drive_item")) {
     teams <- NULL
@@ -112,7 +112,7 @@ project_add <- function(planner = connect_planner(),
                      choices = c(".qmd (Quarto)" = ".qmd",
                                  ".R" = ".R",
                                  ".Rmd (R Markdown)" = ".Rmd"),
-                     selected = "",
+                     selected = ".R",
                      inline = TRUE,
                      width = "100%"),
         awesomeCheckbox("rstudio_projectfile",
@@ -124,14 +124,7 @@ project_add <- function(planner = connect_planner(),
         
         # PLANNER
         img(src = img_planner(), height = "40px", style = "margin-bottom: 10px"),
-        if (!is.null(planner)) {
-          tagList(
-            awesomeCheckbox("planner_upload", HTML(paste0("Taak aanmaken in '", a(get_azure_property(planner, "title"), href = planner_url(planner)), "'")), value = TRUE, width = "100%"),
-            uiOutput("planner_settings")
-          )
-        } else {
-          h5(HTML("Verbind eerst met MS Planner via <code>connect_planner()</code>."))
-        },
+        uiOutput("planner_settings"),
         hr(),
         
         # TEAMS
@@ -225,47 +218,45 @@ project_add <- function(planner = connect_planner(),
     })
     
     output$planner_settings <- renderUI({
-      if (input$planner_upload == TRUE) {
-        members <- planner_user_property(property = "name", as_list = TRUE, account = planner)
-        categories <- unname(planner_categories_list(account = planner))
-        if (length(categories) > 1) {
-          categories <- list(Labels = categories)
-        }
-        active_user <- planner_user_property(get_current_user(), property = "name", account = planner)
-        if (length(active_user) == 0) {
-          active_user <- NULL
-        }
-        tagList(
-          selectInput("planner_bucket",
-                      label = "Bucket",
-                      choices = list(Buckets = planner_buckets_list(plain = TRUE, account = planner)),
-                      selected = read_secret("planner.default.bucket"),
-                      multiple = FALSE,
-                      width = "100%"),
-          selectizeInput("planner_members",
-                         label = "Toegewezen aan",
-                         choices = members,
-                         selected = active_user,
-                         multiple = TRUE,
-                         width = "100%",
-                         options = list(
-                           # do not support non-existing members:
-                           create = FALSE,
-                           createOnBlur = FALSE,
-                           closeAfterSelect = FALSE)),
-          selectizeInput("planner_categories",
-                         label = "Labels",
-                         choices = categories,
-                         selected = "Project",
-                         multiple = TRUE,
-                         width = "100%",
-                         options = list(
-                           # do not support non-existing members:
-                           create = FALSE,
-                           createOnBlur = FALSE,
-                           closeAfterSelect = FALSE))
-        )
+      members <- planner_user_property(property = "name", as_list = TRUE, account = planner)
+      categories <- unname(planner_categories_list(account = planner))
+      if (length(categories) > 1) {
+        categories <- list(Labels = categories)
       }
+      active_user <- planner_user_property(get_current_user(), property = "name", account = planner)
+      if (length(active_user) == 0) {
+        active_user <- NULL
+      }
+      tagList(
+        selectInput("planner_bucket",
+                    label = "Bucket",
+                    choices = list(Buckets = planner_buckets_list(plain = TRUE, account = planner)),
+                    selected = read_secret("planner.default.bucket"),
+                    multiple = FALSE,
+                    width = "100%"),
+        selectizeInput("planner_members",
+                       label = "Toegewezen aan",
+                       choices = members,
+                       selected = active_user,
+                       multiple = TRUE,
+                       width = "100%",
+                       options = list(
+                         # do not support non-existing members:
+                         create = FALSE,
+                         createOnBlur = FALSE,
+                         closeAfterSelect = FALSE)),
+        selectizeInput("planner_categories",
+                       label = "Labels",
+                       choices = categories,
+                       selected = "Project",
+                       multiple = TRUE,
+                       width = "100%",
+                       options = list(
+                         # do not support non-existing members:
+                         create = FALSE,
+                         createOnBlur = FALSE,
+                         closeAfterSelect = FALSE))
+      )
     })
     
     observeEvent(input$files_teams_or_local, {
@@ -318,45 +309,39 @@ project_add <- function(planner = connect_planner(),
       if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
       filetype <- input$filetype
       if (empty_field("Bestandstype", filetype)) return(invisible())
-      duedate <- input$duedate
+      duedate <- as.character(input$duedate)
       if (empty_field("Einddatum", duedate)) return(invisible())
-      
-      disable("create")
-      disable("cancel")
-      on.exit(disable("create"))
-      on.exit(disable("cancel"))
-      
       description <- trimws(input$description)
       if (length(description) == 0) {
         description <- ""
       } else {
         description <- gsub("[.][.]", ".", paste0(description, "."))
       }
+      
       checklist <- input$checklist
       if (is.null(checklist) || length(checklist) == 0) {
         checklist <- ""
       }
       
       withProgress(message = "Aanmaken...", value = 0, {
-        progress_items <- input$rstudio_projectfile + input$planner_upload * 2 + 1 # (+ 1 for creating folders)
-        card_id <- NULL
+        progress_items <- input$rstudio_projectfile + input$files_teams_or_local == "teams" + 3 # (+ 3 for Planner and for creating folders)
+        project_id <- NULL
         new_title <- title
         # Planner ----
-        if (input$planner_upload == TRUE) {
-          incProgress(1 / progress_items, detail = "MS Planner: taak aanmaken")
-          new_task <- planner_task_create(account = planner,
-                                          title = title,
-                                          bucket_name = input$planner_bucket,
-                                          assigned = input$planner_members,
-                                          requested_by = requested_by,
-                                          priority = input$priority,
-                                          duedate = duedate,
-                                          checklist_items = checklist |> strsplit("\n") |> unlist(),
-                                          categories = input$planner_categories,
-                                          description = description)
-          card_id <- new_task$id
-          new_title <- new_task$title
-        }
+        incProgress(1 / progress_items, detail = "MS Planner: taak aanmaken")
+        new_task <- planner_task_create(account = planner,
+                                        title = title,
+                                        bucket_name = input$planner_bucket,
+                                        assigned = input$planner_members,
+                                        requested_by = requested_by,
+                                        priority = input$priority,
+                                        duedate = as.Date(duedate),
+                                        checklist_items = checklist |> strsplit("\n") |> unlist(),
+                                        categories = input$planner_categories,
+                                        description = description)
+        project_id <- new_task$id
+        new_title <- new_task$title
+        
         # Teams ----
         if (tryCatch(input$files_teams_or_local == "teams", error = function(e) FALSE)) {
           incProgress(1 / progress_items, detail = "MS Teams: map aanmaken")
@@ -368,21 +353,17 @@ project_add <- function(planner = connect_planner(),
                                   getwd(),
                                   read_secret("projects.path"))
         }
-
+        incProgress(1 / progress_items, detail = "Map aanmaken")
         fullpath <- paste0(projects_path, "/",
                            trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", title)),
-                           ifelse(is.null(card_id), "", paste0(" - p", card_id)))
+                           ifelse(is.null(project_id), "", paste0(" - p", project_id)))
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
         desc <- unlist(strsplit(description, "\n", fixed = TRUE))
-        if (requested_by != "") {
-          request <- get_user(id == requested_by, property = "name")
-          if (request %in% c("", NA)) {
-            request <- requested_by
-          }
-          request <- paste0("# Aangevraagd door: ", request)
+        if (!arg_is_empty(requested_by)) {
+          requested_by <- paste0("# Aangevraagd door: ", requested_by)
         } else {
-          request <- NA_character_
+          requested_by <- NA_character_
         }
         
         header_text <- c(paste0("# Titel:            ", title),
@@ -392,10 +373,10 @@ project_add <- function(planner = connect_planner(),
                          if_else(length(desc) > 1,
                                  paste0("#                   ", desc[2:length(desc)], collapse = "\n"),
                                  NA_character_),
-                         if_else(!is.null(card_id),
-                                 paste0("# Projectnummer:    p", card_id),
+                         if_else(!is.null(project_id),
+                                 paste0("# Projectnummer:    p", project_id),
                                  NA_character_),
-                         request,
+                         requested_by,
                          paste0(        "# Aangemaakt op:    ", format2(Sys.time(), "d mmmm yyyy H:MM")))
         incProgress(1 / progress_items, detail = "Map aanmaken")
         # create folder
@@ -465,12 +446,12 @@ project_add <- function(planner = connect_planner(),
                            "library(certedata)",
                            "",
                            "data_download <- FALSE",
-                           paste0('if (!is.na(project_get_file(".*rds$", ', card_id, ")) & !data_download) {"),
-                           paste0("  data_", card_id, ' <- import_rds(project_get_file(".*rds$", ', card_id, "))"),
+                           paste0('if (!is.na(project_get_file(".*rds$", ', project_id, ")) & !data_download) {"),
+                           paste0("  data_", project_id, ' <- import_rds(project_get_file(".*rds$", ', project_id, "))"),
                            "} else {",
-                           paste0("  data_", card_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           paste0("  data_", project_id, " <- certedb_getmmb(dates = c(start, stop),"),
                            "                             where  = where(db))",
-                           paste0("  export_rds(data_", card_id, ', "data_', card_id, '", card_number = ', card_id, ')'),
+                           paste0("  export_rds(data_", project_id, ', "data_', project_id, '", card_number = ', project_id, ')'),
                            "}",
                            "```",
                            "",
@@ -495,18 +476,19 @@ project_add <- function(planner = connect_planner(),
           filecontent <- c(header_text,
                            "",
                            "library(certedata)",
-                           paste0("data_", card_id, " <- certedb_getmmb(dates = c(start, stop),"),
-                           paste0(strrep(" ", nchar(card_id)), "                        where = where(db))"),
-                           paste0("export_rds(data_", card_id, ', "data_', card_id, '.rds", card_number = ', card_id, ")"),
-                           paste0("# data_", card_id, ' <- import_rds(project_get_file(".*rds$", ', card_id, '))'),
+                           paste0("data_", project_id, " <- certedb_getmmb(dates = c(start, stop),"),
+                           paste0(strrep(" ", nchar(project_id)), "                        where = where(db))"),
+                           paste0("export_rds(data_", project_id, ', "data_', project_id, '.rds", card_number = ', project_id, ")"),
+                           paste0("# data_", project_id, ' <- import_rds(project_get_file(".*rds$", ', project_id, '))'),
                            ""
           )
         }
         filename <- paste0(fullpath, "/Analyse",
-                           ifelse(!is.null(card_id),
-                                  paste0(" p", card_id),
+                           ifelse(!is.null(project_id),
+                                  paste0(" p", project_id),
                                   ""),
                            filetype)
+        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden schrijven", ""))
         writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
                    con = file.path(filename))
         if (input$files_teams_or_local == "teams") {
@@ -515,11 +497,10 @@ project_add <- function(planner = connect_planner(),
           unlink(fullpath, recursive = TRUE, force = TRUE)
         }
         
-        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden schrijven", ""))
         Sys.sleep(0.1)
       })
       
-      message("Project p", card_id, " aangemaakt.")
+      message("Project p", project_id, " aangemaakt.")
       
       if (isTRUE(input$rstudio_projectfile)) {
         # create project and open it

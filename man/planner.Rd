@@ -29,7 +29,7 @@ planner_buckets_list(account = connect_planner(), plain = FALSE)
 planner_task_create(
   title,
   description = NULL,
-  startdate = Sys.Date(),
+  startdate = NULL,
   duedate = NULL,
   requested_by = NULL,
   priority = read_secret("planner.default.priority"),
@@ -124,7 +124,7 @@ planner_highest_project_id(
 
 \item{description}{a description for the task. A vector of length > 1 will be added as one text separated by white lines.}
 
-\item{startdate}{a date to use as start date, use \code{FALSE} to remove it. Defaults to today.}
+\item{startdate}{a date to use as start date, use \code{FALSE} to remove it}
 
 \item{duedate}{a date to use as due date, use \code{FALSE} to remove it}
 

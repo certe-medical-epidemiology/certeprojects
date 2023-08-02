@@ -78,6 +78,10 @@ is_empty <- function(x) {
   is.null(x) || isFALSE(x) || identical(x, "") || all(is.na(as.character(x)))
 }
 
+arg_is_empty <- function(x) {
+  is.null(x) || length(x) == 0 || all(is.na(x))
+}
+
 #' @importFrom dplyr arrange filter
 get_user <- function(..., property = "shiny") {
   user_file <- read_secret("users.csv.file")
@@ -90,14 +94,7 @@ get_user <- function(..., property = "shiny") {
       filter(...) |> 
       arrange(name)
     if (property == "shiny") {
-      users_id <- users$id
-      if (!all(is.na(users$job))) {
-        users$job[is.na(users$job) | users$job == ""] <- ""
-        names(users_id) <- paste0(users$name, " (", tolower(users$job), ")")
-      } else {
-        names(users_id) <- users$name
-      }
-      users <- users_id
+      users <- users$name
     } else {
       users <- users[, property, drop = TRUE]
     }

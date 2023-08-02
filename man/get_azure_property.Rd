@@ -9,7 +9,7 @@ get_azure_property(x, property)
 \arguments{
 \item{x}{an Azure object}
 
-\item{property}{the name of the property, such as \code{"id"} or \verb{"displayName}. This must exist in \code{x} or in \code{x$properties}, and will return \code{NA} otherwise.}
+\item{property}{the name of the property, such as \code{"id"} or \code{"displayName"}. This must exist in \code{x} or in \code{x$properties}, and will return \code{NA} otherwise.}
 }
 \description{
 This function retrieves a property from an Azure object, such as \code{\link[Microsoft365R:ms_plan]{ms_plan}}, \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}}, \code{\link[Microsoft365R:ms_team]{ms_team}}, \code{\link[Microsoft365R:ms_team_member]{ms_team_member}}, \code{\link[Microsoft365R:ms_drive_item]{ms_drive_item}}.

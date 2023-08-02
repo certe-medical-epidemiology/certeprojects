@@ -66,7 +66,7 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
 #' @rdname planner
 #' @param title title of the task
 #' @param description a description for the task. A vector of length > 1 will be added as one text separated by white lines.
-#' @param startdate a date to use as start date, use `FALSE` to remove it. Defaults to today.
+#' @param startdate a date to use as start date, use `FALSE` to remove it
 #' @param duedate a date to use as due date, use `FALSE` to remove it
 #' @param requested_by name of the person(s) who requested the task, this will be added as first line to `description`
 #' @param priority a priority to set. Can be ranged between 0 (highest) and 10 (lowest), or: `"urgent"` or `"dringend"` for 1, `"important"` or `"belangrijk"` for 3, `"medium"` or `"gemiddeld"` or `FALSE` for 5, `"low"` or `"laag"` for 9. Priorities cannot be removed - the default setting is 5.
@@ -80,7 +80,7 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
 #' @export
 planner_task_create <- function(title,
                                 description = NULL,
-                                startdate = Sys.Date(),
+                                startdate = NULL,
                                 duedate = NULL,
                                 requested_by = NULL,
                                 priority = read_secret("planner.default.priority"),
@@ -776,8 +776,4 @@ generate_guids <- function(length) {
            substr(out, 16, 18), "-",
            substr(out, 19, 30))
   })
-}
-
-arg_is_empty <- function(x) {
-  is.null(x) || all(is.na(x))
 }

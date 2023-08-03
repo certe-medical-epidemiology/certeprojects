@@ -60,19 +60,20 @@ planner_task_update(
   account = connect_planner()
 )
 
-planner_tasks_list(account = connect_planner(), plain = FALSE)
+planner_tasks_list(
+  account = connect_planner(),
+  plain = FALSE,
+  only_non_completed = TRUE
+)
 
 planner_task_search(
   search_term = ".*",
   limit = Inf,
+  only_non_completed = TRUE,
   account = connect_planner()
 )
 
-planner_task_find(
-  task_title = NULL,
-  task_id = NULL,
-  account = connect_planner()
-)
+planner_task_find(task, account = connect_planner())
 
 planner_categories_list(account = connect_planner())
 
@@ -99,7 +100,7 @@ planner_user_property(
 )
 
 planner_highest_project_id(
-  task = read_secret("planner.dummycard"),
+  task = read_secret("planner.dummy.card"),
   account = connect_planner()
 )
 
@@ -142,7 +143,7 @@ planner_highest_project_id(
 
 \item{project_number}{the new project number to assign. Use \code{NULL} or \code{FALSE} to not assign a project number. Defaults to the currently highest project ID + 1.}
 
-\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
+\item{task}{exact task ID or title, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
 
 \item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
 
@@ -150,13 +151,11 @@ planner_highest_project_id(
 
 \item{percent_completed}{percentage of task completion between 0-100}
 
-\item{search_term}{search term, can contain regular expressions}
+\item{only_non_completed}{search only non-completed tasks}
+
+\item{search_term}{search term, can contain a regular expression}
 
 \item{limit}{maximum number of tasks to show}
-
-\item{task_title}{title of the task, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
-
-\item{task_id}{exact id of the task}
 
 \item{category_text}{text of the category to use}
 

@@ -317,6 +317,9 @@ project_add <- function(planner = connect_planner(),
       } else {
         description <- gsub("[.][.]", ".", paste0(description, "."))
       }
+      if (description == ".") {
+        description <- ""
+      }
       
       checklist <- input$checklist
       if (is.null(checklist) || length(checklist) == 0) {
@@ -324,7 +327,7 @@ project_add <- function(planner = connect_planner(),
       }
       
       withProgress(message = "Aanmaken...", value = 0, {
-        progress_items <- input$rstudio_projectfile + input$files_teams_or_local == "teams" + 3 # (+ 3 for Planner and for creating folders)
+        progress_items <- isTRUE(input$rstudio_projectfile) + identical(input$files_teams_or_local, "teams") + 3 # (+ 3 for Planner and for creating folders)
         project_id <- NULL
         new_title <- title
         # Planner ----

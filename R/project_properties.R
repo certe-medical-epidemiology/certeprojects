@@ -28,7 +28,7 @@
 #' @name project_properties
 #' @details [project_get_current_id()] uses [planner_task_search()] to find a specific project based on any search string. 
 #' @rdname project_properties
-#' @importFrom rstudioapi getSourceEditorContext
+#' @importFrom rstudioapi getSourceEditorContext showPrompt isAvailable
 #' @export
 project_get_current_id <- function(ask = NULL) {
   # first try project number from full file location:
@@ -46,10 +46,11 @@ project_get_current_id <- function(ask = NULL) {
   }
   asked <- FALSE
   path <- full_path_to_currently_sourced_script()
-  if (is.null(path) && interactive() && rstudioapi::isAvailable()) {
+  if (is.null(path) && interactive() && isAvailable()) {
     path <- getSourceEditorContext()$path
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
-      id <- planner_retrieve_project_id(planner_task_search(limit = 25))
+      search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+      id <- planner_retrieve_project_id(planner_task_search(search_term = search_term, limit = 25))
       return(fix_id(id))
     } else if (is.null(path)) {
       # for when ask == FALSE
@@ -65,7 +66,8 @@ project_get_current_id <- function(ask = NULL) {
   }
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
-    task <- planner_task_search(limit = 25)
+    search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+    task <- planner_task_search(search_term = search_term, limit = 25)
     if (is.null(task) || suppressWarnings(all(is.na(task)))) {
       return(invisible())
     }
@@ -74,9 +76,14 @@ project_get_current_id <- function(ask = NULL) {
   }
   
   if (identical(ask, TRUE) && asked == FALSE) {
+    if (interactive() && (length(id) == 0 || is.na(id))) {
+      search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+    } else {
+      search_term <- ""
+    }
     task <- planner_task_search(search_term = ifelse(!is.na(id) & length(id) > 0,
                                                      paste0("p", fix_id(id)),
-                                                     ""),
+                                                     search_term),
                                 limit = 25)
     if (is.null(task) || suppressWarnings(all(is.na(task)))) {
       return(invisible())

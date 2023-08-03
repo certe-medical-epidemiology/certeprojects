@@ -421,9 +421,14 @@ planner_task_update <- function(task,
 
 #' @rdname planner
 #' @export
-planner_tasks_list <- function(account = connect_planner(), plain = FALSE) {
+planner_tasks_list <- function(account = connect_planner(),
+                               plain = FALSE,
+                               only_non_completed = TRUE) {
   tasks <- account$list_tasks()
-  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummycard")]
+  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummy.card")]
+  if (only_non_completed == TRUE) {
+    tasks <- tasks[get_azure_property(tasks, "percentComplete") < 100]
+  }
   if (plain == TRUE) {
     sort(get_azure_property(tasks, "title"))
   } else {
@@ -432,19 +437,48 @@ planner_tasks_list <- function(account = connect_planner(), plain = FALSE) {
 }
 
 #' @rdname planner
-#' @param search_term search term, can contain regular expressions
+#' @param search_term search term, can contain a regular expression
 #' @param limit maximum number of tasks to show
+#' @param only_non_completed search only non-completed tasks
 #' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
 #' @importFrom certestyle font_blue format2
 #' @importFrom dplyr bind_rows arrange desc
 #' @importFrom rstudioapi isAvailable
 #' @export
-planner_task_search <- function(search_term = ".*", limit = Inf, account = connect_planner()) {
-  tasks <- planner_tasks_list(account = account, plain = FALSE)
-  tasks_df <- tasks |> lapply(as.data.frame, account = account) |> bind_rows()
+planner_task_search <- function(search_term = ".*",
+                                limit = Inf,
+                                only_non_completed = TRUE,
+                                account = connect_planner()) {
+  if (is.null(search_term) || search_term %in% c(NA, "")) {
+    search_term <- ".*"
+  }
+  message("Searching...")
+  tasks <- planner_tasks_list(account = account,
+                              plain = FALSE,
+                              only_non_completed = only_non_completed)
+  tasks_df <- data.frame(id = tasks |> get_azure_property("id"),
+                         title = tasks |> get_azure_property("title"),
+                         bucketId = tasks |> get_azure_property("bucketId"))
+  if (search_term %unlike% "p?[0-9]") {
+    # also add descriptions
+    tasks_df$description = vapply(FUN.VALUE = character(1),
+                                  tasks,
+                                  function(t) {
+                                    desc <- t$do_operation("details")$description
+                                    if (is.null(desc)) {
+                                      NA_character_
+                                    } else {
+                                      desc
+                                    }
+                                  })
+  }
+  if (!is.infinite(limit)) {
+    tasks_df <- tasks_df[seq_len(limit), ]
+  }
+  
   tasks_df$search_col <- do.call(paste, tasks_df)
   tasks_df$project_number <- suppressWarnings(as.integer(gsub(".*p([0-9]+).*", "\\1", tasks_df$title)))
-  tasks_df$is_like <- tasks_df$search_col %like% search_term | tasks_df$description %like% search_term
+  tasks_df$is_like <- tasks_df$search_col %like% search_term
   tasks_df$levenshtein_distance <- as.double(utils::adist(tasks_df$search_col, search_term, fixed = TRUE))
   tasks_df$levenshtein_delta <- nchar(tasks_df$search_col) - tasks_df$levenshtein_distance
   tasks_df <- tasks_df |> arrange(desc(is_like), levenshtein_delta)
@@ -489,7 +523,7 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = conne
           return(tasks[[which(get_azure_property(tasks, "id") == task_id)]])
         }
       } else {
-        choice <- utils::menu(texts, graphics = FALSE, 
+        choice <- utils::menu(texts, graphics = FALSE,
                               title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
                                              " in '", get_azure_property(account, "title"), "' found (0 to Cancel):"))
       }
@@ -503,47 +537,49 @@ planner_task_search <- function(search_term = ".*", limit = Inf, account = conne
 }
 
 #' @rdname planner
-#' @param task_title title of the task, will be searched with [`%like%`][certetoolbox::like]
-#' @param task_id exact id of the task
+#' @param task exact task ID or title, will be searched with [`%like%`][certetoolbox::like]
 #' @details [planner_task_find()] searches task title or ID, and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. It is used internally b a lot of `planner_*` functions, very fast, and does not support interactive use.
 #' @importFrom Microsoft365R ms_plan_task
 #' @export
-planner_task_find <- function(task_title = NULL, task_id = NULL, account = connect_planner()) {
-  if (inherits(task_title, "ms_plan_task")) {
-    return(task_title)
-  }
-  if (arg_is_empty(task_title) && arg_is_empty(task_id)) {
-    stop("task_title or task_id must be given")
-  }
-  tasks <- account$list_tasks() # this will also include the dummy card
-  if (!arg_is_empty(task_id)) {
-    out <- which(get_azure_property(tasks, "id") == task_id)
+planner_task_find <- function(task, account = connect_planner()) {
+  if (inherits(task, "ms_plan_task")) {
+    return(task)
   } else {
-    out <- which(get_azure_property(tasks, "title") %like% task_title)
+    task <- as.character(task)
+  }
+  tasks <- account$list_tasks() # this will also include the dummy card, which must be the case
+  out <- which(get_azure_property(tasks, "id") == task)
+  if (length(out) == 0) {
+    out <- which(get_azure_property(tasks, "title") %like% task)
     if (length(out) == 0) {
       # perhaps regex made it fail, so:
-      out <- which(grepl(task_title, get_azure_property(tasks, "title"), fixed = TRUE))
+      out <- which(grepl(task, get_azure_property(tasks, "title"), fixed = TRUE))
     }
   }
   
   if (length(out) == 0) {
-    stop("Task not found: '", task_title, "'", call. = FALSE)
+    stop("Task not found: '", task, "'", call. = FALSE)
   } else if (length(out) == 1) {
     return(tasks[[out[1]]])
   } else {
-    titles <- get_azure_property(tasks[out], "title")
-    if (any(titles == task_title)) {
-      out <- tasks[[out[which(titles == task_title)][1]]]
-      if (sum(titles == task_title, na.rm = TRUE) > 1) {
-        warning("There are ", sum(titles == task_title, na.rm = TRUE), " tasks with the title '", task_title, 
-                "'. Make sure to keep them unique!\nNow assuming task ID: ", get_azure_property(out, "id"),
+    tasks <- tasks[out]
+    titles <- get_azure_property(tasks, "title")
+    if (any(titles == task)) {
+      tasks <- tasks[which(titles == task)]
+      # sort on creation date, highest first
+      created <- get_azure_property(tasks, "createdDateTime")
+      tasks <- tasks[order(created, decreasing = TRUE)]
+      out <- tasks[[1]]
+      if (length(tasks) > 1) {
+        warning("There are ", length(tasks), " tasks with the title '", task, 
+                "'. \nAssuming task ID: ", get_azure_property(out, "id"),
                 ", created on ", format(as.POSIXct(gsub("T", " ", get_azure_property(out, "createdDateTime")))), ".",
                 call. = FALSE)
       }
       return(out)
     } else {
-      out <- tasks[[out[1]]]
-      message("Assuming task '", get_azure_property(out, "title"),  "' for searching with text '", task_title, "'")
+      out <- tasks[[1]]
+      message("Assuming task '", get_azure_property(out, "title"),  "' for searching with text '", task, "' out of ", length(tasks), " hits")
       return(out)
     }
   }
@@ -641,25 +677,12 @@ planner_user_property <- function(user,
 
 #' @rdname planner
 #' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy card.
-#' @importFrom jsonlite fromJSON
-#' @importFrom httr GET add_headers stop_for_status content
 #' @export
-planner_highest_project_id <- function(task = read_secret("planner.dummycard"),
+planner_highest_project_id <- function(task = read_secret("planner.dummy.card"),
                                        account = connect_planner()) {
   # this returns the currently highest project number, which is saved to the description
-  task <- planner_task_find(task)
-  task_id <- get_azure_property(task, "id")
-  task_title <- get_azure_property(task, "title")
-  
-  get_task <- GET(url = paste0("https://graph.microsoft.com/v1.0/planner/tasks/", task_id, "/details"),
-                  config = add_headers(Authorization = paste(account$token$credentials$token_type,
-                                                             account$token$credentials$access_token)))
-  stop_for_status(get_task, task = paste("getting task", task_title))
-  response_body <- get_task |> 
-    content(type = "text", encoding = "UTF-8") |>
-    fromJSON(flatten = TRUE)
-  
-  as.integer(gsub("[^0-9]+", "", response_body$description))
+  task <- planner_task_find(task, account = account)
+  as.integer(gsub("[^0-9]+", "", task$do_operation("details")$description))
 }
 
 #' @rdname planner
@@ -728,7 +751,7 @@ planner_bucket_object <- function(bucket_name = read_secret("planner.default.buc
   }
 }
 
-increase_highest_project_id <- function(task = read_secret("planner.dummycard"),
+increase_highest_project_id <- function(task = read_secret("planner.dummy.card"),
                                         account = connect_planner()) {
   highest <- planner_highest_project_id(task = task, account = account)
   planner_task_update(task = task, description = highest + 1, account = account)

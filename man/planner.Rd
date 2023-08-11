@@ -63,13 +63,14 @@ planner_task_update(
 planner_tasks_list(
   account = connect_planner(),
   plain = FALSE,
-  only_non_completed = TRUE
+  include_completed = TRUE
 )
 
 planner_task_search(
   search_term = ".*",
   limit = Inf,
-  only_non_completed = TRUE,
+  include_completed = TRUE,
+  include_description = FALSE,
   account = connect_planner()
 )
 
@@ -151,11 +152,13 @@ planner_highest_project_id(
 
 \item{percent_completed}{percentage of task completion between 0-100}
 
-\item{only_non_completed}{search only non-completed tasks}
+\item{include_completed}{also search completed tasks}
 
 \item{search_term}{search term, can contain a regular expression}
 
 \item{limit}{maximum number of tasks to show}
+
+\item{include_description}{also search the description, which requires additional queries and lowers speed}
 
 \item{category_text}{text of the category to use}
 

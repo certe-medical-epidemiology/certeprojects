@@ -423,10 +423,10 @@ planner_task_update <- function(task,
 #' @export
 planner_tasks_list <- function(account = connect_planner(),
                                plain = FALSE,
-                               only_non_completed = TRUE) {
+                               include_completed = TRUE) {
   tasks <- account$list_tasks()
   tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummy.card")]
-  if (only_non_completed == TRUE) {
+  if (isFALSE(include_completed)) {
     tasks <- tasks[get_azure_property(tasks, "percentComplete") < 100]
   }
   if (plain == TRUE) {
@@ -439,7 +439,8 @@ planner_tasks_list <- function(account = connect_planner(),
 #' @rdname planner
 #' @param search_term search term, can contain a regular expression
 #' @param limit maximum number of tasks to show
-#' @param only_non_completed search only non-completed tasks
+#' @param include_completed also search completed tasks
+#' @param include_description also search the description, which requires additional queries and lowers speed
 #' @details [planner_task_search()] searches the title and description using case-insensitive regular expressions and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. In interactive mode and with multiple hits, a menu will be shown to pick from.
 #' @importFrom certestyle font_blue format2
 #' @importFrom dplyr bind_rows arrange desc
@@ -447,7 +448,8 @@ planner_tasks_list <- function(account = connect_planner(),
 #' @export
 planner_task_search <- function(search_term = ".*",
                                 limit = Inf,
-                                only_non_completed = TRUE,
+                                include_completed = TRUE,
+                                include_description = FALSE,
                                 account = connect_planner()) {
   if (is.null(search_term) || search_term %in% c(NA, "")) {
     search_term <- ".*"
@@ -455,11 +457,15 @@ planner_task_search <- function(search_term = ".*",
   message("Searching...")
   tasks <- planner_tasks_list(account = account,
                               plain = FALSE,
-                              only_non_completed = only_non_completed)
+                              include_completed = include_completed)
   tasks_df <- data.frame(id = tasks |> get_azure_property("id"),
                          title = tasks |> get_azure_property("title"),
                          bucketId = tasks |> get_azure_property("bucketId"))
-  if (search_term %unlike% "p?[0-9]") {
+  if (search_term %like% "p?[0-9]" && sum(unique(tasks_df$title) %like% search_term) == 1) {
+    # looking for project and only 1 title fits it
+    return(tasks[[which(tasks_df$title %like% search_term)[1]]])
+  }
+  if (isTRUE(include_description) && search_term %unlike% "p?[0-9]") {
     # also add descriptions
     tasks_df$description = vapply(FUN.VALUE = character(1),
                                   tasks,
@@ -476,7 +482,7 @@ planner_task_search <- function(search_term = ".*",
     tasks_df <- tasks_df[seq_len(limit), ]
   }
   
-  tasks_df$search_col <- do.call(paste, tasks_df)
+  tasks_df$search_col <- do.call(paste, tasks_df) # this includes description if it's in it
   tasks_df$project_number <- suppressWarnings(as.integer(gsub(".*p([0-9]+).*", "\\1", tasks_df$title)))
   tasks_df$is_like <- tasks_df$search_col %like% search_term
   tasks_df$levenshtein_distance <- as.double(utils::adist(tasks_df$search_col, search_term, fixed = TRUE))

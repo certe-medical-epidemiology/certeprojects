@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.12</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.13</span>
       </span>
     </div>
 
@@ -119,13 +119,14 @@
 <span><span class="fu">planner_tasks_list</span><span class="op">(</span></span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  plain <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  only_non_completed <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_completed <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">planner_task_search</span><span class="op">(</span></span>
 <span>  search_term <span class="op">=</span> <span class="st">".*"</span>,</span>
 <span>  limit <span class="op">=</span> <span class="cn">Inf</span>,</span>
-<span>  only_non_completed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_completed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_description <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -247,8 +248,8 @@
 <dd><p>percentage of task completion between 0-100</p></dd>
 
 
-<dt>only_non_completed</dt>
-<dd><p>search only non-completed tasks</p></dd>
+<dt>include_completed</dt>
+<dd><p>also search completed tasks</p></dd>
 
 
 <dt>search_term</dt>
@@ -257,6 +258,10 @@
 
 <dt>limit</dt>
 <dd><p>maximum number of tasks to show</p></dd>
+
+
+<dt>include_description</dt>
+<dd><p>also search the description, which requires additional queries and lowers speed</p></dd>
 
 
 <dt>category_text</dt>

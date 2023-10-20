@@ -62,7 +62,7 @@
 #' ### Pre-loaded Settings
 #' 
 #' When attaching this `certeprojects` package using [library()], and external R process will be run in the background using the `callr` package to connect to MS Outlook, MS Planner, and MS Teams. This will increase speed when connecting using [connect_outlook()], [connect_planner()], or [connect_teams()].
-#' @importFrom AzureGraph create_graph_login get_graph_login
+#' @importFrom AzureGraph create_graph_login get_graph_login list_graph_logins
 #' @rdname connect
 #' @name connect
 #' @export
@@ -149,8 +149,20 @@ get_microsoft365_token <- function(scope,
       return(NULL)
     })
   }
-  if (isTRUE(error_on_fail) && is.null(pkg_env[[scope]])) {
-    stop("Could not connect to Microsoft 365.", call. = FALSE)
+  if (isTRUE(error_on_fail) && !is.null(pkg_env[[scope]])) {
+    logins <- list_graph_logins()
+    logins_txt <- ""
+    for (lgn in logins) {
+      for (tkn in lgn) {
+        scps <- sort(gsub("https?://.*/", "", tkn$token$scope))
+        scps <- scps[scps %like% "[.]"]
+        logins_txt <- paste0(logins_txt, "\n",
+                             "Tenant:  ", tkn$tenant, "\n",
+                             "Scopes:  ", paste0(scps, collapse = ", "), "\n",
+                             "Expires: ", as.POSIXct(as.double(tkn$token$credentials$expires_on)), "\n")
+      }
+    }
+    stop("Could not connect to Microsoft 365.\n\nCurrent tokens:\n", logins_txt, call. = FALSE)
   }
   # this will auto-renew authorisation when due
   suppressMessages(pkg_env[[scope]])

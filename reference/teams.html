@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.13</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.14</span>
       </span>
     </div>
 
@@ -222,7 +222,7 @@
 
 
 <dt>fun</dt>
-<dd><p>function to use for rendering. Can be e.g. <a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render</a> or <a href="https://rdrr.io/pkg/quarto/man/quarto_render.html" class="external-link">quarto::quarto_render</a>.</p></dd>
+<dd><p>function to use for rendering. Can be e.g. <a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render</a> or <a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render</a>.</p></dd>
 
 
 <dt>...</dt>
@@ -278,7 +278,7 @@
     <p>The <code>teams_new_project()</code> function:</p><ol><li><p>Checks if there is a Planner task with the correct task title</p></li>
 <li><p>Creates a new folder in Teams in the projects channel</p></li>
 <li><p>Updates the task to contain the project folder URL as an attachment</p></li>
-</ol><p>The <code>teams_download_project_file()</code> function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> or <code><a href="https://rdrr.io/pkg/quarto/man/quarto_render.html" class="external-link">quarto::quarto_render()</a></code> using the <code>teams_download_project_file()</code> function as input.</p>
+</ol><p>The <code>teams_download_project_file()</code> function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> or <code><a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render()</a></code> using the <code>teams_download_project_file()</code> function as input.</p>
 <p>The <code>teams_render_project_file()</code> function allows to render a Teams file. It downloads the Teams file using <code>teams_download_project_file()</code>, runs the rendering function set in <code>fun</code>, and uploads the resulting output file back to Teams using the same file name a <code>file</code>, but with the new file extension (such as pdf, html, or docx). It <strong>invisibly returns</strong> the temporary local file location, so that the output of <code>teams_render_project_file()</code> can be given to e.g. <code>certemail::mail()</code> as an attachment.</p>
 <p><code>teams_send_message()</code> can also take a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>, which will be converted to HTML with <a href="https://certe-medical-epidemiology.github.io/certestyle/reference/plain_html_table.html" class="external-link">plain_html_table()</a>. If the input is a vector length &gt; 1, the input will be collapsed with linebreaks.</p>
     </div>

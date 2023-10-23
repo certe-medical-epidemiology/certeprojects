@@ -461,15 +461,15 @@ pick_teams_item <- function(full_teams_path = NULL,
     }
   }
   get_icon <- function(ff) {
-    case_when(ff$isdir ~ "🗂️",  # "📁",
-              ff$name %like% "xlsx?$" ~ "📊",
-              ff$name %like% "(docx?|pdf)$" ~ "📝",
-              ff$name %like% "pptx?$" ~ "📉",
-              ff$name %like% "csv$" ~ "🧾",
-              ff$name %like% "zip$" ~ "📦",
-              ff$name %like% "(jpe?g|bmp|png|gif)$" ~ "🖼️",
-              ff$name %like% "(eml|msg)$" ~ "✉️️",
-              TRUE ~ "📄")
+    case_when(ff$isdir ~ "\U1F5C2",  # Folder
+              ff$name %like% "xlsx?$" ~ "\U1F4CA",  # Spreadsheet
+              ff$name %like% "(docx?|pdf)$" ~ "\U1F4DD",  # Document
+              ff$name %like% "pptx?$" ~ "\U1F4C9",  # Presentation
+              ff$name %like% "csv$" ~ "\U1F9FE",  # Receipt
+              ff$name %like% "zip$" ~ "\U1F4E6",  # Package
+              ff$name %like% "(jpe?g|bmp|png|gif)$" ~ "\U1F5BC",  # Image
+              ff$name %like% "(eml|msg)$" ~ "\U2709\UFE0F",  # Envelope with variant selector
+              TRUE ~ "\U1F4C4")  # Document
   }
   format_filesize <- function(x) {
     format2(structure(x, class = "object_size"), decimal.mark = ".")
@@ -499,9 +499,9 @@ pick_teams_item <- function(full_teams_path = NULL,
   has_picked <- !item$isdir && !only_folders
   
   while (!has_picked) {
-    cat(font_bold("Current folder:\n\n💼 "), group_name, sep = "")
+    cat(font_bold("Current folder:\n\n\U1F465 "), group_name, sep = "")
     if (length(dive_levels) > 0) {
-      cat(paste0("\n", strrep("   ", seq_len(length(dive_levels))), "↳ ", dive_levels), "\n\n")
+      cat(paste0("\n", strrep("   ", seq_len(length(dive_levels))), "\U21B3 ", dive_levels), "\n\n")
     } else {
       cat("\n\n")
     }
@@ -521,10 +521,10 @@ pick_teams_item <- function(full_teams_path = NULL,
                              " (", format_filesize(files$size), ")")
     }
     if (only_folders == TRUE && length(dive_levels) > 0) {
-      file_choices <- c(file_choices, paste0("↪ Select this folder (", format_filesize(files_total_size), ")"))
+      file_choices <- c(file_choices, paste0("\U21AA Select this folder (", format_filesize(files_total_size), ")"))
     }
     if (searchpath != "") {
-      file_choices <- c(file_choices, "↩ Go back to previous folder...")
+      file_choices <- c(file_choices, "\U21A9 Go back to previous folder...")
     }
     picked <- utils::menu(choices = file_choices,
                           graphics = FALSE,
@@ -532,13 +532,13 @@ pick_teams_item <- function(full_teams_path = NULL,
     if (picked == 0) {
       # has chosen Cancel
       return(invisible())
-    } else if (file_choices[picked] == "↩ Go back to previous folder...") {
+    } else if (file_choices[picked] == "\U21A9 Go back to previous folder...") {
       # return one level
       dive_levels <- dive_levels[seq_len(length(dive_levels) - 1)]
       if (item$id == item_parent$id) {
         item_parent <- item_root
       }
-    } else if (file_choices[picked] %like% "↪ Select this folder") {
+    } else if (file_choices[picked] %like% "\U21AA Select this folder") {
       if (item$id == item_parent$id) {
         item_parent <- item_root
       }

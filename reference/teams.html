@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.14.14</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.15.0</span>
       </span>
     </div>
 
@@ -138,6 +138,36 @@
 <span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">teams_download_file</span><span class="op">(</span></span>
+<span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  destination_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_download_folder</span><span class="op">(</span></span>
+<span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  destination_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  recursive <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_upload_file</span><span class="op">(</span><span class="va">file_path</span>, full_teams_path <span class="op">=</span> <span class="cn">NULL</span>, account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_upload_folder</span><span class="op">(</span></span>
+<span>  <span class="va">folder_path</span>,</span>
+<span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  recursive <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">pick_teams_item</span><span class="op">(</span></span>
+<span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  only_folders <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">teams_name</span><span class="op">(</span>account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_channels_list</span><span class="op">(</span>account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>, plain <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -149,29 +179,6 @@
 <span>  <span class="va">channel</span>,</span>
 <span>  content_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text"</span>, <span class="st">"html"</span><span class="op">)</span>,</span>
 <span>  attachments <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">teams_upload</span><span class="op">(</span></span>
-<span>  <span class="va">local_path</span>,</span>
-<span>  teams_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">local_path</span><span class="op">)</span>,</span>
-<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">teams_download</span><span class="op">(</span></span>
-<span>  <span class="va">teams_path</span>,</span>
-<span>  local_path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">teams_path</span><span class="op">)</span>,</span>
-<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">teams_import</span><span class="op">(</span></span>
-<span>  <span class="va">teams_path</span>,</span>
-<span>  card_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
-<span>  channel <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -233,6 +240,30 @@
 <dd><p>the files to upload</p></dd>
 
 
+<dt>full_teams_path</dt>
+<dd><p>a full path in Teams, <strong>including the Team name and the channel name</strong>. Leave blank to use interactive mode, which allows file/folder picking from a list in the console.</p></dd>
+
+
+<dt>destination_dir</dt>
+<dd><p>a folder to download the file or folder to, defaults to the current working directory.</p></dd>
+
+
+<dt>recursive</dt>
+<dd><p>download/upload all files within the folder</p></dd>
+
+
+<dt>file_path</dt>
+<dd><p>local path of the file to upload</p></dd>
+
+
+<dt>folder_path</dt>
+<dd><p>local path of the folder to upload</p></dd>
+
+
+<dt>only_folders</dt>
+<dd><p>only show folders, not files</p></dd>
+
+
 <dt>plain</dt>
 <dd><p>return as plain names, not as <code>Azure</code> objects</p></dd>
 
@@ -249,16 +280,8 @@
 <dd><p>vector of file locations of attachments to add to the message</p></dd>
 
 
-<dt>local_path</dt>
-<dd><p>file location on the local system, can also be a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a> which will then be saved locally to the temp folder first</p></dd>
-
-
 <dt>teams_path</dt>
 <dd><p>file location in Microsoft Teams, may also contain the channel name if <code>channel</code> is <code>NULL</code>, e.g., <code>teams_path = "channel name/test.xlsx"</code></p></dd>
-
-
-<dt>card_number</dt>
-<dd><p>Planner card number</p></dd>
 
 
 <dt>share_type</dt>
@@ -280,13 +303,16 @@
 <li><p>Updates the task to contain the project folder URL as an attachment</p></li>
 </ol><p>The <code>teams_download_project_file()</code> function will download the given project file to a temporary location, and will return the path of this location. This makes it possible to use <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>, <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> or <code><a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render()</a></code> using the <code>teams_download_project_file()</code> function as input.</p>
 <p>The <code>teams_render_project_file()</code> function allows to render a Teams file. It downloads the Teams file using <code>teams_download_project_file()</code>, runs the rendering function set in <code>fun</code>, and uploads the resulting output file back to Teams using the same file name a <code>file</code>, but with the new file extension (such as pdf, html, or docx). It <strong>invisibly returns</strong> the temporary local file location, so that the output of <code>teams_render_project_file()</code> can be given to e.g. <code>certemail::mail()</code> as an attachment.</p>
+<p>The <code>teams_download_file()</code> and <code>teams_download_folder()</code> functions use <code>pick_teams_item()</code> to select a file or folder, after which they will be downloaded to the destination folder.</p>
+<p>The <code>teams_upload_file()</code> and <code>teams_upload_folder()</code> functions use <code>pick_teams_item()</code> to select the destination folder on Teams. <strong>Notice</strong> that these upload functions have not <code>overwrite</code> argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.</p>
+<p>The <code>pick_teams_item()</code> function provides an interactive way to select a file in any Team, any channel. It returns a list with the <code>group_id</code>, <code>item_id</code>, <code>item_name</code> and <code>full_path</code> of the Team item.</p>
 <p><code>teams_send_message()</code> can also take a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>, which will be converted to HTML with <a href="https://certe-medical-epidemiology.github.io/certestyle/reference/plain_html_table.html" class="external-link">plain_html_table()</a>. If the input is a vector length &gt; 1, the input will be collapsed with linebreaks.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span><span class="co"># PROJECT-RELATED --------------------------------------------------------</span></span></span>
+<span class="r-in"><span><span class="co"># PROJECT-RELATED ------------------------------------------------------</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Project-related Teams function rely on existing Planner tasks.</span></span></span>
 <span class="r-in"><span></span></span>
@@ -303,34 +329,21 @@
 <span class="r-in"><span><span class="fu">teams_render_project_file</span><span class="op">(</span><span class="st">"analysis.Rmd"</span>, <span class="st">"My Planner task"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># this will put the output file in the same Teams folder as 'analysis.Rmd'</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># PROJECT-UNRELATED ------------------------------------------------------</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, <span class="st">"my channel/my folder/test.docx"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># also supports data frames, they will be saved locally in a temp folder</span></span></span>
-<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="va">mtcars</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">mtcars</span> <span class="op">|&gt;</span> </span></span>
-<span class="r-in"><span>  <span class="fu">teams_upload</span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"My Channel"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  </span></span>
-<span class="r-in"><span>  </span></span>
-<span class="r-in"><span><span class="co"># integrates with department projects:</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># upload "myfile.docx" from the project folder of p123 to "My Channel":</span></span></span>
-<span class="r-in"><span><span class="fu">teams_upload</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># download "myfile.docx" from "My Channel" to the project folder of p123:</span></span></span>
-<span class="r-in"><span><span class="fu">teams_download</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">teams_download</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># direct import from Teams requires the 'certetoolbox' package</span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"mychannel/myfile.docx"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">teams_import</span><span class="op">(</span><span class="st">"myfile.docx"</span>, channel <span class="op">=</span> <span class="st">"My Channel"</span>, card_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># open a file in Excel Online</span></span></span>
 <span class="r-in"><span><span class="fu">teams_open</span><span class="op">(</span><span class="st">"test.xlsx"</span>, <span class="st">"My Channel"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">teams_open</span><span class="op">(</span><span class="st">"my channel/test.xlsx"</span><span class="op">)</span> <span class="co"># shorter version, tries to find channel</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># PROJECT-UNRELATED ----------------------------------------------------</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># by not specifying a remote location, a file picker will show in the console:</span></span></span>
+<span class="r-in"><span><span class="fu">teams_download_file</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">teams_download_folder</span><span class="op">(</span><span class="st">"MyTeamName/MyChannelName/MySubFolder/"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">teams_upload_file</span><span class="op">(</span><span class="st">"myfile.docx"</span>, full_teams_path <span class="op">=</span> <span class="st">"MyTeamName/MyChannelName/MySubFolder/"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># also supports data frames, they will be saved as RDS</span></span></span>
+<span class="r-in"><span><span class="va">mtcars</span> <span class="op">|&gt;</span> </span></span>
+<span class="r-in"><span>  <span class="fu">teams_upload_file</span><span class="op">(</span><span class="st">"MyTeamName/MyChannelName/MySubFolder/"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 </code></pre></div>
     </div>

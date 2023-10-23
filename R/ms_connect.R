@@ -149,7 +149,7 @@ get_microsoft365_token <- function(scope,
       return(NULL)
     })
   }
-  if (isTRUE(error_on_fail) && !is.null(pkg_env[[scope]])) {
+  if (isTRUE(error_on_fail) && is.null(pkg_env[[scope]])) {
     logins <- list_graph_logins()
     logins_txt <- ""
     for (lgn in logins) {

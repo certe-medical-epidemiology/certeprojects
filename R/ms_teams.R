@@ -30,7 +30,7 @@
 #' @export
 #' @examples 
 #' \dontrun{
-#' # PROJECT-RELATED --------------------------------------------------------
+#' # PROJECT-RELATED ------------------------------------------------------
 #' 
 #' # Project-related Teams function rely on existing Planner tasks.
 #' 
@@ -47,34 +47,21 @@
 #' teams_render_project_file("analysis.Rmd", "My Planner task")
 #' # this will put the output file in the same Teams folder as 'analysis.Rmd'
 #' 
-#' 
-#' # PROJECT-UNRELATED ------------------------------------------------------
-#' 
-#' teams_upload("myfile.docx", channel = "My Channel")
-#' teams_upload("myfile.docx", "my channel/my folder/test.docx")
-#' 
-#' # also supports data frames, they will be saved locally in a temp folder
-#' teams_upload(mtcars, channel = "My Channel")
-#' mtcars |> 
-#'   teams_upload(channel = "My Channel")
-#'   
-#'   
-#' # integrates with department projects:
-#' 
-#' # upload "myfile.docx" from the project folder of p123 to "My Channel":
-#' teams_upload("myfile.docx", channel = "My Channel", card_number = 123)
-#' # download "myfile.docx" from "My Channel" to the project folder of p123:
-#' teams_download("myfile.docx", channel = "My Channel", card_number = 123)
-#' teams_download("mychannel/myfile.docx", card_number = 123)
-#' 
-#' # direct import from Teams requires the 'certetoolbox' package
-#' x <- teams_import("mychannel/myfile.docx")
-#' x <- teams_import("mychannel/myfile.docx", card_number = 123)
-#' x <- teams_import("myfile.docx", channel = "My Channel", card_number = 123)
-#' 
-#' # open a file in Excel Online
 #' teams_open("test.xlsx", "My Channel")
 #' teams_open("my channel/test.xlsx") # shorter version, tries to find channel
+#' 
+#' 
+#' # PROJECT-UNRELATED ----------------------------------------------------
+#' 
+#' # by not specifying a remote location, a file picker will show in the console:
+#' teams_download_file()
+#' teams_download_folder("MyTeamName/MyChannelName/MySubFolder/")
+#' 
+#' teams_upload_file("myfile.docx", full_teams_path = "MyTeamName/MyChannelName/MySubFolder/")
+#' 
+#' # also supports data frames, they will be saved as RDS
+#' mtcars |> 
+#'   teams_upload_file("MyTeamName/MyChannelName/MySubFolder/")
 #' }
 teams_projects_channel <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
                                    overwrite = FALSE,
@@ -321,6 +308,255 @@ teams_upload_project_file <- function(files,
 
 # OTHER FUNCTIONS -------------------------------------------------------------
 
+#' @param full_teams_path a full path in Teams, **including the Team name and the channel name**. Leave blank to use interactive mode, which allows file/folder picking from a list in the console.
+#' @param destination_dir a folder to download the file or folder to, defaults to the current working directory.
+#' @details The [teams_download_file()] and [teams_download_folder()] functions use [pick_teams_item()] to select a file or folder, after which they will be downloaded to the destination folder.
+#' @importFrom AzureGraph create_graph_login
+#' @rdname teams
+#' @export
+teams_download_file <- function(full_teams_path = NULL,
+                                account = connect_teams(),
+                                destination_dir = getwd(),
+                                overwrite = FALSE) {
+  item <- pick_teams_item(full_teams_path = full_teams_path,
+                          account = account,
+                          only_folders = FALSE)
+  if (is.null(item)) {
+    return(invisible())
+  }
+  token <- create_graph_login(token = account$token)
+  drive <- token$get_group(item$group_id)$get_drive()
+  message("Downloading file to ", destination_dir, "...", appendLF = FALSE)
+  drive$download_file(srcid = item$item_id,
+                      dest = paste0(destination_dir, "/", item$item_name),
+                      overwrite = overwrite)
+  message("OK.")
+}
+
+
+#' @param recursive download/upload all files within the folder
+#' @importFrom AzureGraph create_graph_login
+#' @rdname teams
+#' @export
+teams_download_folder <- function(full_teams_path = NULL,
+                                  account = connect_teams(),
+                                  destination_dir = getwd(),
+                                  recursive = TRUE,
+                                  overwrite = FALSE) {
+  item <- pick_teams_item(full_teams_path = full_teams_path,
+                          account = account,
+                          only_folders = TRUE)
+  if (is.null(item)) {
+    return(invisible())
+  }
+  token <- create_graph_login(token = account$token)
+  drive <- token$get_group(item$group_id)$get_drive()
+  message("Downloading folder to ", destination_dir, "...", appendLF = FALSE)
+  drive$download_folder(srcid = item$item_id,
+                        dest = paste0(destination_dir, "/", item$item_name),
+                        overwrite = overwrite,
+                        recursive = recursive)
+  message("OK.")
+}
+
+#' @param file_path local path of the file to upload
+#' @importFrom AzureGraph create_graph_login
+#' @details The [teams_upload_file()] and [teams_upload_folder()] functions use [pick_teams_item()] to select the destination folder on Teams. **Notice** that these upload functions have not `overwrite` argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.
+#' @rdname teams
+#' @export
+teams_upload_file <- function(file_path,
+                              full_teams_path = NULL,
+                              account = connect_teams()) {
+  item <- pick_teams_item(full_teams_path = full_teams_path,
+                          account = account,
+                          only_folders = TRUE)
+  if (is.null(item)) {
+    return(invisible())
+  }
+  token <- create_graph_login(token = account$token)
+  drive <- token$get_group(item$group_id)$get_drive()
+  folder <- drive$get_item(itemid = item$item_id)
+  message("Uploading file to ", item$full_path, "...", appendLF = FALSE)
+  folder$upload(src = file_path,
+                dest = basename(file_path),
+                recursive = FALSE,
+                parallel = FALSE)
+  message("OK.")
+}
+
+#' @param folder_path local path of the folder to upload
+#' @importFrom AzureGraph create_graph_login
+#' @rdname teams
+#' @export
+teams_upload_folder <- function(folder_path,
+                                full_teams_path = NULL,
+                                account = connect_teams(),
+                                recursive = TRUE) {
+  item <- pick_teams_item(full_teams_path = full_teams_path,
+                          account = account,
+                          only_folders = TRUE)
+  if (is.null(item)) {
+    return(invisible())
+  }
+  token <- create_graph_login(token = account$token)
+  drive <- token$get_group(item$group_id)$get_drive()
+  folder <- drive$get_item(itemid = item$item_id)
+  message("Uploading folder to ", item$full_path, "...", appendLF = FALSE)
+  folder$upload(src = folder_path,
+                dest = basename(folder_path),
+                recursive = recursive,
+                parallel = "parallel" %in% rownames(utils::installed.packages()))
+  message("OK.")
+}
+
+#' @importFrom certestyle format2 font_bold
+#' @importFrom AzureGraph create_graph_login
+#' @param only_folders only show folders, not files
+#' @details The [pick_teams_item()] function provides an interactive way to select a file in any Team, any channel. It returns a list with the `group_id`, `item_id`, `item_name` and `full_path` of the Team item.
+#' @rdname teams
+#' @export
+pick_teams_item <- function(full_teams_path = NULL,
+                            account = connect_teams(),
+                            only_folders = FALSE) {
+  if (!is_valid_teams(account)) {
+    stop("No valid Teams account")
+  }
+  
+  item_type <- ifelse(only_folders, "folder", "file")
+  
+  # non-interactive mode
+  if (!is.null(full_teams_path)) {
+    path_parts <- strsplit(full_teams_path, split = "/", fixed = TRUE)[[1]]
+    message("Retrieving Team '", path_parts[1], "'...", appendLF = FALSE)
+    login <- create_graph_login(token = account$token)
+    group <- login$get_group(name = path_parts[1])
+    drive <- group$get_drive()
+    item <- drive$get_item(paste0(path_parts[2:length(path_parts)], collapse = "/"))
+    message("OK.")
+    return(list(group_id = group$properties$id,
+                item_id = item$properties$id,
+                item_name = item$properties$name,
+                full_path = full_teams_path))
+  } else if (!interactive()) {
+    stop(tools::toTitleCase(item_type), " picking only works in interactive mode. Set `full_teams_path` in non-interactive mode")
+  }
+  
+  # interactive mode
+  message("Retrieving list of Teams within ", account$token$tenant, "...", appendLF = FALSE)
+  groups <- get_teams_groups_from_env(account)
+  groups_names <- sapply(groups, function(g) g$properties$displayName)
+  message("OK, n = ", length(groups), ".")
+  continue <- FALSE
+  while (!isTRUE(continue)) {
+    searchterm <- readline("Search for Team name, allows regex: ")
+    found_groups <- which(groups_names %like% searchterm)
+    if (length(found_groups) == 0) {
+      levensthein <- as.double(utils::adist(searchterm, groups_names, counts = FALSE, ignore.case = TRUE))
+      found_groups <- order(levensthein)[1]
+    }
+    continue <- utils::askYesNo(paste0("Found Team '", groups_names[found_groups[1]], "'. Continue?"))
+    if (is.na(continue)) {
+      # has chosen 'cancel'
+      return(invisible())
+    }
+  }
+  get_icon <- function(ff) {
+    case_when(ff$isdir ~ "🗂️",  # "📁",
+              ff$name %like% "xlsx?$" ~ "📊",
+              ff$name %like% "(docx?|pdf)$" ~ "📝",
+              ff$name %like% "pptx?$" ~ "📉",
+              ff$name %like% "csv$" ~ "🧾",
+              ff$name %like% "zip$" ~ "📦",
+              ff$name %like% "(jpe?g|bmp|png|gif)$" ~ "🖼️",
+              ff$name %like% "(eml|msg)$" ~ "✉️️",
+              TRUE ~ "📄")
+  }
+  format_filesize <- function(x) {
+    format2(structure(x, class = "object_size"), decimal.mark = ".")
+  }
+  message("Retrieving ", item_type, " list...", appendLF = FALSE)
+  group <- groups[[found_groups[1]]]
+  group_name <- groups_names[found_groups[1]]
+  drive <- group$get_drive()
+  files <- drive$list_files()
+  if (only_folders == TRUE) {
+    files <- files[which(files$isdir), ]
+  }
+  file_choices <- paste0(get_icon(files), " ",
+                         trimws(files$name),
+                         " (", format_filesize(files$size), ")")
+  message("OK.")
+  picked <- utils::menu(choices = file_choices,
+                        graphics = FALSE,
+                        title = font_bold(paste0("Choose a ", ifelse(!only_folders, "file or ", ""), "folder (0 to Cancel):")))
+  if (picked == 0) {
+    # has chosen Cancel
+    return(invisible())
+  }
+  item <- files[picked, ]
+  item_root <- item
+  dive_levels <- item$name
+  has_picked <- !item$isdir && !only_folders
+  
+  while (!has_picked) {
+    cat(font_bold("Current folder:\n\n💼 "), group_name, sep = "")
+    if (length(dive_levels) > 0) {
+      cat(paste0("\n", strrep("   ", seq_len(length(dive_levels))), "↳ ", dive_levels), "\n\n")
+    } else {
+      cat("\n\n")
+    }
+    item_parent <- item
+    searchpath <- paste0(dive_levels, collapse = "/")
+    files <- drive$list_files(searchpath)
+    files_total_size <- sum(files$size, na.rm = TRUE)
+    if (only_folders == TRUE) {
+      files <- files[which(files$isdir), ]
+    }
+    if (NROW(files) == 0) {
+      file_choices <- character(0)
+      files_total_size <- item$size
+    } else {
+      file_choices <- paste0(get_icon(files), " ",
+                             trimws(files$name),
+                             " (", format_filesize(files$size), ")")
+    }
+    if (only_folders == TRUE && length(dive_levels) > 0) {
+      file_choices <- c(file_choices, paste0("↪ Select this folder (", format_filesize(files_total_size), ")"))
+    }
+    if (searchpath != "") {
+      file_choices <- c(file_choices, "↩ Go back to previous folder...")
+    }
+    picked <- utils::menu(choices = file_choices,
+                          graphics = FALSE,
+                          title = font_bold(paste0("Choose a ", ifelse(!only_folders, "file or ", ""), "folder (0 to Cancel):")))
+    if (picked == 0) {
+      # has chosen Cancel
+      return(invisible())
+    } else if (file_choices[picked] == "↩ Go back to previous folder...") {
+      # return one level
+      dive_levels <- dive_levels[seq_len(length(dive_levels) - 1)]
+      if (item$id == item_parent$id) {
+        item_parent <- item_root
+      }
+    } else if (file_choices[picked] %like% "↪ Select this folder") {
+      if (item$id == item_parent$id) {
+        item_parent <- item_root
+      }
+      item <- item_parent
+      has_picked <- TRUE
+    } else {
+      item <- files[picked, ]
+      dive_levels <- c(dive_levels, item$name)
+      has_picked <- !item$isdir && !only_folders
+    }
+  }
+
+  list(group_id = group$properties$id,
+       item_id = item$id,
+       item_name = item$name,
+       full_path = paste0(group_name, "/", paste0(dive_levels, collapse = "/")))
+}
+
 #' @rdname teams
 #' @export
 teams_name <- function(account = connect_teams()) {
@@ -400,120 +636,120 @@ teams_send_message <- function(body,
   )
 }
 
-#' @param local_path file location on the local system, can also be a [data.frame] which will then be saved locally to the temp folder first
+# #' @param local_pah file location on the local system, can also be a [data.frame] which will then be saved locally to the temp folder first
+# #' @rdname teams
+# #' @export
+# teams_upload <- function(local_path,
+#                          teams_path = basename(local_path),
+#                          card_number = project_get_current_id(ask = FALSE),
+#                          channel = NULL,
+#                          account = connect_teams()) {
+#   if (!is_valid_teams(account)) {
+#     stop("No valid Teams account")
+#   }
+#   if (is.data.frame(local_path)) {
+#     message("Saving data set as RDS file to temporary location...", appendLF = FALSE)
+#     filename <- deparse(substitute(local_path))
+#     if (filename == ".") {
+#       filename <- paste0("data_", concat(sample(c(letters[seq_len(6)], 0:9), size = 8, replace = TRUE)))
+#     }
+#     tmp <- paste0(tempdir(), "/", filename, ".rds")
+#     saveRDS(object = local_path, file = tmp, compress = "xz")
+#     local_path <- tmp
+#     teams_path <- paste0(filename, ".rds")
+#     message("OK.")
+#   }
+#   if (!is.null(card_number)) {
+#     local_path <- project_set_file(filename = local_path, card_number = card_number)
+#   }
+#   if (!file.exists(local_path)) {
+#     stop("Path not found: ", local_path)
+#   }
+#   if (is.null(channel)) {
+#     # find channel based on teams path
+#     channel <- find_channel(path = teams_path, account = account)
+#     if (!is.na(channel) && teams_path %like% "[/]") {
+#       # a channel was found, so remove first part of name from teams_path
+#       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+#     } else if (is.na(channel)) {
+#       stop("No valid channel set")
+#     }
+#   }
+#   message("Uploading '", local_path,
+#           "' to channel '", channel,
+#           "' as '", teams_path, "'...", appendLF = FALSE)
+#   tryCatch({
+#     account$
+#       get_channel(channel)$
+#       upload_file(src = local_path,
+#                   dest = teams_path)
+#     message("OK.")
+#   }, error = function(e) message("ERROR.\n", e$message))
+#   
+#   # remove temp file
+#   try(unlink(tmp), silent = TRUE)
+# }
+
+# #' @inheritParams project_properties
+# #' @rdname teams 
+# #' @export
+# teams_download <- function(teams_path,
+#                            local_path = basename(teams_path),
+#                            card_number = project_get_current_id(ask = FALSE),
+#                            channel = NULL,
+#                            account = connect_teams()) {
+#   if (!is_valid_teams(account)) {
+#     stop("No valid Teams account")
+#   }
+#   if (is.null(channel)) {
+#     # find channel based on teams path
+#     channel <- find_channel(path = teams_path, account = account)
+#     if (!is.na(channel) && teams_path %like% "[/]") {
+#       # a channel was found, so remove first part of name from teams_path
+#       teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
+#     } else if (is.na(channel)) {
+#       stop("No valid channel set")
+#     }
+#   }
+#   if (!is.null(card_number)) {
+#     local_path <- project_set_file(filename = local_path, card_number = card_number)
+#   }
+#   message("Downloading Teams file '", teams_path,
+#           "' from channel '", channel,
+#           "' as '", local_path, "'...", appendLF = FALSE)
+#   tryCatch(
+#     account$
+#       get_channel(channel)$
+#       download_file(src = teams_path,
+#                     dest = local_path,
+#                     overwrite = TRUE),
+#     error = function(e) message("ERROR.\n", e$message))
+#   if (file.exists(local_path)) {
+#     message("OK.")
+#     return(invisible(local_path))
+#   } else {
+#     return(NULL)
+#   }
+# }
+
+# #' @inheritParams project_properties
+# #' @rdname teams 
+# #' @export
+# teams_import <- function(teams_path,
+#                          card_number = project_get_current_id(ask = FALSE),
+#                          channel = NULL,
+#                          account = connect_teams()) {
+#   suppressMessages(
+#     tempfile <- teams_download(teams_path = teams_path,
+#                                local_path = paste0(tempdir(), "/", basename(teams_path)),
+#                                card_number = card_number,
+#                                channel = channel,
+#                                account = account)
+#   )
+#   certetoolbox::import(tempfile)
+# }
+
 #' @param teams_path file location in Microsoft Teams, may also contain the channel name if `channel` is `NULL`, e.g., `teams_path = "channel name/test.xlsx"`
-#' @rdname teams
-#' @export
-teams_upload <- function(local_path,
-                         teams_path = basename(local_path),
-                         card_number = project_get_current_id(ask = FALSE),
-                         channel = NULL,
-                         account = connect_teams()) {
-  if (!is_valid_teams(account)) {
-    stop("No valid Teams account")
-  }
-  if (is.data.frame(local_path)) {
-    message("Saving data set as RDS file to temporary location...", appendLF = FALSE)
-    filename <- deparse(substitute(local_path))
-    if (filename == ".") {
-      filename <- paste0("data_", concat(sample(c(letters[seq_len(6)], 0:9), size = 8, replace = TRUE)))
-    }
-    tmp <- paste0(tempdir(), "/", filename, ".rds")
-    saveRDS(object = local_path, file = tmp, compress = "xz")
-    local_path <- tmp
-    teams_path <- paste0(filename, ".rds")
-    message("OK.")
-  }
-  if (!is.null(card_number)) {
-    local_path <- project_set_file(filename = local_path, card_number = card_number)
-  }
-  if (!file.exists(local_path)) {
-    stop("Path not found: ", local_path)
-  }
-  if (is.null(channel)) {
-    # find channel based on teams path
-    channel <- find_channel(path = teams_path, account = account)
-    if (!is.na(channel) && teams_path %like% "[/]") {
-      # a channel was found, so remove first part of name from teams_path
-      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
-    } else if (is.na(channel)) {
-      stop("No valid channel set")
-    }
-  }
-  message("Uploading '", local_path,
-          "' to channel '", channel,
-          "' as '", teams_path, "'...", appendLF = FALSE)
-  tryCatch({
-    account$
-      get_channel(channel)$
-      upload_file(src = local_path,
-                  dest = teams_path)
-    message("OK.")
-  }, error = function(e) message("ERROR.\n", e$message))
-  
-  # remove temp file
-  try(unlink(tmp), silent = TRUE)
-}
-
-#' @inheritParams project_properties
-#' @rdname teams 
-#' @export
-teams_download <- function(teams_path,
-                           local_path = basename(teams_path),
-                           card_number = project_get_current_id(ask = FALSE),
-                           channel = NULL,
-                           account = connect_teams()) {
-  if (!is_valid_teams(account)) {
-    stop("No valid Teams account")
-  }
-  if (is.null(channel)) {
-    # find channel based on teams path
-    channel <- find_channel(path = teams_path, account = account)
-    if (!is.na(channel) && teams_path %like% "[/]") {
-      # a channel was found, so remove first part of name from teams_path
-      teams_path <- gsub("^(.*?)/(.*)", "\\2", teams_path)
-    } else if (is.na(channel)) {
-      stop("No valid channel set")
-    }
-  }
-  if (!is.null(card_number)) {
-    local_path <- project_set_file(filename = local_path, card_number = card_number)
-  }
-  message("Downloading Teams file '", teams_path,
-          "' from channel '", channel,
-          "' as '", local_path, "'...", appendLF = FALSE)
-  tryCatch(
-    account$
-      get_channel(channel)$
-      download_file(src = teams_path,
-                    dest = local_path,
-                    overwrite = TRUE),
-    error = function(e) message("ERROR.\n", e$message))
-  if (file.exists(local_path)) {
-    message("OK.")
-    return(invisible(local_path))
-  } else {
-    return(NULL)
-  }
-}
-
-#' @inheritParams project_properties
-#' @rdname teams 
-#' @export
-teams_import <- function(teams_path,
-                         card_number = project_get_current_id(ask = FALSE),
-                         channel = NULL,
-                         account = connect_teams()) {
-  suppressMessages(
-    tempfile <- teams_download(teams_path = teams_path,
-                               local_path = paste0(tempdir(), "/", basename(teams_path)),
-                               card_number = card_number,
-                               channel = channel,
-                               account = account)
-  )
-  certetoolbox::import(tempfile)
-}
-
 #' @rdname teams
 #' @export
 teams_open <- function(teams_path, channel = NULL, account = connect_teams()) {
@@ -634,4 +870,17 @@ try_with_retry <- function(expr) {
              Sys.sleep(2)
              expr
            })
+}
+
+#' @importFrom AzureGraph create_graph_login
+get_teams_groups_from_env <- function(account) {
+  if (is.null(pkg_env$teams_groups)) {
+    # check if callr found it, then use it
+    pkg_env$teams_groups <- tryCatch(pkg_env$callr$get_result()$teams_groups, error = function(e) NULL)
+    if (is.null(pkg_env$teams_groups)) {
+      login <- create_graph_login(token = account$token)
+      pkg_env$teams_groups <- login$list_groups()
+    }
+  }
+  return(pkg_env$teams_groups)
 }

@@ -11,13 +11,15 @@
 \alias{teams_render_project_file}
 \alias{teams_view_project_file}
 \alias{teams_upload_project_file}
+\alias{teams_download_file}
+\alias{teams_download_folder}
+\alias{teams_upload_file}
+\alias{teams_upload_folder}
+\alias{pick_teams_item}
 \alias{teams_name}
 \alias{teams_channels_list}
 \alias{teams_view_sharepoint}
 \alias{teams_send_message}
-\alias{teams_upload}
-\alias{teams_download}
-\alias{teams_import}
 \alias{teams_open}
 \alias{teams_get_link}
 \title{Connect to Microsoft Teams via Microsoft 365}
@@ -84,6 +86,36 @@ teams_upload_project_file(
   planner = connect_planner()
 )
 
+teams_download_file(
+  full_teams_path = NULL,
+  account = connect_teams(),
+  destination_dir = getwd(),
+  overwrite = FALSE
+)
+
+teams_download_folder(
+  full_teams_path = NULL,
+  account = connect_teams(),
+  destination_dir = getwd(),
+  recursive = TRUE,
+  overwrite = FALSE
+)
+
+teams_upload_file(file_path, full_teams_path = NULL, account = connect_teams())
+
+teams_upload_folder(
+  folder_path,
+  full_teams_path = NULL,
+  account = connect_teams(),
+  recursive = TRUE
+)
+
+pick_teams_item(
+  full_teams_path = NULL,
+  account = connect_teams(),
+  only_folders = FALSE
+)
+
 teams_name(account = connect_teams())
 
 teams_channels_list(account = connect_teams(), plain = TRUE)
@@ -95,29 +127,6 @@ teams_send_message(
   channel,
   content_type = c("text", "html"),
   attachments = NULL,
-  account = connect_teams()
-)
-
-teams_upload(
-  local_path,
-  teams_path = basename(local_path),
-  card_number = project_get_current_id(ask = FALSE),
-  channel = NULL,
-  account = connect_teams()
-)
-
-teams_download(
-  teams_path,
-  local_path = basename(teams_path),
-  card_number = project_get_current_id(ask = FALSE),
-  channel = NULL,
-  account = connect_teams()
-)
-
-teams_import(
-  teams_path,
-  card_number = project_get_current_id(ask = FALSE),
-  channel = NULL,
   account = connect_teams()
 )
 
@@ -155,6 +164,18 @@ teams_get_link(
 
 \item{files}{the files to upload}
 
+\item{full_teams_path}{a full path in Teams, \strong{including the Team name and the channel name}. Leave blank to use interactive mode, which allows file/folder picking from a list in the console.}
+
+\item{destination_dir}{a folder to download the file or folder to, defaults to the current working directory.}
+
+\item{recursive}{download/upload all files within the folder}
+
+\item{file_path}{local path of the file to upload}
+
+\item{folder_path}{local path of the folder to upload}
+
+\item{only_folders}{only show folders, not files}
+
 \item{plain}{return as plain names, not as \code{Azure} objects}
 
 \item{body}{text of the message}
@@ -163,11 +184,7 @@ teams_get_link(
 
 \item{attachments}{vector of file locations of attachments to add to the message}
 
-\item{local_path}{file location on the local system, can also be a \link{data.frame} which will then be saved locally to the temp folder first}
-
 \item{teams_path}{file location in Microsoft Teams, may also contain the channel name if \code{channel} is \code{NULL}, e.g., \code{teams_path = "channel name/test.xlsx"}}
-
-\item{card_number}{Planner card number}
 
 \item{share_type}{type of share, must be \code{"view"} (default) or \code{"edit"}}
 
@@ -190,11 +207,17 @@ The \code{\link[=teams_download_project_file]{teams_download_project_file()}} fu
 
 The \code{\link[=teams_render_project_file]{teams_render_project_file()}} function allows to render a Teams file. It downloads the Teams file using \code{\link[=teams_download_project_file]{teams_download_project_file()}}, runs the rendering function set in \code{fun}, and uploads the resulting output file back to Teams using the same file name a \code{file}, but with the new file extension (such as pdf, html, or docx). It \strong{invisibly returns} the temporary local file location, so that the output of \code{\link[=teams_render_project_file]{teams_render_project_file()}} can be given to e.g. \code{\link[certemail:mail]{certemail::mail()}} as an attachment.
 
+The \code{\link[=teams_download_file]{teams_download_file()}} and \code{\link[=teams_download_folder]{teams_download_folder()}} functions use \code{\link[=pick_teams_item]{pick_teams_item()}} to select a file or folder, after which they will be downloaded to the destination folder.
+
+The \code{\link[=teams_upload_file]{teams_upload_file()}} and \code{\link[=teams_upload_folder]{teams_upload_folder()}} functions use \code{\link[=pick_teams_item]{pick_teams_item()}} to select the destination folder on Teams. \strong{Notice} that these upload functions have not \code{overwrite} argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.
+
+The \code{\link[=pick_teams_item]{pick_teams_item()}} function provides an interactive way to select a file in any Team, any channel. It returns a list with the \code{group_id}, \code{item_id}, \code{item_name} and \code{full_path} of the Team item.
+
 \code{\link[=teams_send_message]{teams_send_message()}} can also take a \link{data.frame}, which will be converted to HTML with \link[certestyle:plain_html_table]{plain_html_table()}. If the input is a vector length > 1, the input will be collapsed with linebreaks.
 }
 \examples{
 \dontrun{
-# PROJECT-RELATED --------------------------------------------------------
+# PROJECT-RELATED ------------------------------------------------------
 
 # Project-related Teams function rely on existing Planner tasks.
 
@@ -211,33 +234,20 @@ teams_upload_project_file("analysis.Rmd", "My Planner task")
 teams_render_project_file("analysis.Rmd", "My Planner task")
 # this will put the output file in the same Teams folder as 'analysis.Rmd'
 
-
-# PROJECT-UNRELATED ------------------------------------------------------
-
-teams_upload("myfile.docx", channel = "My Channel")
-teams_upload("myfile.docx", "my channel/my folder/test.docx")
-
-# also supports data frames, they will be saved locally in a temp folder
-teams_upload(mtcars, channel = "My Channel")
-mtcars |> 
-  teams_upload(channel = "My Channel")
-  
-  
-# integrates with department projects:
-
-# upload "myfile.docx" from the project folder of p123 to "My Channel":
-teams_upload("myfile.docx", channel = "My Channel", card_number = 123)
-# download "myfile.docx" from "My Channel" to the project folder of p123:
-teams_download("myfile.docx", channel = "My Channel", card_number = 123)
-teams_download("mychannel/myfile.docx", card_number = 123)
-
-# direct import from Teams requires the 'certetoolbox' package
-x <- teams_import("mychannel/myfile.docx")
-x <- teams_import("mychannel/myfile.docx", card_number = 123)
-x <- teams_import("myfile.docx", channel = "My Channel", card_number = 123)
-
-# open a file in Excel Online
 teams_open("test.xlsx", "My Channel")
 teams_open("my channel/test.xlsx") # shorter version, tries to find channel
+
+
+# PROJECT-UNRELATED ----------------------------------------------------
+
+# by not specifying a remote location, a file picker will show in the console:
+teams_download_file()
+teams_download_folder("MyTeamName/MyChannelName/MySubFolder/")
+
+teams_upload_file("myfile.docx", full_teams_path = "MyTeamName/MyChannelName/MySubFolder/")
+
+# also supports data frames, they will be saved as RDS
+mtcars |> 
+  teams_upload_file("MyTeamName/MyChannelName/MySubFolder/")
 }
 }

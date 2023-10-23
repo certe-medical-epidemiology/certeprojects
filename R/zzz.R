@@ -18,6 +18,7 @@
 # ===================================================================== #
 
 #' @importFrom callr r_bg
+#' @importFrom AzureGraph create_graph_login
 .onAttach <- function(...) {
   # connect on attach with a background R process
   # this will make sure that using Outlook, Planner, or Teams can be done instantly
@@ -29,6 +30,8 @@
                             error = function(e) NULL),
          teams = tryCatch(certeprojects::connect_teams(),
                           error = function(e) NULL),
+         teams_groups = tryCatch(AzureGraph::create_graph_login(token = certeprojects::connect_teams()$token)$list_groups(),
+                                 error = function(e) NULL),
          teams_project_folder = tryCatch(certeprojects::teams_projects_channel(),
                                          error = function(e) NULL))),
     silent = TRUE)

@@ -318,6 +318,9 @@ teams_download_file <- function(full_teams_path = NULL,
                                 account = connect_teams(),
                                 destination_dir = getwd(),
                                 overwrite = FALSE) {
+  if (!is.null(full_teams_path) && tools::file_ext(full_teams_path) == "") {
+    stop("'", full_teams_path, "' is not a file, but a folder")
+  }
   item <- pick_teams_item(full_teams_path = full_teams_path,
                           account = account,
                           only_folders = FALSE)
@@ -325,12 +328,14 @@ teams_download_file <- function(full_teams_path = NULL,
     return(invisible())
   }
   token <- create_graph_login(token = account$token)
-  drive <- token$get_group(item$group_id)$get_drive()
-  message("Downloading file to ", destination_dir, "...", appendLF = FALSE)
-  drive$download_file(srcid = item$item_id,
-                      dest = paste0(destination_dir, "/", item$item_name),
-                      overwrite = overwrite)
+  message("Downloading file '", item$item_name, "' to ", destination_dir, "...", appendLF = FALSE)
+  drive_item <- picked_teams_item_2_drive_item(token = token, item = item)
+  drive_item$download(dest = paste0(destination_dir, "/", item$item_name),
+                      overwrite = overwrite,
+                      recursive = FALSE,
+                      parallel = FALSE)
   message("OK.")
+  return(invisible(paste0(destination_dir, "/", item$item_name)))
 }
 
 
@@ -343,6 +348,9 @@ teams_download_folder <- function(full_teams_path = NULL,
                                   destination_dir = getwd(),
                                   recursive = TRUE,
                                   overwrite = FALSE) {
+  if (!is.null(full_teams_path) && tools::file_ext(full_teams_path) != "") {
+    stop("'", full_teams_path, "' is not a folder, but a file")
+  }
   item <- pick_teams_item(full_teams_path = full_teams_path,
                           account = account,
                           only_folders = TRUE)
@@ -350,37 +358,70 @@ teams_download_folder <- function(full_teams_path = NULL,
     return(invisible())
   }
   token <- create_graph_login(token = account$token)
-  drive <- token$get_group(item$group_id)$get_drive()
-  message("Downloading folder to ", destination_dir, "...", appendLF = FALSE)
-  drive$download_folder(srcid = item$item_id,
-                        dest = paste0(destination_dir, "/", item$item_name),
-                        overwrite = overwrite,
-                        recursive = recursive)
+  message("Downloading folder '", item$item_name, "' to ", destination_dir, "...", appendLF = FALSE)
+  drive_item <- picked_teams_item_2_drive_item(token = token, item = item)
+  drive_item$download(dest = paste0(destination_dir, "/", item$item_name),
+                      overwrite = overwrite,
+                      recursive = recursive,
+                      parallel = "parallel" %in% rownames(utils::installed.packages()))
   message("OK.")
+  return(invisible(paste0(destination_dir, "/", item$item_name)))
 }
 
-#' @param file_path local path of the file to upload
+#' @param file_path local path of the file to upload. Can also be an \R object to save it as RDS to Teams.
+#' @param file_name a file name to use if `file_path` is an \R object
+#' @importFrom certestyle format2
 #' @importFrom AzureGraph create_graph_login
 #' @details The [teams_upload_file()] and [teams_upload_folder()] functions use [pick_teams_item()] to select the destination folder on Teams. **Notice** that these upload functions have not `overwrite` argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.
 #' @rdname teams
 #' @export
 teams_upload_file <- function(file_path,
                               full_teams_path = NULL,
-                              account = connect_teams()) {
+                              account = connect_teams(),
+                              file_name = NULL) {
+  if (is.character(file_path) && tools::file_ext(file_path) == "") {
+    stop("'", file_path, "' is not a file, but a folder")
+  }
+  if (!is.null(full_teams_path) && tools::file_ext(full_teams_path) != "") {
+    stop("'", full_teams_path, "' is not a folder, but a file")
+  }
   item <- pick_teams_item(full_teams_path = full_teams_path,
                           account = account,
                           only_folders = TRUE)
   if (is.null(item)) {
     return(invisible())
   }
+  
+  # save R object if given as file_path
+  if (!is.character(file_path) || (exists(file_path) && !file.exists(file_path))) {
+    if (!is.null(file_name)) {
+      nm <- basename(tools::file_path_sans_ext(file_name))
+    } else {
+      nm <- deparse(substitute(file_path))
+      if (nm == ".") {
+        nm <- paste0("r_object_", format2(Sys.time(), "hhmmss"))
+      }
+    }
+    nm_new <- trimws(gsub("[^a-zA-Z0-9_]+", " ", nm))
+    if (nm %unlike% "^[a-zA-Z0-9_ ]+$") {
+      warning("Setting file name to '", nm_new, ".rds' - Preferably set `file_name` using valid file name characters.", immediate. = TRUE)
+    }
+    # save to temp dir
+    tmp <- paste0(tempdir(), "/", nm_new, ".rds")
+    message("Saving R object to ", tmp, "...", appendLF = FALSE)
+    saveRDS(file_path, tmp, version = 2, compress = "xz")
+    message("OK (", format2(structure(file.size(tmp), class = "object_size"), decimal.mark = "."), ").")
+    file_path <- tmp
+  }
+  
+  # upload the file
   token <- create_graph_login(token = account$token)
-  drive <- token$get_group(item$group_id)$get_drive()
-  folder <- drive$get_item(itemid = item$item_id)
-  message("Uploading file to ", item$full_path, "...", appendLF = FALSE)
-  folder$upload(src = file_path,
-                dest = basename(file_path),
-                recursive = FALSE,
-                parallel = FALSE)
+  message("Uploading file '", basename(file_path), "' to ", item$full_path, "...", appendLF = FALSE)
+  drive_item <- picked_teams_item_2_drive_item(token = token, item = item)
+  drive_item$upload(src = file_path,
+                    dest = basename(file_path),
+                    recursive = FALSE,
+                    parallel = FALSE)
   message("OK.")
 }
 
@@ -392,6 +433,12 @@ teams_upload_folder <- function(folder_path,
                                 full_teams_path = NULL,
                                 account = connect_teams(),
                                 recursive = TRUE) {
+  if (tools::file_ext(folder_path) != "") {
+    stop("'", folder_path, "' is not a folder, but a file")
+  }
+  if (!is.null(full_teams_path) && tools::file_ext(full_teams_path) != "") {
+    stop("'", full_teams_path, "' is not a folder, but a file")
+  }
   item <- pick_teams_item(full_teams_path = full_teams_path,
                           account = account,
                           only_folders = TRUE)
@@ -399,20 +446,19 @@ teams_upload_folder <- function(folder_path,
     return(invisible())
   }
   token <- create_graph_login(token = account$token)
-  drive <- token$get_group(item$group_id)$get_drive()
-  folder <- drive$get_item(itemid = item$item_id)
-  message("Uploading folder to ", item$full_path, "...", appendLF = FALSE)
-  folder$upload(src = folder_path,
-                dest = basename(folder_path),
-                recursive = recursive,
-                parallel = "parallel" %in% rownames(utils::installed.packages()))
+  message("Uploading folder '", basename(folder_path), "' to ", item$full_path, "...", appendLF = FALSE)
+  drive_item <- picked_teams_item_2_drive_item(token = token, item = item)
+  drive_item$upload(src = folder_path,
+                    dest = basename(folder_path),
+                    recursive = recursive,
+                    parallel = "parallel" %in% rownames(utils::installed.packages()))
   message("OK.")
 }
 
 #' @importFrom certestyle format2 font_bold
 #' @importFrom AzureGraph create_graph_login
 #' @param only_folders only show folders, not files
-#' @details The [pick_teams_item()] function provides an interactive way to select a file in any Team, any channel. It returns a list with the `group_id`, `item_id`, `item_name` and `full_path` of the Team item.
+#' @details The [pick_teams_item()] function provides an interactive way to select a file in any Team, any channel. It returns a list with the properties `group_id`, `is_private`, `channel_id`, `item_id`, `item_name`, `item_path`, and `full_path` of the Team item.
 #' @rdname teams
 #' @export
 pick_teams_item <- function(full_teams_path = NULL,
@@ -431,12 +477,31 @@ pick_teams_item <- function(full_teams_path = NULL,
     login <- create_graph_login(token = account$token)
     group <- login$get_group(name = path_parts[1])
     drive <- group$get_drive()
-    item <- drive$get_item(paste0(path_parts[2:length(path_parts)], collapse = "/"))
+    if (path_parts[2] %in% drive$list_files()$name) {
+      # not a private channel
+      is_private <- FALSE
+      item <- drive$get_item(paste0(path_parts[-1], collapse = "/"))
+    } else {
+      # a private channel
+      is_private <- TRUE
+      message("OK.")
+      message("Retrieving private channel '", path_parts[2], "'...", appendLF = FALSE)
+      team <- group$get_team()
+      channel <- team$get_channel(channel_name = path_parts[2])
+      folder <- channel$get_folder()
+      item <- folder$get_item(paste0(path_parts[-c(1, 2)], collapse = "/"))
+    }
     message("OK.")
     return(list(group_id = group$properties$id,
+                is_private = is_private,
+                channel_id = ifelse(is_private, channel$properties$id, NA_character_),
                 item_id = item$properties$id,
                 item_name = item$properties$name,
+                item_path = ifelse(is_private,
+                                   paste0(path_parts[-c(1, 2)], collapse = "/"),
+                                   paste0(path_parts[-1], collapse = "/")),
                 full_path = full_teams_path))
+    
   } else if (!interactive()) {
     stop(tools::toTitleCase(item_type), " picking only works in interactive mode. Set `full_teams_path` in non-interactive mode")
   }
@@ -444,11 +509,17 @@ pick_teams_item <- function(full_teams_path = NULL,
   # interactive mode
   message("Retrieving list of Teams within ", account$token$tenant, "...", appendLF = FALSE)
   groups <- get_teams_groups_from_env(account)
-  groups_names <- sapply(groups, function(g) g$properties$displayName)
+  groups <- groups[which(vapply(FUN.VALUE = logical(1), groups, function(g) !is.null(g$properties$visibility)))]
+  groups_names <- vapply(FUN.VALUE = character(1), groups, function(g) g$properties$displayName)
   message("OK, n = ", length(groups), ".")
   continue <- FALSE
   while (!isTRUE(continue)) {
-    searchterm <- readline("Search for Team name, allows regex: ")
+    searchterm <- readline("Search for Team name, allows regex - leave blank for 'Medische Epidemiologie': ")
+    if (trimws(searchterm) == "") {
+      found_groups <- which(groups_names %like% "Medische Epidemiologie")
+      continue <- TRUE
+      next
+    }
     found_groups <- which(groups_names %like% searchterm)
     if (length(found_groups) == 0) {
       levensthein <- as.double(utils::adist(searchterm, groups_names, counts = FALSE, ignore.case = TRUE))
@@ -461,42 +532,64 @@ pick_teams_item <- function(full_teams_path = NULL,
     }
   }
   get_icon <- function(ff) {
-    case_when(ff$isdir ~ "\U1F5C2",  # Folder
-              ff$name %like% "xlsx?$" ~ "\U1F4CA",  # Spreadsheet
-              ff$name %like% "(docx?|pdf)$" ~ "\U1F4DD",  # Document
-              ff$name %like% "pptx?$" ~ "\U1F4C9",  # Presentation
-              ff$name %like% "csv$" ~ "\U1F9FE",  # Receipt
-              ff$name %like% "zip$" ~ "\U1F4E6",  # Package
-              ff$name %like% "(jpe?g|bmp|png|gif)$" ~ "\U1F5BC",  # Image
-              ff$name %like% "(eml|msg)$" ~ "\U2709\UFE0F",  # Envelope with variant selector
-              TRUE ~ "\U1F4C4")  # Document
+    case_when(ff$isdir ~ "\U1F5C2", # Folder
+              ff$name %like% "xlsx?$" ~ "\U1F4CA", # Spreadsheet
+              ff$name %like% "(docx?|pdf)$" ~ "\U1F4DD", # Document
+              ff$name %like% "pptx?$" ~ "\U1F4C9", # Presentation
+              ff$name %like% "csv$" ~ "\U1F9FE", # Receipt
+              ff$name %like% "zip$" ~ "\U1F4E6", # Package
+              ff$name %like% "(jpe?g|bmp|png|gif)$" ~ "\U1F5BC", # Image
+              ff$name %like% "(eml|msg)$" ~ "\U2709\UFE0F", # Envelope with variant selector
+              TRUE ~ "\U1F4C4") # Document
   }
   format_filesize <- function(x) {
-    format2(structure(x, class = "object_size"), decimal.mark = ".")
+    out <- format2(structure(x, class = "object_size"), decimal.mark = ".")
+    out[is.na(x)] <- "\U1F512" # Padlock
+    out
   }
   message("Retrieving ", item_type, " list...", appendLF = FALSE)
   group <- groups[[found_groups[1]]]
   group_name <- groups_names[found_groups[1]]
   drive <- group$get_drive()
   files <- drive$list_files()
-  if (only_folders == TRUE) {
-    files <- files[which(files$isdir), ]
+  files <- files[which(files$isdir), ] # in channel view, only show folders
+  files$private <- FALSE
+  team <- group$get_team()
+  private_channels <- try_with_retry(team$list_channels())
+  private_channels <- private_channels[which(vapply(FUN.VALUE = character(1), private_channels, function(cn) cn$properties$membershipType) == "private")]
+  
+  if (length(private_channels) > 0) {
+    private_files <- data.frame(name = vapply(FUN.VALUE = character(1), private_channels, function(cn) cn$properties$displayName),
+                                size = NA_real_,
+                                isdir = TRUE,
+                                id = vapply(FUN.VALUE = character(1), private_channels, function(cn) cn$properties$id),
+                                private = TRUE)
+    files <- rbind(files, private_files)
   }
-  file_choices <- paste0(get_icon(files), " ",
-                         trimws(files$name),
-                         " (", format_filesize(files$size), ")")
+  # order on name
+  files_root <- files[order(tolower(trimws(gsub("[^a-zA-Z0-9 /.-]", "", files$name)))), ]
+  file_choices_root <- paste0(font_bold(trimws(files_root$name), collapse = NULL),
+                              " (", format_filesize(files_root$size), ")")
   message("OK.")
-  picked <- utils::menu(choices = file_choices,
+  cat(font_bold("Current folder:\n\n\U1F465 "), group_name, "\n\n", sep = "")
+  picked <- utils::menu(choices = file_choices_root,
                         graphics = FALSE,
-                        title = font_bold(paste0("Choose a ", ifelse(!only_folders, "file or ", ""), "folder (0 to Cancel):")))
+                        title = font_bold(paste0("Choose a channel (0 to Cancel):")))
   if (picked == 0) {
     # has chosen Cancel
     return(invisible())
   }
-  item <- files[picked, ]
-  item_root <- item
-  dive_levels <- item$name
-  has_picked <- !item$isdir && !only_folders
+  item_root <- files_root[picked, ]
+  item <- item_root
+  if (item_root$private) {
+    is_private <- TRUE
+    channel <- team$get_channel(channel_id = item_root$id)
+  } else {
+    is_private <- FALSE
+    channel <- NA
+  }
+  dive_levels <- item_root$name
+  has_picked <- !item_root$isdir
   
   while (!has_picked) {
     cat(font_bold("Current folder:\n\n\U1F465 "), group_name, sep = "")
@@ -506,29 +599,49 @@ pick_teams_item <- function(full_teams_path = NULL,
       cat("\n\n")
     }
     item_parent <- item
-    searchpath <- paste0(dive_levels, collapse = "/")
-    files <- drive$list_files(searchpath)
-    files_total_size <- sum(files$size, na.rm = TRUE)
-    if (only_folders == TRUE) {
-      files <- files[which(files$isdir), ]
-    }
-    if (NROW(files) == 0) {
-      file_choices <- character(0)
-      files_total_size <- item$size
+    if (length(dive_levels) == 0) {
+      # we are in the root again
+      is_root <- TRUE
+      files <- files_root
+      file_choices <- file_choices_root
+      searchpath <- ""
+      files_total_size <- sum(files$size, na.rm = TRUE)
     } else {
-      file_choices <- paste0(get_icon(files), " ",
-                             trimws(files$name),
-                             " (", format_filesize(files$size), ")")
+      # we are still in some subfolder
+      is_root <- FALSE
+      if (item$private == TRUE) {
+        searchpath <- paste0(dive_levels[-1], collapse = "/")
+        files <- channel$list_files(searchpath)
+      } else {
+        searchpath <- paste0(dive_levels, collapse = "/")
+        files <- drive$list_files(searchpath)
+      }
+      files <- files[order(!files$isdir, tolower(trimws(gsub("[^a-zA-Z0-9 /.-]", "", files$name)))), ]
+      files$private <- item$private
+      files_total_size <- sum(files$size, na.rm = TRUE)
+      if (only_folders == TRUE) {
+        files <- files[which(files$isdir), ]
+      }
+      if (NROW(files) == 0) {
+        file_choices <- character(0)
+        files_total_size <- item$size
+      } else {
+        file_choices <- paste0(get_icon(files), " ",
+                               trimws(files$name),
+                               " (", format_filesize(files$size), ")")
+      }
     }
     if (only_folders == TRUE && length(dive_levels) > 0) {
       file_choices <- c(file_choices, paste0("\U21AA Select this folder (", format_filesize(files_total_size), ")"))
     }
-    if (searchpath != "") {
+    if (length(dive_levels) > 0) {
       file_choices <- c(file_choices, "\U21A9 Go back to previous folder...")
     }
     picked <- utils::menu(choices = file_choices,
                           graphics = FALSE,
-                          title = font_bold(paste0("Choose a ", ifelse(!only_folders, "file or ", ""), "folder (0 to Cancel):")))
+                          title = font_bold(paste0("Choose a ",
+                                                   ifelse(is_root, "channel",
+                                                          ifelse(only_folders, "folder", "file or folder ")), " (0 to Cancel):")))
     if (picked == 0) {
       # has chosen Cancel
       return(invisible())
@@ -538,10 +651,11 @@ pick_teams_item <- function(full_teams_path = NULL,
       if (item$id == item_parent$id) {
         item_parent <- item_root
       }
+      has_picked <- FALSE
     } else if (file_choices[picked] %like% "\U21AA Select this folder") {
-      if (item$id == item_parent$id) {
-        item_parent <- item_root
-      }
+      # if (item$id == item_parent$id) {
+      #   item_parent <- item_root
+      # }
       item <- item_parent
       has_picked <- TRUE
     } else {
@@ -550,10 +664,13 @@ pick_teams_item <- function(full_teams_path = NULL,
       has_picked <- !item$isdir && !only_folders
     }
   }
-
+  
   list(group_id = group$properties$id,
+       is_private = item$private,
+       channel_id = ifelse(item$private, channel$properties$id, NA_character_),
        item_id = item$id,
        item_name = item$name,
+       item_path = ifelse(item$private,  paste0(dive_levels[-1], collapse = "/"), paste0(dive_levels, collapse = "/")),
        full_path = paste0(group_name, "/", paste0(dive_levels, collapse = "/")))
 }
 
@@ -883,4 +1000,17 @@ get_teams_groups_from_env <- function(account) {
     }
   }
   return(pkg_env$teams_groups)
+}
+
+picked_teams_item_2_drive_item <- function(token, item) {
+  if (item$is_private) {
+    team <- token$get_team(item$group_id)
+    channel <- team$get_channel(channel_id = item$channel_id)
+    folder <- channel$get_folder()
+    return(folder$get_item(item$item_path))
+  } else {
+    group <- token$get_group(item$group_id)
+    drive <- group$get_drive()
+    return(drive$get_item(itemid = item$item_id))
+  }
 }

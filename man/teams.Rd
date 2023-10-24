@@ -101,7 +101,12 @@ teams_download_folder(
   overwrite = FALSE
 )
 
-teams_upload_file(file_path, full_teams_path = NULL, account = connect_teams())
+teams_upload_file(
+  file_path,
+  full_teams_path = NULL,
+  account = connect_teams(),
+  file_name = NULL
+)
 
 teams_upload_folder(
   folder_path,
@@ -170,7 +175,9 @@ teams_get_link(
 
 \item{recursive}{download/upload all files within the folder}
 
-\item{file_path}{local path of the file to upload}
+\item{file_path}{local path of the file to upload. Can also be an \R object to save it as RDS to Teams.}
+
+\item{file_name}{a file name to use if \code{file_path} is an \R object}
 
 \item{folder_path}{local path of the folder to upload}
 
@@ -211,7 +218,7 @@ The \code{\link[=teams_download_file]{teams_download_file()}} and \code{\link[=t
 
 The \code{\link[=teams_upload_file]{teams_upload_file()}} and \code{\link[=teams_upload_folder]{teams_upload_folder()}} functions use \code{\link[=pick_teams_item]{pick_teams_item()}} to select the destination folder on Teams. \strong{Notice} that these upload functions have not \code{overwrite} argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.
 
-The \code{\link[=pick_teams_item]{pick_teams_item()}} function provides an interactive way to select a file in any Team, any channel. It returns a list with the \code{group_id}, \code{item_id}, \code{item_name} and \code{full_path} of the Team item.
+The \code{\link[=pick_teams_item]{pick_teams_item()}} function provides an interactive way to select a file in any Team, any channel. It returns a list with the properties \code{group_id}, \code{is_private}, \code{channel_id}, \code{item_id}, \code{item_name}, \code{item_path}, and \code{full_path} of the Team item.
 
 \code{\link[=teams_send_message]{teams_send_message()}} can also take a \link{data.frame}, which will be converted to HTML with \link[certestyle:plain_html_table]{plain_html_table()}. If the input is a vector length > 1, the input will be collapsed with linebreaks.
 }

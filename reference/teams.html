@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.15.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.15.2</span>
       </span>
     </div>
 
@@ -153,7 +153,12 @@
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">teams_upload_file</span><span class="op">(</span><span class="va">file_path</span>, full_teams_path <span class="op">=</span> <span class="cn">NULL</span>, account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">teams_upload_file</span><span class="op">(</span></span>
+<span>  <span class="va">file_path</span>,</span>
+<span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  file_name <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">teams_upload_folder</span><span class="op">(</span></span>
 <span>  <span class="va">folder_path</span>,</span>
@@ -253,7 +258,11 @@
 
 
 <dt>file_path</dt>
-<dd><p>local path of the file to upload</p></dd>
+<dd><p>local path of the file to upload. Can also be an <span style="R">R</span> object to save it as RDS to Teams.</p></dd>
+
+
+<dt>file_name</dt>
+<dd><p>a file name to use if <code>file_path</code> is an <span style="R">R</span> object</p></dd>
 
 
 <dt>folder_path</dt>
@@ -305,7 +314,7 @@
 <p>The <code>teams_render_project_file()</code> function allows to render a Teams file. It downloads the Teams file using <code>teams_download_project_file()</code>, runs the rendering function set in <code>fun</code>, and uploads the resulting output file back to Teams using the same file name a <code>file</code>, but with the new file extension (such as pdf, html, or docx). It <strong>invisibly returns</strong> the temporary local file location, so that the output of <code>teams_render_project_file()</code> can be given to e.g. <code>certemail::mail()</code> as an attachment.</p>
 <p>The <code>teams_download_file()</code> and <code>teams_download_folder()</code> functions use <code>pick_teams_item()</code> to select a file or folder, after which they will be downloaded to the destination folder.</p>
 <p>The <code>teams_upload_file()</code> and <code>teams_upload_folder()</code> functions use <code>pick_teams_item()</code> to select the destination folder on Teams. <strong>Notice</strong> that these upload functions have not <code>overwrite</code> argument - Microsoft365R does not support them since overwrite means that a new file version will be created on Teams.</p>
-<p>The <code>pick_teams_item()</code> function provides an interactive way to select a file in any Team, any channel. It returns a list with the <code>group_id</code>, <code>item_id</code>, <code>item_name</code> and <code>full_path</code> of the Team item.</p>
+<p>The <code>pick_teams_item()</code> function provides an interactive way to select a file in any Team, any channel. It returns a list with the properties <code>group_id</code>, <code>is_private</code>, <code>channel_id</code>, <code>item_id</code>, <code>item_name</code>, <code>item_path</code>, and <code>full_path</code> of the Team item.</p>
 <p><code>teams_send_message()</code> can also take a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>, which will be converted to HTML with <a href="https://certe-medical-epidemiology.github.io/certestyle/reference/plain_html_table.html" class="external-link">plain_html_table()</a>. If the input is a vector length &gt; 1, the input will be collapsed with linebreaks.</p>
     </div>
 

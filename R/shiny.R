@@ -19,7 +19,7 @@
 
 #' Add Project Using Shiny
 #' 
-#' This is a Shiny app to add a new project: it creates a project folder local [or in Teams][connect_teams()], generates the required Quarto or R Markdown or R files, and creates a [new task in Planner][connect_planner()]. These functions come with RStudio addins to quickly access existing projects.
+#' This is a Shiny app to add a new project: it creates a project folder locally [or in Teams][connect_teams()], generates the required Quarto or R Markdown or R file, and creates a [new task in Planner][connect_planner()]. These functions come with RStudio addins to quickly access existing projects.
 #' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
 #' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
@@ -88,7 +88,7 @@ project_add <- function(planner = connect_planner(),
                     label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i style='font-weight:normal !important;'>(standaard 'Dringend' in het weekend)</i>", ""))),
                     choices = c("Laag", "Gemiddeld", "Belangrijk", "Dringend"), 
                     selected = ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7),
-                                      "Dringend", # default if card is created on weekend day
+                                      "Dringend", # default if project is created on weekend day
                                       "Gemiddeld")),
         dateInput("duedate",
                   label = HTML("Einddatum <i style='font-weight:normal !important;'>(standaard volgende week donderdag)</i>"),
@@ -357,9 +357,7 @@ project_add <- function(planner = connect_planner(),
                                   read_secret("projects.path"))
         }
         incProgress(1 / progress_items, detail = "Map aanmaken")
-        fullpath <- paste0(projects_path, "/",
-                           trimws(gsub("(\\|/|:|\\*|\\?|\"|\\|)+", " ", title)),
-                           ifelse(is.null(project_id), "", paste0(" - p", project_id)))
+        fullpath <- paste0(projects_path, "/", new_title)
         fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
         
         desc <- unlist(strsplit(description, "\n", fixed = TRUE))
@@ -454,7 +452,7 @@ project_add <- function(planner = connect_planner(),
                            "} else {",
                            paste0("  data_", project_id, " <- certedb_getmmb(dates = c(start, stop),"),
                            "                             where  = where(db))",
-                           paste0("  export_rds(data_", project_id, ', "data_', project_id, '", card_number = ', project_id, ')'),
+                           paste0("  export_rds(data_", project_id, ', "data_', project_id, '", project_number = ', project_id, ')'),
                            "}",
                            "```",
                            "",
@@ -481,7 +479,7 @@ project_add <- function(planner = connect_planner(),
                            "library(certedata)",
                            paste0("data_", project_id, " <- certedb_getmmb(dates = c(start, stop),"),
                            paste0(strrep(" ", nchar(project_id)), "                        where = where(db))"),
-                           paste0("export_rds(data_", project_id, ', "data_', project_id, '.rds", card_number = ', project_id, ")"),
+                           paste0("export_rds(data_", project_id, ', "data_', project_id, '.rds", project_number = ', project_id, ")"),
                            paste0("# data_", project_id, ' <- import_rds(project_get_file(".*rds$", ', project_id, '))'),
                            ""
           )

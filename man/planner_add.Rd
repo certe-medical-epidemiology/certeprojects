@@ -26,5 +26,5 @@ project_update(
 \item{current_task_id}{Project (p-)number of the project to update}
 }
 \description{
-This is a Shiny app to add a new project: it creates a project folder local \link[=connect_teams]{or in Teams}, generates the required Quarto or R Markdown or R files, and creates a \link[=connect_planner]{new task in Planner}. These functions come with RStudio addins to quickly access existing projects.
+This is a Shiny app to add a new project: it creates a project folder locally \link[=connect_teams]{or in Teams}, generates the required Quarto or R Markdown or R file, and creates a \link[=connect_planner]{new task in Planner}. These functions come with RStudio addins to quickly access existing projects.
 }

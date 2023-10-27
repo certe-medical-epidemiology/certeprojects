@@ -25,8 +25,8 @@ coverage:
 
 ignore:
   - "R/addins.R"
-  - "R/project_shiny.R"
-  - "R/ms_teams.R"
+  - "R/ms_connect.R"
   - "R/ms_planner.R"
-  - "R/ms_token.R"
+  - "R/ms_teams.R"
+  - "R/shiny.R"
   - "R/universal.R"

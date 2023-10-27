@@ -45,28 +45,9 @@ get_azure_property <- function(x, property) {
 }
 
 
-globalVariables(c(".",
-                  "checkItems",
-                  "closed",
-                  "data.text",
-                  "desc",
-                  "fullName",
-                  "id",
-                  "idCard",
-                  "idMembers",
-                  "idShort",
-                  "is_like",
+globalVariables(c("is_like",
                   "levenshtein_delta",
-                  "list.name",
-                  "memberCreator.fullName",
-                  "name",
-                  "name.card",
-                  "name.list",
-                  "shortLink",
-                  "shortUrl",
-                  "text",
-                  "title",
-                  "username"))
+                  "name"))
 
 count_lines <- function(x) {
   vapply(FUN.VALUE = integer(1),

@@ -16,32 +16,32 @@
 \usage{
 project_get_current_id(ask = NULL)
 
-project_identifier(card_number = project_get_current_id())
+project_identifier(project_number = project_get_current_id())
 
-project_get_folder(card_number = project_get_current_id())
+project_get_folder(project_number = project_get_current_id())
 
-project_get_folder_full(card_number = project_get_current_id())
+project_get_folder_full(project_number = project_get_current_id())
 
-project_get_title(card_number = project_get_current_id())
+project_get_title(project_number = project_get_current_id())
 
 project_get_file(
   filename,
-  card_number = project_get_current_id(),
+  project_number = project_get_current_id(),
   fixed = FALSE
 )
 
-project_set_file(filename, card_number = project_get_current_id())
+project_set_file(filename, project_number = project_get_current_id())
 
-project_set_folder(foldername, card_number = project_get_current_id())
+project_set_folder(foldername, project_number = project_get_current_id())
 
-project_open_analysis_file(card_number = project_get_current_id(ask = TRUE))
+project_open_analysis_file(project_number = project_get_current_id(ask = TRUE))
 
-project_open_folder(card_number = project_get_current_id(ask = TRUE))
+project_open_folder(project_number = project_get_current_id(ask = TRUE))
 }
 \arguments{
 \item{ask}{logical to indicate whether the project number should always be asked. The default, \code{NULL}, will show a popup in \link[=interactive]{interactive} \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current \link[=getwd]{working directory} to determine the project number.}
 
-\item{card_number}{Planner card number}
+\item{project_number}{Planner project number}
 
 \item{filename}{filename to set or get, case-insensitive, and can also be a \link[base:regex]{regular expression}}
 

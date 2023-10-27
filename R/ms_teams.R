@@ -758,7 +758,7 @@ teams_send_message <- function(body,
 # #' @export
 # teams_upload <- function(local_path,
 #                          teams_path = basename(local_path),
-#                          card_number = project_get_current_id(ask = FALSE),
+#                          project_number = project_get_current_id(ask = FALSE),
 #                          channel = NULL,
 #                          account = connect_teams()) {
 #   if (!is_valid_teams(account)) {
@@ -776,8 +776,8 @@ teams_send_message <- function(body,
 #     teams_path <- paste0(filename, ".rds")
 #     message("OK.")
 #   }
-#   if (!is.null(card_number)) {
-#     local_path <- project_set_file(filename = local_path, card_number = card_number)
+#   if (!is.null(project_number)) {
+#     local_path <- project_set_file(filename = local_path, project_number = project_number)
 #   }
 #   if (!file.exists(local_path)) {
 #     stop("Path not found: ", local_path)
@@ -812,7 +812,7 @@ teams_send_message <- function(body,
 # #' @export
 # teams_download <- function(teams_path,
 #                            local_path = basename(teams_path),
-#                            card_number = project_get_current_id(ask = FALSE),
+#                            project_number = project_get_current_id(ask = FALSE),
 #                            channel = NULL,
 #                            account = connect_teams()) {
 #   if (!is_valid_teams(account)) {
@@ -828,8 +828,8 @@ teams_send_message <- function(body,
 #       stop("No valid channel set")
 #     }
 #   }
-#   if (!is.null(card_number)) {
-#     local_path <- project_set_file(filename = local_path, card_number = card_number)
+#   if (!is.null(project_number)) {
+#     local_path <- project_set_file(filename = local_path, project_number = project_number)
 #   }
 #   message("Downloading Teams file '", teams_path,
 #           "' from channel '", channel,
@@ -853,13 +853,13 @@ teams_send_message <- function(body,
 # #' @rdname teams 
 # #' @export
 # teams_import <- function(teams_path,
-#                          card_number = project_get_current_id(ask = FALSE),
+#                          project_number = project_get_current_id(ask = FALSE),
 #                          channel = NULL,
 #                          account = connect_teams()) {
 #   suppressMessages(
 #     tempfile <- teams_download(teams_path = teams_path,
 #                                local_path = paste0(tempdir(), "/", basename(teams_path)),
-#                                card_number = card_number,
+#                                project_number = project_number,
 #                                channel = channel,
 #                                account = account)
 #   )

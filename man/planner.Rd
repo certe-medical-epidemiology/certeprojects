@@ -14,6 +14,7 @@
 \alias{planner_retrieve_project_id}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
+\alias{planner_project_from_path}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
 \alias{as.data.frame.ms_object}
@@ -92,6 +93,14 @@ planner_task_validate(
   account = connect_planner()
 )
 
+planner_project_from_path(
+  path,
+  projects_path = read_secret("projects.path"),
+  account = connect_planner(),
+  title = basename(path),
+  ...
+)
+
 planner_user_property(
   user,
   team_name = read_secret("team.name"),
@@ -101,7 +110,7 @@ planner_user_property(
 )
 
 planner_highest_project_id(
-  task = read_secret("planner.dummy.card"),
+  task = read_secret("planner.dummy.project"),
   account = connect_planner()
 )
 
@@ -140,7 +149,7 @@ planner_highest_project_id(
 
 \item{assigned}{names of members within the plan - use \code{NULL} to not add members in \code{\link[=planner_task_create]{planner_task_create()}}, and use \code{FALSE} to remove all existing members in \code{\link[=planner_task_update]{planner_task_update()}}}
 
-\item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task card.}
+\item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task.}
 
 \item{project_number}{the new project number to assign. Use \code{NULL} or \code{FALSE} to not assign a project number. Defaults to the currently highest project ID + 1.}
 
@@ -162,6 +171,12 @@ planner_highest_project_id(
 
 \item{category_text}{text of the category to use}
 
+\item{path}{location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.}
+
+\item{projects_path}{location of the folder that contains all department projects}
+
+\item{...}{arguments passed on to \code{\link[=planner_task_create]{planner_task_create()}}}
+
 \item{user}{a user name, mail adress, or Certe login name}
 
 \item{team_name}{name of the team, can be left blank to connect to an individual planner}
@@ -182,8 +197,6 @@ planner_highest_project_id(
     \code{optional} only for column names treatment, basically with the
     meaning of \code{\link[base]{data.frame}(*, check.names = !optional)}.
     See also the \code{make.names} argument of the \code{matrix} method.}
-
-\item{...}{additional arguments to be passed to or from methods.}
 }
 \description{
 These functions use the connection to Microsoft Planner set up with \code{\link[=connect_planner]{connect_planner()}}.
@@ -195,7 +208,9 @@ These functions use the connection to Microsoft Planner set up with \code{\link[
 
 \code{\link[=planner_retrieve_project_id]{planner_retrieve_project_id()}} retrieves the p-number from the task title and returns it as \link{integer}.
 
-\code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy card.
+Use \code{\link[=planner_project_from_path]{planner_project_from_path()}} to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
+
+\code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy project.
 
 Using \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} on an \code{ms_object}, such as \code{ms_plan_task}, will return the properties and details of the object as a \link{data.frame}. For transforming many \code{ms_object}s to a data.frame, use \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} in \code{\link[=lapply]{lapply()}} and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
 

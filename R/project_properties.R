@@ -21,7 +21,7 @@
 #' 
 #' Retrieve project properties, such as the title, folder location and project number.
 #' @param ask logical to indicate whether the project number should always be asked. The default, `NULL`, will show a popup in [interactive][interactive()] \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current [working directory][getwd()] to determine the project number.
-#' @param card_number Planner card number
+#' @param project_number Planner project number
 #' @param filename filename to set or get, case-insensitive, and can also be a [regular expression][base::regex]
 #' @param foldername foldername to set
 #' @param fixed [logical] to turn off regular expressions
@@ -102,32 +102,32 @@ project_get_current_id <- function(ask = NULL) {
 #' @export
 #' @examples
 #' project_identifier(123)
-project_identifier <- function(card_number = project_get_current_id()) {
+project_identifier <- function(project_number = project_get_current_id()) {
   user_datetime <- paste0(Sys.info()["user"], "-", format2(Sys.time(), "yymmddHHMM"))
-  if (is.null(card_number) || all(card_number %in% c("", NA, FALSE))) {
+  if (is.null(project_number) || all(project_number %in% c("", NA, FALSE))) {
     user_datetime
   } else {
-    paste0(user_datetime, "-", card_number)
+    paste0(user_datetime, "-", project_number)
   }
 }
 
 #' @rdname project_properties
 #' @export
-project_get_folder <- function(card_number = project_get_current_id()) {
-  card_number <- gsub("[^0-9]", "", card_number)
-  basename(project_get_folder_full(card_number = card_number))
+project_get_folder <- function(project_number = project_get_current_id()) {
+  project_number <- gsub("[^0-9]", "", project_number)
+  basename(project_get_folder_full(project_number = project_number))
 }
 
 #' @rdname project_properties
 #' @export
-project_get_folder_full <- function(card_number = project_get_current_id()) {
-  card_number <- gsub("[^0-9]", "", card_number)
+project_get_folder_full <- function(project_number = project_get_current_id()) {
+  project_number <- gsub("[^0-9]", "", project_number)
   project_path <- read_secret("projects.path")
   
   folders <- list.dirs(project_path,
                        full.names = TRUE,
                        recursive = FALSE)
-  folder <- folders[folders %like% paste0("p", card_number)][1L]
+  folder <- folders[folders %like% paste0("p", project_number)][1L]
   if (!is.na(folder)) {
     out <- gsub("\\", "/", normalizePath(paste0(folder, "/")), fixed = TRUE)
     if (out %unlike% "/$") {
@@ -135,27 +135,27 @@ project_get_folder_full <- function(card_number = project_get_current_id()) {
     }
     out
   } else {
-    warning("Project folder of p", card_number, " not found")
+    warning("Project folder of p", project_number, " not found")
     NA_character_
   }
 }
 
 #' @rdname project_properties
 #' @export
-project_get_title <- function(card_number = project_get_current_id()) {
-  if (is.null(card_number)) {
+project_get_title <- function(project_number = project_get_current_id()) {
+  if (is.null(project_number)) {
     return(NA_character_)
   }
-  card_number <- gsub("[^0-9]", "", card_number)
-  trimws(gsub("-? ?p[0-9]+/?$", "", project_get_folder(card_number = card_number)))
+  project_number <- gsub("[^0-9]", "", project_number)
+  trimws(gsub("-? ?p[0-9]+/?$", "", project_get_folder(project_number = project_number)))
 }
 
 #' @rdname project_properties
 #' @importFrom certestyle format2 font_bold font_blue
 #' @export
-project_get_file <- function(filename, card_number = project_get_current_id(), fixed = FALSE) {
-  card_number <- gsub("[^0-9]", "", card_number)
-  folder <- project_get_folder_full(card_number = card_number)
+project_get_file <- function(filename, project_number = project_get_current_id(), fixed = FALSE) {
+  project_number <- gsub("[^0-9]", "", project_number)
+  folder <- project_get_folder_full(project_number = project_number)
   filename <- filename[1L]
   if (isTRUE(fixed)) {
     filename <- paste0("^", filename, "$")
@@ -209,9 +209,9 @@ project_get_file <- function(filename, card_number = project_get_current_id(), f
 
 #' @rdname project_properties
 #' @export
-project_set_file <- function(filename, card_number = project_get_current_id()) {
-  card_number <- gsub("[^0-9]", "", card_number)
-  folder <- project_get_folder_full(card_number = card_number)
+project_set_file <- function(filename, project_number = project_get_current_id()) {
+  project_number <- gsub("[^0-9]", "", project_number)
+  folder <- project_get_folder_full(project_number = project_number)
   filename <- filename[1L]
   if (!is.na(folder)) {
     filename <- paste0(folder, filename)
@@ -224,9 +224,9 @@ project_set_file <- function(filename, card_number = project_get_current_id()) {
 #' @rdname project_properties
 #' @details [project_set_folder()] will create the folder if it does not exist.
 #' @export
-project_set_folder <- function(foldername, card_number = project_get_current_id()) {
-  card_number <- gsub("[^0-9]", "", card_number)
-  folder <- project_get_folder_full(card_number = card_number)
+project_set_folder <- function(foldername, project_number = project_get_current_id()) {
+  project_number <- gsub("[^0-9]", "", project_number)
+  folder <- project_get_folder_full(project_number = project_number)
   foldername <- foldername[1L]
   if (!is.na(folder)) {
     foldername <- gsub("//", "/", paste0(folder, "/", foldername), fixed = TRUE)
@@ -240,15 +240,15 @@ project_set_folder <- function(foldername, card_number = project_get_current_id(
 #' @rdname project_properties
 #' @importFrom rstudioapi navigateToFile
 #' @export
-project_open_analysis_file <- function(card_number = project_get_current_id(ask = TRUE)) {
-  if (is.null(card_number)) {
+project_open_analysis_file <- function(project_number = project_get_current_id(ask = TRUE)) {
+  if (is.null(project_number)) {
     return(invisible())
   }
-  card_number <- gsub("[^0-9]", "", card_number)
+  project_number <- gsub("[^0-9]", "", project_number)
   # furst argument in project_get_file is case-insensitive
-  path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", card_number = card_number)
+  path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", project_number = project_number)
   if (is.na(path)) {
-    stop(paste0("No syntax files found for p", card_number))
+    stop(paste0("No syntax files found for p", project_number))
   } else {
     invisible(navigateToFile(path))
   }
@@ -256,33 +256,33 @@ project_open_analysis_file <- function(card_number = project_get_current_id(ask 
 
 #' @rdname project_properties
 #' @export
-project_open_folder <- function(card_number = project_get_current_id(ask = TRUE)) {
-  if (is.null(card_number)) {
+project_open_folder <- function(project_number = project_get_current_id(ask = TRUE)) {
+  if (is.null(project_number)) {
     return(invisible())
   }
-  path <- project_get_folder_full(card_number = card_number)
+  path <- project_get_folder_full(project_number = project_number)
   utils::browseURL(path)
 }
 
 #' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile
-project_save_file <- function(card_number = project_get_current_id(ask = TRUE)) {
+project_save_file <- function(project_number = project_get_current_id(ask = TRUE)) {
   current <- getSourceEditorContext()
   if (is.null(current)) {
     showDialog(title = "No file to be saved", message = "Open a (text) file first to save.")
     return(invisible(FALSE))
   }
   
-  if (is.null(card_number)) {
+  if (is.null(project_number)) {
     path <- getwd()
     
   } else {
-    path <- project_get_folder_full(card_number = card_number)
+    path <- project_get_folder_full(project_number = project_number)
   }
   
   new_file <- showPrompt(title = "Save File",
-                         message = ifelse(is.null(card_number),
+                         message = ifelse(is.null(project_number),
                                           paste0("In ", path, ":"),
-                                          paste0("Project p", card_number, " in ", path, ":")),
+                                          paste0("Project p", project_number, " in ", path, ":")),
                          default = ifelse(current$path != "",
                                           basename(current$path),
                                           "Analyse.R"))

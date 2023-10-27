@@ -17,6 +17,9 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
+
+# EXPORTED FUNCTIONS ------------------------------------------------------
+
 #' Connect to Microsoft Planner via Microsoft 365
 #'
 #' These functions use the connection to Microsoft Planner set up with [connect_planner()].
@@ -73,7 +76,7 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
 #' @param checklist_items character vector of checklist items
 #' @param assigned names of members within the plan - use `NULL` to not add members in [planner_task_create()], and use `FALSE` to remove all existing members in [planner_task_update()]
 #' @param categories names of categories to add, can be multiple, but must exactly match existing category names
-#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task card.
+#' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task.
 #' @param project_number the new project number to assign. Use `NULL` or `FALSE` to not assign a project number. Defaults to the currently highest project ID + 1.
 #' @importFrom httr add_headers stop_for_status POST
 #' @importFrom jsonlite toJSON
@@ -102,6 +105,16 @@ planner_task_create <- function(title,
     title <- paste0(title, " - p", project_number)
   } else {
     project_number <- NULL
+  }
+
+  if (!arg_is_empty(categories) && isTRUE("Project" %in% categories)) {
+    # projects must contain valid file names, since they have an accompanying folder
+    invalid_characters <- c("/", "\\", ":", "*", "?", "\"", "<", ">", "|")
+    old_title <- title
+    title <- gsub(" +", " ", gsub(paste0("[" , paste0(invalid_characters, collapse = "") , "]"), " ", title))
+    if (old_title != title) {
+      warning("Since this will be a project that requires a valid project folder name, the title was renamed to '", title, "'", immediate. = TRUE, call. = FALSE)
+    }
   }
   
   if (title %in% planner_tasks_list(plain = TRUE, account = account)) {
@@ -182,6 +195,9 @@ planner_task_create <- function(title,
                         assigned = assigned, categories = categories, attachment_urls = attachment_urls,
                         account = account)
   }
+  if (inherits(title, "ms_plan_task")) {
+    title <- get_azure_property(title, property = "title")
+  }
   
   return(invisible(list(id = project_number, title = title)))
 }
@@ -217,7 +233,7 @@ planner_task_update <- function(task,
   task_id <- get_azure_property(task, "id")
   task_title <- get_azure_property(task, "title")
   
-  # UPDATE TASK ITSELF ----
+  # Update Task Itself ----
   
   body <- list()
   
@@ -325,7 +341,7 @@ planner_task_update <- function(task,
   }
   
   
-  # UPDATE TASK DETAILS -----
+  # Update Task Details -----
   
   # the following properties are considered task details and must be updated using .../id/details:
   # checklist, description, previewType, references
@@ -343,11 +359,11 @@ planner_task_update <- function(task,
   }
   
   if (!arg_is_empty(checklist_items)) {
-    # reverse the order, since the first item in the vector will otherwise become last on the card
+    # reverse the order, since the first item in the vector will otherwise become last on the task
     checklist_items <- rev(checklist_items)
     check_items <- list()
     for (check_item in checklist_items) {
-      check_items <- c(check_items, 
+      check_items <- c(check_items,
                        stats::setNames(list(list(`@odata.type` = "microsoft.graph.plannerChecklistItem",
                                                  title = check_item,
                                                  isChecked = FALSE)),
@@ -425,7 +441,7 @@ planner_tasks_list <- function(account = connect_planner(),
                                plain = FALSE,
                                include_completed = TRUE) {
   tasks <- account$list_tasks()
-  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummy.card")]
+  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummy.project")]
   if (isFALSE(include_completed)) {
     tasks <- tasks[get_azure_property(tasks, "percentComplete") < 100]
   }
@@ -553,7 +569,7 @@ planner_task_find <- function(task, account = connect_planner()) {
   } else {
     task <- as.character(task)
   }
-  tasks <- account$list_tasks() # this will also include the dummy card, which must be the case
+  tasks <- account$list_tasks() # this will also include the dummy project, which must be the case
   out <- which(get_azure_property(tasks, "id") == task)
   if (length(out) == 0) {
     out <- which(get_azure_property(tasks, "title") %like% task)
@@ -639,6 +655,81 @@ planner_task_validate <- function(task,
 }
 
 #' @rdname planner
+#' @param path location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.
+#' @param projects_path location of the folder that contains all department projects
+#' @param ... arguments passed on to [planner_task_create()]
+#' @details Use [planner_project_from_path()] to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
+#' @export
+planner_project_from_path <- function(path,
+                                      projects_path = read_secret("projects.path"),
+                                      account = connect_planner(),
+                                      title = basename(path),
+                                      ...) {
+  if (!dir.exists(path)) {
+    stop("path not found: ", path, call. = FALSE)
+  }
+  path <- tools::file_path_as_absolute(path)
+  if (!interactive()) {
+    stop("planner_project_from_path() has to run in interactive mode.", call. = FALSE)
+  }
+  continue <- utils::askYesNo(paste0("Nieuwe Planner-taak en projectnummer aanmaken voor '", title, "'?"),
+                              prompts = gettext(c("Ja", "Nee", "Annuleren")))
+  if (!isTRUE(continue)) {
+    return(invisible())
+  }
+  
+  dots <- list(...)
+  
+  cat("\nPROJECT:             ", title, "\n", sep = "")
+  if (!"requested_by" %in% names(dots)) {
+    dots$requested_by <- readline("Aangevraagd door:    ")
+  }
+  if (!"description" %in% names(dots)) {
+    dots$description  <- readline("Beschrijving [leeg]: ")
+  }
+  if (!"bucket_name" %in% names(dots)) {
+    dots$bucket_name <- readline("Bucket [Bezig]:      ")
+    if (dots$bucket_name == "") {
+      dots$bucket_name <- "Bezig"
+    }
+  }
+  ass <- utils::askYesNo(paste0("Project toewijzen aan ", Sys.info()["user"], "?"),
+                         prompts = gettext(c("Ja", "Nee", "")))
+  if (isTRUE(ass)) {
+    dots$assigned <- paste0(Sys.info()["user"], "@certe.nl")
+  } else {
+    dots$assigned <- NULL
+  }
+  dots$title <- title
+  dots$categories <- "Project"
+  dots$account <- account
+  return(dots)
+  task <- do.call(planner_task_create, dots)
+  
+  new_title <- task$title
+  new_path <- paste0(projects_path, "/", new_title)
+  cat("Oude mapnaam:   ", path, "\n", sep = "")
+  cat("Nieuwe mapnaam: ", new_path, "\n", sep = "")
+  move_folder <- FALSE
+  while(!isTRUE(move_folder)) {
+    move_folder <- utils::askYesNo(paste0("Druk op Enter om de oude map te hernoemen."),
+                                   prompts = gettext(c("OK", "Annuleren", "")))
+  }
+  success <- FALSE
+  while (!isTRUE(success)) {
+    success <- tryCatch(file.rename(path, paste0(dirname(path), "/", new_title)),
+                        error = function(e) {
+                          message("De map kon niet verplaatst worden: ", e$message)
+                          return(FALSE)
+                        })
+    if (!success) {
+      readline("Druk op Enter om het opnieuw te proberen. ")
+    }
+  }
+  message("Geslaagd.")
+}
+
+#' @rdname planner
 #' @param user a user name, mail adress, or Certe login name
 #' @param property property to return, can be "id", "name" or "mail"
 #' @param as_list return the full list of members as [list], split into Eigenaars (Owners) / Leden (Members). This ignores `user`.
@@ -658,9 +749,7 @@ planner_user_property <- function(user,
     pkg_env$planner_owners <- create_graph_login(token = account$token)$get_group(name = team_name)$list_owners()
   }
   owners <- pkg_env$planner_owners
-  if (as_list == TRUE) {
-    owners <- get_azure_property(owners, "displayName")
-  }
+  owners <- get_azure_property(owners, "displayName")
   df <- data.frame(certe_login = gsub("@certe.nl", "", get_azure_property(members, "userPrincipalName")),
                    name = get_azure_property(members, "displayName"),
                    mail = get_azure_property(members, "mail"),
@@ -676,15 +765,15 @@ planner_user_property <- function(user,
   
   users <- character(0)
   for (usr in user) {
-    users <- c(users, df[[property]][which(df$id == usr | df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
+    users <- c(users, df[[property]][which(df$id == usr | paste0(df$certe_login, "@certe.nl") == tolower(usr) | df$certe_login %like% usr | df$name %like% usr | df$mail %like% usr)])
   }
   users
 }
 
 #' @rdname planner
-#' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy card.
+#' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy project.
 #' @export
-planner_highest_project_id <- function(task = read_secret("planner.dummy.card"),
+planner_highest_project_id <- function(task = read_secret("planner.dummy.project"),
                                        account = connect_planner()) {
   # this returns the currently highest project number, which is saved to the description
   task <- planner_task_find(task, account = account)
@@ -746,6 +835,9 @@ as_tibble.ms_object <- function(x, account = connect_planner(), ...) {
   as_tibble(as.data.frame(x = x, account = account, ...))
 }
 
+
+# INTERNAL FUNCTIONS ------------------------------------------------------
+
 planner_bucket_object <- function(bucket_name = read_secret("planner.default.bucket"), account = connect_planner()) {
   # account$get_bucket() does not work yet in Microsoft365R, return error 'Invalid bucket name', so do it manually:
   buckets <- account$list_buckets()
@@ -757,7 +849,7 @@ planner_bucket_object <- function(bucket_name = read_secret("planner.default.buc
   }
 }
 
-increase_highest_project_id <- function(task = read_secret("planner.dummy.card"),
+increase_highest_project_id <- function(task = read_secret("planner.dummy.project"),
                                         account = connect_planner()) {
   highest <- planner_highest_project_id(task = task, account = account)
   planner_task_update(task = task, description = highest + 1, account = account)

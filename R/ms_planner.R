@@ -703,7 +703,7 @@ planner_project_from_path <- function(path,
   dots$title <- title
   dots$categories <- "Project"
   dots$account <- account
-  return(dots)
+  
   task <- do.call(planner_task_create, dots)
   
   new_title <- task$title

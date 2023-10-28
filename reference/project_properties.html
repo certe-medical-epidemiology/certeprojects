@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.15.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.16.2</span>
       </span>
     </div>
 
@@ -78,27 +78,27 @@
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_identifier</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_identifier</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_folder</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_folder</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_folder_full</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_folder_full</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_title</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_title</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">project_get_file</span><span class="op">(</span></span>
 <span>  <span class="va">filename</span>,</span>
-<span>  card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  fixed <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_set_file</span><span class="op">(</span><span class="va">filename</span>, card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_set_file</span><span class="op">(</span><span class="va">filename</span>, project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_set_folder</span><span class="op">(</span><span class="va">foldername</span>, card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_set_folder</span><span class="op">(</span><span class="va">foldername</span>, project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_open_analysis_file</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_open_analysis_file</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_open_folder</span><span class="op">(</span>card_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">project_open_folder</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -107,8 +107,8 @@
 <dd><p>logical to indicate whether the project number should always be asked. The default, <code>NULL</code>, will show a popup in <a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a> <span style="R">R</span> sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current <a href="https://rdrr.io/r/base/getwd.html" class="external-link">working directory</a> to determine the project number.</p></dd>
 
 
-<dt>card_number</dt>
-<dd><p>Planner card number</p></dd>
+<dt>project_number</dt>
+<dd><p>Planner project number</p></dd>
 
 
 <dt>filename</dt>
@@ -134,7 +134,7 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">project_identifier</span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2310241514-123"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2310281442-123"</span>
 </code></pre></div>
     </div>
   </div>

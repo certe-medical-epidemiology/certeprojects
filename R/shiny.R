@@ -53,7 +53,7 @@ project_add <- function(planner = connect_planner(),
                 var textbox = document.getElementById("title");
                 textbox.focus();
                 });'),
-    tags$style(paste0("* { font-family: Calibri; }
+    tags$style(paste0("* { font-family: Calibri, Helvetica Neue, Arial; }
                       .container-fluid { margin-top: 15px; }
                       .well { background-color: ", colourpicker("certeblauw6"), "; }
                       .well label { color: ", colourpicker("certeblauw"), "; }
@@ -556,6 +556,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
         background-color: ", colourpicker("certeblauw6"), ";
      }",
       "* {
+        font-family: Calibri, Helvetica Neue, Arial;
         text-align: center;
      }",
       ".move_btn {
@@ -592,8 +593,9 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
       buckets_df$sorting <- case_when(buckets_df$name %like% "Idee" ~ 1,
                                       buckets_df$name %like% "Bezig" ~ 2,
                                       buckets_df$name %like% "Wachten" ~ 3,
-                                      buckets_df$name %like% "Voltooid" ~ 4,
-                                      TRUE ~ 5)
+                                      buckets_df$name %like% "Voorlopig voltooid" ~ 4,
+                                      buckets_df$name %like% "Voltooid" ~ 5,
+                                      TRUE ~ 6)
       buckets_df <- buckets_df[order(buckets_df$sorting), ]
       current_bucket <- buckets_df$name[match(bucket_id, buckets_df$id)]
       
@@ -602,7 +604,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
         if (bucket == current_bucket || bucket %like% "nog mee beginnen") next
         icon <- case_when(bucket %like% "Bezig" ~ "screwdriver-wrench",
                           bucket %like% "Wachten" ~ "hourglass-start",
-                          bucket %like% "Voltooid" ~ "square-check",
+                          bucket %like% "Voorlopig|Voltooid" ~ "square-check",
                           bucket %like% "Idee" ~ "lightbulb",
                           TRUE ~ "screwdriver-wrench")
         buttons <- c(buttons,
@@ -616,7 +618,13 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
       
       tagList(
         h4(get_azure_property(current_task, "title")),
-        p(HTML(paste("Huidige bucket:", strong(current_bucket), 
+        p(HTML(paste("Huidige bucket:", strong(HTML(paste0(icon(class = "fa-solid",
+                                                                case_when(current_bucket %like% "Bezig" ~ "screwdriver-wrench",
+                                                                          current_bucket %like% "Wachten" ~ "hourglass-start",
+                                                                          current_bucket %like% "Voorlopig|Voltooid" ~ "square-check",
+                                                                          current_bucket %like% "Idee" ~ "lightbulb",
+                                                                          TRUE ~ "screwdriver-wrench")),
+                                                           " ", current_bucket))), 
                      ifelse(is.na(get_azure_property(current_task, "startDateTime")),
                             "",
                             paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "startDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
@@ -635,7 +643,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
   }
   suppressMessages(
     runGadget(app = ui, server = server,
-              viewer = dialogViewer(dialogName = paste("Taak verplaatsen -", get_azure_property(planner, "title")), width = 550, height = 270),
+              viewer = dialogViewer(dialogName = paste("Taak verplaatsen -", get_azure_property(planner, "title")), width = 550, height = 360),
               port = 4123)
   )
 }
@@ -654,6 +662,7 @@ shiny_item_picker <- function(values, oversized = character(0), title = "", subt
         background-color: ", colourpicker("certeblauw6"), ";
      }
      * {
+        font-family: Calibri, Helvetica Neue, Arial;
         text-align: center;
      }
      h4 {

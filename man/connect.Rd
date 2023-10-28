@@ -9,12 +9,12 @@
 \title{Connect to Microsoft 365}
 \usage{
 get_microsoft365_token(
-  scope,
+  scope = read_secret("azure.scope_list"),
   tenant = read_secret("azure.tenant"),
   app_id = read_secret("azure.app_id"),
   auth_type = read_secret("azure.auth_type"),
   ...,
-  overwrite = FALSE,
+  overwrite = TRUE,
   error_on_fail = TRUE
 )
 
@@ -30,7 +30,7 @@ connect_planner(
 connect_teams(team_name = read_secret("team.name"), overwrite = FALSE, ...)
 }
 \arguments{
-\item{scope}{this must be "outlook", "teams", "planner", "tasks" (which is "planner" without group rights), or "sharepoint", and will set the right API permission for each}
+\item{scope}{any (combination) of "outlook", "teams", "planner", "tasks" (which is "planner" without group rights), or "sharepoint". Can also be a manual vector of Microsoft Permissions, such as \verb{"User.Read}.}
 
 \item{tenant}{the tenant to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
 

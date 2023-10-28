@@ -508,10 +508,8 @@ pick_teams_item <- function(full_teams_path = NULL,
   
   # interactive mode
   message("Retrieving list of Teams within ", account$token$tenant, "...", appendLF = FALSE)
-  groups <- get_teams_groups_from_env(account)
-  groups <- groups[which(vapply(FUN.VALUE = logical(1), groups, function(g) !is.null(g$properties$visibility)))]
-  groups_names <- vapply(FUN.VALUE = character(1), groups, function(g) g$properties$displayName)
-  message("OK, n = ", length(groups), ".")
+  groups_names <- get_teams_groups_from_env(account)
+  message("OK, n = ", length(groups_names), ".")
   continue <- FALSE
   while (!isTRUE(continue)) {
     searchterm <- readline("Search for Team name, allows regex - leave blank for 'Medische Epidemiologie': ")
@@ -548,8 +546,8 @@ pick_teams_item <- function(full_teams_path = NULL,
     out
   }
   message("Retrieving ", item_type, " list...", appendLF = FALSE)
-  group <- groups[[found_groups[1]]]
   group_name <- groups_names[found_groups[1]]
+  group <- get_group(group_name, account = account)
   drive <- group$get_drive()
   files <- drive$list_files()
   files <- files[which(files$isdir), ] # in channel view, only show folders
@@ -989,6 +987,10 @@ try_with_retry <- function(expr) {
            })
 }
 
+get_group <- function(group_name, account) {
+  create_graph_login(token = account$token)$get_group(name = group_name)
+}
+
 #' @importFrom AzureGraph create_graph_login
 get_teams_groups_from_env <- function(account) {
   if (is.null(pkg_env$teams_groups)) {
@@ -996,7 +998,7 @@ get_teams_groups_from_env <- function(account) {
     pkg_env$teams_groups <- tryCatch(pkg_env$callr$get_result()$teams_groups, error = function(e) NULL)
     if (is.null(pkg_env$teams_groups)) {
       login <- create_graph_login(token = account$token)
-      pkg_env$teams_groups <- login$list_groups()
+      pkg_env$teams_groups <- get_azure_property(login$list_groups(), "displayName")
     }
   }
   return(pkg_env$teams_groups)

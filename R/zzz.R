@@ -24,14 +24,17 @@
   # this will make sure that using Outlook, Planner, or Teams can be done instantly
   # this must be in .onAttach() and not .onLoad() as it would otherwise lead to a loop
   try(pkg_env$callr <- r_bg(function() 
-    list(outlook = tryCatch(certeprojects::connect_outlook(),
-                            error = function(e) NULL),
-         planner = tryCatch(certeprojects::connect_planner(),
-                            error = function(e) NULL),
-         teams = tryCatch(certeprojects::connect_teams(),
-                          error = function(e) NULL),
-         teams_groups = tryCatch(AzureGraph::create_graph_login(token = certeprojects::connect_teams()$token)$list_groups(),
-                                 error = function(e) NULL),
+    list(azure_token = tryCatch(certeprojects::get_microsoft365_token(),
+                                error = function(e) NULL),
+         
+         teams_groups = tryCatch({
+           grps <- AzureGraph::create_graph_login(token = certeprojects::get_microsoft365_token())$list_groups()
+           nms <- certeprojects::get_azure_property(grps, "displayName")
+           vis <- certeprojects::get_azure_property(grps, "visibility")
+           # return names of Teams groups that are visible
+           sort(nms[!is.na(vis)])
+         }, error = function(e) NULL),
+         
          teams_project_folder = tryCatch(certeprojects::teams_projects_channel(),
                                          error = function(e) NULL))),
     silent = TRUE)

@@ -125,10 +125,22 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
     pkg_env$azure_token$refresh()
     # save to Azure token folder
     pkg_env$azure_token$cache()
+    rewrite_graph_logins.json(pkg_env$azure_token)
   }
   suppressMessages(pkg_env$azure_token)
 }
 
+#' @importFrom AzureAuth AzureR_dir
+#' @importFrom jsonlite write_json
+rewrite_graph_logins.json <- function(tkn) {
+  this_token <- tkn$hash()
+  tenant <- tkn$tenant
+  other_tokens <- list.files(AzureR_dir(), recursive = FALSE, include.dirs = FALSE, full.names = FALSE)
+  all_tokens <- unique(c(this_token, other_tokens[other_tokens != "graph_logins.json"]))
+  lst <- list(all_tokens)
+  names(lst) <- tenant
+  write_json(lst, file.path(AzureR_dir(), "graph_logins.json"), pretty = TRUE)
+}
 
 get_scope_list <- function(scope) {
   if (all(scope %like% "[.]")) {

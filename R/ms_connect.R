@@ -159,6 +159,7 @@ get_scope_list <- function(scope) {
   # mail
   if ("outlook" %in% scope) {
     scope_vector <- c(scope_vector,
+                      "Calendar.ReadWrite",
                       "Mail.ReadWrite",
                       "Mail.ReadWrite.Shared",
                       "Mail.Send",

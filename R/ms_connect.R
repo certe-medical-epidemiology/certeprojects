@@ -93,12 +93,18 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
       # try to get existing login first - this will prevent that the device code must be given every time
       conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = TRUE)), silent = TRUE)
       if (inherits(conn, "try-error")) {
-        if (interactive() == TRUE) {
-          # now create a new login
-          message("! Cannot retrieve tokens using get_graph_login(), creating a new token")
-          conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
-        } else if (isTRUE(error_on_fail)) {
-          stop("Could not connect to Microsoft 365. Run certeprojects::get_microsoft365_token() to create a new token.", call. = FALSE)
+        # try again with new JSON file
+        rewrite_graph_logins.json(NULL)
+        Sys.sleep(1)
+        conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = TRUE)), silent = TRUE)
+        if (inherits(conn, "try-error")) {
+          if (interactive() == TRUE) {
+            # now create a new login
+            message("! Cannot retrieve tokens using get_graph_login(), creating a new token")
+            conn <- suppressMessages(create_graph_login(tenant = tenant, app = app_id, scopes = scopes, auth_type = auth_type, ...))
+          } else if (isTRUE(error_on_fail)) {
+            stop("Run certeprojects::get_microsoft365_token() to create a new token.", call. = FALSE)
+          }
         }
       }
       pkg_env$azure_token <- conn$token
@@ -106,16 +112,16 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
       return(invisible())
     }, error = function(e, fail = error_on_fail) {
       if (isTRUE(fail)) {
-        stop("Could not connect to Microsoft 365: ", paste0(e$message, collapse = ", "), call. = FALSE)
+        stop("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), call. = FALSE)
       } else {
-        warning("Could not connect to Microsoft 365: ", paste0(e$message, collapse = ", "), call. = FALSE)
+        warning("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), call. = FALSE)
       }
       return(NULL)
     })
   }
   if (is.null(pkg_env$azure_token)) {
     if (isTRUE(error_on_fail)) {
-      stop("Could not connect to Microsoft 365. Run certeprojects::get_microsoft365_token() to create a new token.", call. = FALSE)
+      stop("Could not connect to Microsoft 365 - Run certeprojects::get_microsoft365_token() to create a new token.", call. = FALSE)
     } else {
       return(invisible(NULL))
     }
@@ -132,11 +138,28 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
 
 #' @importFrom AzureAuth AzureR_dir
 #' @importFrom jsonlite write_json
-rewrite_graph_logins.json <- function(tkn) {
-  this_token <- tkn$hash()
-  tenant <- tkn$tenant
-  other_tokens <- list.files(AzureR_dir(), recursive = FALSE, include.dirs = FALSE, full.names = FALSE)
-  all_tokens <- unique(c(this_token, other_tokens[other_tokens != "graph_logins.json"]))
+rewrite_graph_logins.json <- function(tkn = NULL) {
+  existing_tokens <- list.files(AzureR_dir(), recursive = FALSE, include.dirs = FALSE, full.names = FALSE)
+  existing_tokens <- existing_tokens[existing_tokens != "graph_logins.json"]
+  if (is.null(tkn)) {
+    all_tokens <- existing_tokens
+    if (length(all_tokens) == 0) return(invisible())
+    tenant <- NULL
+    for (i in seq_len(length(existing_tokens))) {
+      tenant <- tryCatch(readRDS(file.path(AzureAuth::AzureR_dir(), existing_tokens[i]))$tenant,
+                         error = function(e) NULL)
+      if (!is.null(tenant)) {
+        break
+      }
+    }
+    if (is.null(tenant)) {
+      stop("no tenant found in existing token files")
+    }
+  } else {
+    this_token <- tkn$hash()
+    tenant <- tkn$tenant
+    all_tokens <- unique(c(this_token, existing_tokens))
+  }
   lst <- list(all_tokens)
   names(lst) <- tenant
   write_json(lst, file.path(AzureR_dir(), "graph_logins.json"), pretty = TRUE)

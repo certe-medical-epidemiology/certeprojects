@@ -45,10 +45,11 @@ project_get_current_id <- function(ask = NULL) {
     }
   }
   asked <- FALSE
-  path <- full_path_to_currently_sourced_script()
-  if (is.null(path) && interactive() && isAvailable()) {
-    path <- tools::file_path_as_absolute(getSourceEditorContext()$path)
+  path <- tryCatch(tools::file_path_as_absolute(getSourceEditorContext()$path), error = function(e) NULL)
+  if (is.null(path)) {
+    path <- full_path_to_currently_sourced_script()
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
+      # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
       id <- planner_retrieve_project_id(planner_task_search(search_term = search_term, limit = 25))
       return(fix_id(id))
@@ -325,6 +326,7 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
 #' @rdname project_properties
 #' @param filename name for the new Quarto file
 #' @details [project_add_qmd_skeleton()] initializes a new Quarto skeleton for a project.
+#' @importFrom rstudioapi showPrompt navigateToFile
 #' @export
 project_add_qmd_skeleton <- function(filename = NULL,
                                      project_number = project_get_current_id(),
@@ -336,7 +338,7 @@ project_add_qmd_skeleton <- function(filename = NULL,
   if (is.null(filename)) {
     filename <- showPrompt(title = "Bestandsnaam voor Quarto-document",
                            message = paste0("Bestandsnaam voor het Quarto-document voor project '", project_folder, "':"),
-                           default = paste0("Analyse p", gsub(".*(p[0-9]+).*", "\\1", project_folder), ".qmd"))
+                           default = paste0("Analyse ", gsub(".*(p[0-9]+).*", "\\1", project_folder), ".qmd"))
     
     if (is.null(filename)) {
       return(invisible())
@@ -347,5 +349,5 @@ project_add_qmd_skeleton <- function(filename = NULL,
   }
   filename <- file.path(project_folder, filename)
   file.copy(from = system.file("qmd_skeleton.qmd", package = "certeprojects"), to = filename, overwrite = FALSE, copy.date = FALSE)
-  navigateToFile(file = filename)
+  invisible(navigateToFile(file = filename))
 }

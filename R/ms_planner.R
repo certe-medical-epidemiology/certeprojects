@@ -650,7 +650,11 @@ planner_retrieve_project_id <- function(task, account = connect_planner()) {
 #' @method print integer_task
 #' @export
 print.integer_task <- function(x, ...) {
-  cat("Planner Task (Project ID)\n")
+  if (!is.null(attributes(x)$task)) {
+    cat("Planner Task (Project ID) of: ", attributes(x)$task |> get_azure_property("title"), "\n", sep = "")
+  } else {
+    cat("Planner Task (Project ID)\n")
+  }
   print(as.integer(x))
 }
 

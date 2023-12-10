@@ -85,15 +85,32 @@ get_user <- function(..., property = "shiny") {
 
 # helper function for paths and source() calls
 full_path_to_currently_sourced_script <- function() {
+  
   # we start here: https://stackoverflow.com/a/28260382/4575331
-  x <- eval(match.call()[[1]])
-  out <- utils::getSrcFilename(x)
+  out <- tryCatch({
+    x <- eval(match.call()[[1]])
+    utils::getSrcFilename(x)
+  }, error = function(e) NULL)
+  
   if (is.null(out) || length(out) == 0) {
     # now we go here: https://stackoverflow.com/a/1816487/4575331
-    frame_files <- lapply(sys.frames(), function(x) x$ofile)
-    frame_files <- Filter(Negate(is.null), frame_files)
-    out <- dirname(frame_files[[length(frame_files)]])
+    out <- tryCatch({
+      frame_files <- lapply(sys.frames(), function(x) x$ofile)
+      frame_files <- Filter(Negate(is.null), frame_files)
+      dirname(frame_files[[length(frame_files)]])  
+    }, error = function(e) NULL)
   }
+  
+  if (is.null(out) || length(out) == 0) {
+    # now we do what we had in an earlier function
+    for (i in sys.nframe():1) {
+      x <- sys.frame(i)$ofile
+      if (!is.null(x) & is.null(out)) {
+        out <- normalizePath(x)
+      }
+    }
+  }
+  
   out
 }
 

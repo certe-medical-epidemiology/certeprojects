@@ -6,6 +6,10 @@ Name: ✅ Taak verplaatsen...
 Binding: addin2_projects_update
 Interactive: true
 
+Name: 🌟 Nieuw Quarto-document voor project...
+Binding: addin3_quarto_skeleton
+Interactive: true
+
 Name: 💾 Opslaan in projectmap...
 Binding: addin4_projects_save
 Interactive: true

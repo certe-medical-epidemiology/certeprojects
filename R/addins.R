@@ -23,6 +23,9 @@ addin1_projects_new <- function() {
 addin2_projects_update <- function() {
   project_update()
 }
+addin3_quarto_skeleton <- function() {
+  project_add_qmd_skeleton()
+}
 addin4_projects_save <- function() {
   project_save_file()
 }

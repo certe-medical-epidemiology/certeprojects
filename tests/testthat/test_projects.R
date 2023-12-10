@@ -17,53 +17,6 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-project_dir <- paste0(tempdir(), "/projects/")
-my_secrets_file <- tempfile(fileext = ".yaml")
-Sys.setenv(secrets_file = my_secrets_file)
-writeLines(c(paste0("projects.path: '", project_dir, "'"),
-             "teams.webhooks.file: ''"),
-           my_secrets_file)
-
-test_that("project properties work", {
-  
-  read_secret("projects.path")
-
-  dir.create(path = project_dir)
-  dir.create(path = paste0(project_dir, "Project Something - p123/"))
-  
-  expect_true(file.create(paste0(project_dir, "Project Something - p123/Analyse.R")))
-  
-  expect_identical(project_get_folder_full(123),
-                   gsub("\\", "/", 
-                        paste0(normalizePath(paste0(project_dir, "Project Something - p123")), "/"),
-                        fixed = TRUE))
-  expect_identical(project_get_folder(123), "Project Something - p123")
-  expect_warning(project_get_folder(456))
-  expect_identical(suppressWarnings(project_get_folder(456)), NA_character_)
-  expect_identical(project_get_file("Analyse.R", 123),
-                   gsub("\\", "/", 
-                        normalizePath(paste0(project_dir, "Project Something - p123/Analyse.R")),
-                        fixed = TRUE))
-  expect_identical(project_get_file(".*lys.*", 123),
-                   gsub("\\", "/", 
-                        normalizePath(paste0(project_dir, "Project Something - p123/Analyse.R")),
-                        fixed = TRUE))
-  expect_warning(project_get_file("does not exist", 123))
-  expect_identical(suppressWarnings(project_get_file("does not exist", 123)), NA_character_)
-  expect_identical(project_set_file("test.csv", 123),
-                   gsub("\\", "/",
-                        paste0(normalizePath(paste0(project_dir, "Project Something - p123")), "/test.csv"),
-                        fixed = TRUE))
-  
-  expect_identical(project_set_folder("testdir", 123),
-                   gsub("\\", "/",
-                        paste0(normalizePath(paste0(project_dir, "Project Something - p123/testdir")), "/"),
-                        fixed = TRUE))
-
-  expect_true(project_identifier(123) %like% paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmdd"), "[0-9]{4}-123"))
-  expect_true(project_identifier(NULL) %like% paste0(Sys.info()["user"], "-", certestyle::format2(Sys.time(), "yymmdd"), "[0-9]{4}"))
-})
-
 test_that("scheduling works", {
   expect_message(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1))
   expect_equal(suppressMessages(schedule_task(., ., ., ., ., Sys.info()["user"], 1 + 1)), 2)

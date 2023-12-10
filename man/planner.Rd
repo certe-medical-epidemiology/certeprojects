@@ -14,7 +14,7 @@
 \alias{planner_retrieve_project_id}
 \alias{planner_task_request_validation}
 \alias{planner_task_validate}
-\alias{planner_project_from_path}
+\alias{planner_create_project_from_path}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
 \alias{as.data.frame.ms_object}
@@ -93,7 +93,7 @@ planner_task_validate(
   account = connect_planner()
 )
 
-planner_project_from_path(
+planner_create_project_from_path(
   path,
   projects_path = read_secret("projects.path"),
   account = connect_planner(),
@@ -208,7 +208,7 @@ These functions use the connection to Microsoft Planner set up with \code{\link[
 
 \code{\link[=planner_retrieve_project_id]{planner_retrieve_project_id()}} retrieves the p-number from the task title and returns it as \link{integer}.
 
-Use \code{\link[=planner_project_from_path]{planner_project_from_path()}} to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
+Use \code{\link[=planner_create_project_from_path]{planner_create_project_from_path()}} to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
 
 \code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy project.
 

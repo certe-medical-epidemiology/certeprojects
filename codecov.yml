@@ -21,12 +21,13 @@ coverage:
   # more than 75% coverage is unfeasible in non-interactive mode
   range:
   - 0.0
-  - 75.0
+  - 25.0
 
 ignore:
   - "R/addins.R"
   - "R/ms_connect.R"
   - "R/ms_planner.R"
   - "R/ms_teams.R"
+  - "R/project_properties.R"
   - "R/shiny.R"
   - "R/universal.R"

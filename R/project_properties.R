@@ -113,49 +113,61 @@ project_identifier <- function(project_number = project_get_current_id()) {
 
 #' @rdname project_properties
 #' @export
-project_get_folder <- function(project_number = project_get_current_id()) {
+project_get_folder <- function(project_number = project_get_current_id(),
+                               account = connect_planner()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  basename(project_get_folder_full(project_number = project_number))
+  basename(project_get_folder_full(project_number = project_number, account = account))
 }
 
 #' @rdname project_properties
+#' @inheritParams planner_create_project_from_path
 #' @export
-project_get_folder_full <- function(project_number = project_get_current_id()) {
-  project_number <- gsub("[^0-9]", "", project_number)
-  project_path <- read_secret("projects.path")
-  
-  folders <- list.dirs(project_path,
-                       full.names = TRUE,
-                       recursive = FALSE)
-  folder <- folders[folders %like% paste0("p", project_number)][1L]
-  if (!is.na(folder)) {
-    out <- gsub("\\", "/", normalizePath(paste0(folder, "/")), fixed = TRUE)
-    if (out %unlike% "/$") {
-      out <- paste0(out, "/")
-    }
-    out
+project_get_folder_full <- function(project_number = project_get_current_id(),
+                                    projects_path = read_secret("projects.path"),
+                                    account = connect_planner()) {
+  if (!is.null(attributes(project_number)$task)) {
+    # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
+    project_title <- attributes(project_number)$task |> get_azure_property("title")
   } else {
-    warning("Project folder of p", project_number, " not found")
+    project_title <- planner_task_search(project_number,
+                                         include_completed = TRUE,
+                                         include_description = FALSE,
+                                         account = account) |> 
+      get_azure_property("title")
+  }
+  
+  folders <- list.dirs(projects_path,
+                       full.names = FALSE,
+                       recursive = FALSE)
+  folder <- folders[folders == project_title][1]
+  if (!is.na(folder)) {
+    paste0(file.path(projects_path, folder), .Platform$file.sep)
+  } else {
+    warning("Project folder not found: \"", file.path(projects_path, project_title), "\"", call. = FALSE)
     NA_character_
   }
 }
 
 #' @rdname project_properties
 #' @export
-project_get_title <- function(project_number = project_get_current_id()) {
+project_get_title <- function(project_number = project_get_current_id(),
+                              account = connect_planner()) {
   if (is.null(project_number)) {
     return(NA_character_)
   }
   project_number <- gsub("[^0-9]", "", project_number)
-  trimws(gsub("-? ?p[0-9]+/?$", "", project_get_folder(project_number = project_number)))
+  trimws(gsub("-? ?p[0-9]+/?$", "", project_get_folder(project_number = project_number, account = account)))
 }
 
 #' @rdname project_properties
 #' @importFrom certestyle format2 font_bold font_blue
 #' @export
-project_get_file <- function(filename, project_number = project_get_current_id(), fixed = FALSE) {
+project_get_file <- function(filename,
+                             project_number = project_get_current_id(),
+                             fixed = FALSE,
+                             account = connect_planner()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number)
+  folder <- project_get_folder_full(project_number = project_number, account = account)
   filename <- filename[1L]
   if (isTRUE(fixed)) {
     filename <- paste0("^", filename, "$")
@@ -209,44 +221,50 @@ project_get_file <- function(filename, project_number = project_get_current_id()
 
 #' @rdname project_properties
 #' @export
-project_set_file <- function(filename, project_number = project_get_current_id()) {
+project_set_file <- function(filename,
+                             project_number = project_get_current_id(),
+                             account = connect_planner()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number)
+  folder <- project_get_folder_full(project_number = project_number, account = account)
   filename <- filename[1L]
   if (!is.na(folder)) {
-    filename <- paste0(folder, filename)
+    file.path(folder, filename)
   } else {
-    filename <- paste0(tools::file_path_as_absolute(dirname(filename)), "/", filename)
+    file.path(dirname(filename), filename)
   }
-  gsub("//", "/", filename, fixed = TRUE)
 }
 
 #' @rdname project_properties
 #' @details [project_set_folder()] will create the folder if it does not exist.
 #' @export
-project_set_folder <- function(foldername, project_number = project_get_current_id()) {
+project_set_folder <- function(foldername,
+                               project_number = project_get_current_id(),
+                               account = connect_planner()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number)
+  folder <- project_get_folder_full(project_number = project_number, account = account)
   foldername <- foldername[1L]
   if (!is.na(folder)) {
-    foldername <- gsub("//", "/", paste0(folder, "/", foldername), fixed = TRUE)
+    foldername <- file.path(folder, foldername)
   }
   if (!dir.exists(foldername)) {
     invisible(dir.create(foldername))
   }
-  paste0(tools::file_path_as_absolute(foldername), "/")
+  paste0(foldername, "/")
 }
 
 #' @rdname project_properties
 #' @importFrom rstudioapi navigateToFile
 #' @export
-project_open_analysis_file <- function(project_number = project_get_current_id(ask = TRUE)) {
+project_open_analysis_file <- function(project_number = project_get_current_id(ask = TRUE),
+                                       account = connect_planner()) {
   if (is.null(project_number)) {
     return(invisible())
   }
   project_number <- gsub("[^0-9]", "", project_number)
   # furst argument in project_get_file is case-insensitive
-  path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$", project_number = project_number)
+  path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$",
+                           project_number = project_number,
+                           account = account)
   if (is.na(path)) {
     stop(paste0("No syntax files found for p", project_number))
   } else {
@@ -256,16 +274,18 @@ project_open_analysis_file <- function(project_number = project_get_current_id(a
 
 #' @rdname project_properties
 #' @export
-project_open_folder <- function(project_number = project_get_current_id(ask = TRUE)) {
+project_open_folder <- function(project_number = project_get_current_id(ask = TRUE),
+                                account = connect_planner()) {
   if (is.null(project_number)) {
     return(invisible())
   }
-  path <- project_get_folder_full(project_number = project_number)
+  path <- project_get_folder_full(project_number = project_number, account = account)
   utils::browseURL(path)
 }
 
 #' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile
-project_save_file <- function(project_number = project_get_current_id(ask = TRUE)) {
+project_save_file <- function(project_number = project_get_current_id(ask = TRUE),
+                              account = connect_planner()) {
   current <- getSourceEditorContext()
   if (is.null(current)) {
     showDialog(title = "No file to be saved", message = "Open a (text) file first to save.")
@@ -274,9 +294,8 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
   
   if (is.null(project_number)) {
     path <- getwd()
-    
   } else {
-    path <- project_get_folder_full(project_number = project_number)
+    path <- project_get_folder_full(project_number = project_number, account = account)
   }
   
   new_file <- showPrompt(title = "Save File",
@@ -301,4 +320,32 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
   } else {
     message("File save cancelled.")
   }
+}
+
+#' @rdname project_properties
+#' @param filename name for the new Quarto file
+#' @details [project_add_qmd_skeleton()] initializes a new Quarto skeleton for a project.
+#' @export
+project_add_qmd_skeleton <- function(filename = NULL,
+                                     project_number = project_get_current_id(),
+                                     account = connect_planner()) {
+  project_folder <- project_get_folder_full(project_number = project_number, account = account)
+  if (is.na(project_folder)) {
+    return(invisible())
+  }
+  if (is.null(filename)) {
+    filename <- showPrompt(title = "Bestandsnaam voor Quarto-document",
+                           message = paste0("Bestandsnaam voor het Quarto-document voor project '", project_folder, "':"),
+                           default = paste0("Analyse p", gsub(".*(p[0-9]+).*", "\\1", project_folder), ".qmd"))
+    
+    if (is.null(filename)) {
+      return(invisible())
+    }
+  }
+  if (filename %unlike% "[.]qmd$") {
+    filename <- paste0(filename, ".qmd")
+  }
+  filename <- file.path(project_folder, filename)
+  file.copy(from = system.file("qmd_skeleton.qmd", package = "certeprojects"), to = filename, overwrite = FALSE, copy.date = FALSE)
+  navigateToFile(file = filename)
 }

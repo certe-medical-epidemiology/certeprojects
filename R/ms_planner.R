@@ -106,7 +106,7 @@ planner_task_create <- function(title,
   } else {
     project_number <- NULL
   }
-
+  
   if (!arg_is_empty(categories) && isTRUE("Project" %in% categories)) {
     # projects must contain valid file names, since they have an accompanying folder
     invalid_characters <- c("/", "\\", ":", "*", "?", "\"", "<", ">", "|")
@@ -467,6 +467,11 @@ planner_task_search <- function(search_term = ".*",
                                 include_completed = TRUE,
                                 include_description = FALSE,
                                 account = connect_planner()) {
+  if (inherits(search_term, "ms_plan_task")) {
+    return(search_term)
+  } else {
+    search_term <- as.character(search_term)
+  }
   if (is.null(search_term) || search_term %in% c(NA, "")) {
     search_term <- ".*"
   }
@@ -628,7 +633,7 @@ planner_categories_list <- function(account = connect_planner()) {
 #' @details [planner_retrieve_project_id()] retrieves the p-number from the task title and returns it as [integer].
 #' @export
 planner_retrieve_project_id <- function(task, account = connect_planner()) {
-  task <- planner_task_find(task)
+  task <- planner_task_search(task, include_completed = TRUE, include_description = FALSE, account = account)
   title <- get_azure_property(task, "title")
   if (title %like% "p[0-9]+") {
     structure(as.integer(gsub(".*p([0-9]+).*", "\\1", title)),
@@ -636,6 +641,7 @@ planner_retrieve_project_id <- function(task, account = connect_planner()) {
               class = c("integer_task", "integer"))
   } else {
     structure(NA_integer_,
+              task = NULL,
               class = c("integer_task", "integer"))
   }
 }
@@ -644,7 +650,7 @@ planner_retrieve_project_id <- function(task, account = connect_planner()) {
 #' @method print integer_task
 #' @export
 print.integer_task <- function(x, ...) {
-  cat("Planner Task/Project IDs\n")
+  cat("Planner Task (Project ID)\n")
   print(as.integer(x))
 }
 
@@ -669,19 +675,19 @@ planner_task_validate <- function(task,
 #' @param path location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.
 #' @param projects_path location of the folder that contains all department projects
 #' @param ... arguments passed on to [planner_task_create()]
-#' @details Use [planner_project_from_path()] to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
+#' @details Use [planner_create_project_from_path()] to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
 #' @export
-planner_project_from_path <- function(path,
-                                      projects_path = read_secret("projects.path"),
-                                      account = connect_planner(),
-                                      title = basename(path),
-                                      ...) {
+planner_create_project_from_path <- function(path,
+                                             projects_path = read_secret("projects.path"),
+                                             account = connect_planner(),
+                                             title = basename(path),
+                                             ...) {
   if (!dir.exists(path)) {
     stop("path not found: ", path, call. = FALSE)
   }
   path <- tools::file_path_as_absolute(path)
   if (!interactive()) {
-    stop("planner_project_from_path() has to run in interactive mode.", call. = FALSE)
+    stop("planner_create_project_from_path() has to run in interactive mode.", call. = FALSE)
   }
   continue <- utils::askYesNo(paste0("Nieuwe Planner-taak en projectnummer aanmaken voor '", title, "'?"),
                               prompts = gettext(c("Ja", "Nee", "Annuleren")))

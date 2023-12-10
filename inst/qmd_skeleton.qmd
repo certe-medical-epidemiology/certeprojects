@@ -1,0 +1,44 @@
+---
+title: "Titel" # laat leeg voor geen voorblad bij PDF
+subtitle: "Subtitel"
+subtitle2: "Subtitel" # komt onder subtitle, is iets kleiner
+author: "`r certestyle::rmarkdown_department()`"
+date: "`r Sys.Date()`" # moet in YYYY-MM-DD
+date-format: "D MMMM YYYY" # zie Quarto website
+identifier: "`r certeprojects::project_identifier()`"
+toc: true
+toc-depth: 2
+fig-width: 6.5 # in inch
+fig-height: 3.5  # in inch
+format:
+  # docx:
+  #   reference-doc: "C:/R/R-pakketten/certestyle/rmarkdown/latextemplate/certe.docx"
+  pdf:
+    execute:
+      echo: false
+      warning: false
+    pdf-engine: "xelatex"
+    template: "C:/R/R-pakketten/certestyle/rmarkdown/latextemplate/certe.tex"
+logofront: "`r certestyle::rmarkdown_logo('front')`"   # max 16x7 cm
+logofooter: "`r certestyle::rmarkdown_logo('footer')`" # max 16x0.7 cm
+editor: source
+crossref:
+  fig-prefix: "figuur"
+  tbl-prefix: "tabel"
+lang: "nl"
+editor_options:
+  chunk_output_type: console
+---
+ 
+```{r}
+#| message: false
+#| warning: false
+#| label: Downloaden
+
+library(certedata)
+df <- certedb::get_diver_data()
+
+```
+
+# Inleiding
+

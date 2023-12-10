@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.17.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.17.4</span>
       </span>
     </div>
 
@@ -124,7 +124,7 @@
 <span></span>
 <span><span class="fu">planner_task_search</span><span class="op">(</span></span>
 <span>  search_term <span class="op">=</span> <span class="st">".*"</span>,</span>
-<span>  limit <span class="op">=</span> <span class="cn">Inf</span>,</span>
+<span>  limit <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  include_completed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  include_description <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -261,7 +261,7 @@
 
 
 <dt>search_term</dt>
-<dd><p>search term, can contain a regular expression</p></dd>
+<dd><p>search term, can contain a regular expression. When searching for project numbers (such as "p201 - Some text", or "p201" or "201"), only titles will be searched for the project number.</p></dd>
 
 
 <dt>limit</dt>

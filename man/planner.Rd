@@ -69,7 +69,7 @@ planner_tasks_list(
 
 planner_task_search(
   search_term = ".*",
-  limit = Inf,
+  limit = 50,
   include_completed = TRUE,
   include_description = FALSE,
   account = connect_planner()
@@ -163,7 +163,7 @@ planner_highest_project_id(
 
 \item{include_completed}{also search completed tasks}
 
-\item{search_term}{search term, can contain a regular expression}
+\item{search_term}{search term, can contain a regular expression. When searching for project numbers (such as "p201 - Some text", or "p201" or "201"), only titles will be searched for the project number.}
 
 \item{limit}{maximum number of tasks to show}
 

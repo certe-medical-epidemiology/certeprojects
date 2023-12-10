@@ -47,7 +47,7 @@ project_get_current_id <- function(ask = NULL) {
   asked <- FALSE
   path <- full_path_to_currently_sourced_script()
   if (is.null(path) && interactive() && isAvailable()) {
-    path <- getSourceEditorContext()$path
+    path <- tools::file_path_as_absolute(getSourceEditorContext()$path)
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
       id <- planner_retrieve_project_id(planner_task_search(search_term = search_term, limit = 25))

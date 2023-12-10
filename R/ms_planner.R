@@ -453,7 +453,7 @@ planner_tasks_list <- function(account = connect_planner(),
 }
 
 #' @rdname planner
-#' @param search_term search term, can contain a regular expression
+#' @param search_term search term, can contain a regular expression. When searching for project numbers (such as "p201 - Some text", or "p201" or "201"), only titles will be searched for the project number.
 #' @param limit maximum number of tasks to show
 #' @param include_completed also search completed tasks
 #' @param include_description also search the description, which requires additional queries and lowers speed
@@ -463,25 +463,40 @@ planner_tasks_list <- function(account = connect_planner(),
 #' @importFrom rstudioapi isAvailable
 #' @export
 planner_task_search <- function(search_term = ".*",
-                                limit = Inf,
+                                limit = 50,
                                 include_completed = TRUE,
                                 include_description = FALSE,
                                 account = connect_planner()) {
   if (is.null(search_term) || search_term %in% c(NA, "")) {
     search_term <- ".*"
   }
-  message("Searching...")
   tasks <- planner_tasks_list(account = account,
                               plain = FALSE,
                               include_completed = include_completed)
+  
+  search_parts <- unlist(strsplit(search_term, "[^a-zA-Z0-9]"))
+  if (any(search_parts %like% "^p[0-9]+$", na.rm = TRUE)) {
+    # term contains project number, only keep that
+    search_term <- search_parts[search_parts %like% "^p[0-9]+$"][1]
+  }
+  if (search_term %like% "^p?[0-9]+$") {
+    # searching for a project number (such as "p100" or "100"), just check titles and return the hit
+    task_titles <- tasks |> get_azure_property("title")
+    title_hits <- which(task_titles %like% paste0("p", gsub("p", "", search_term), "$"))
+    if (length(title_hits) == 1) {
+      # found the project
+      return(tasks[[title_hits]])
+    }
+  }
+  
   tasks_df <- data.frame(id = tasks |> get_azure_property("id"),
                          title = tasks |> get_azure_property("title"),
+                         createdDateTime = tasks |> get_azure_property("createdDateTime") |> as.Date(),
+                         dueDateTime = tasks |> get_azure_property("dueDateTime") |> as.Date(),
                          bucketId = tasks |> get_azure_property("bucketId"))
-  if (search_term %like% "p?[0-9]" && sum(unique(tasks_df$title) %like% search_term) == 1) {
-    # looking for project and only 1 title fits it
-    return(tasks[[which(tasks_df$title %like% search_term)[1]]])
-  }
+  
   if (isTRUE(include_description) && search_term %unlike% "p?[0-9]") {
+    message("Downloading task descriptions...", appendLF = FALSE)
     # also add descriptions
     tasks_df$description = vapply(FUN.VALUE = character(1),
                                   tasks,
@@ -493,9 +508,7 @@ planner_task_search <- function(search_term = ".*",
                                       desc
                                     }
                                   })
-  }
-  if (!is.infinite(limit)) {
-    tasks_df <- tasks_df[seq_len(limit), ]
+    message("OK")
   }
   
   tasks_df$search_col <- do.call(paste, tasks_df) # this includes description if it's in it
@@ -516,24 +529,17 @@ planner_task_search <- function(search_term = ".*",
       return(tasks[[which(get_azure_property(tasks, "id") == tasks_df$id[1])]])
     } else {
       if (!is.infinite(limit)) {
-        if (sum(tasks_df$is_like) <= limit) {
-          limit <- Inf
-        } else {
-          tasks_df <- tasks_df[seq_len(limit), ]
-        }
+        tasks_df <- tasks_df[seq_len(limit), ]
       }
       # interactive and more than 1, pick from menu
       buckets <- planner_buckets_list(account = account) |> 
         lapply(as.data.frame, account = account) |> 
         bind_rows()
       tasks_df$bucket <- buckets$name[match(tasks_df$bucketId, buckets$id)]
-      texts <- paste0(font_blue(tasks_df$title, collapse = NULL),
-                      " (", ifelse(is.na(tasks_df$createdDateTime),
-                                   "",
-                                   paste0(format2(tasks_df$createdDateTime, "ddd d mmm yyyy"), ", ")),
-                      tasks_df$bucket, ")")
       if (rstudioapi::isAvailable()) {
         # use RStudio and Shiny to pick a project
+        duplicated_titles <- which(tasks_df$title %in% tasks_df$title[which(duplicated(tasks_df$title))])
+        tasks_df$title[duplicated_titles] <- paste0(tasks_df$title[duplicated_titles], " (eind: ", format2(tasks_df$dueDateTime[duplicated_titles], "ddd d mmm yyyy"), ")")
         task_id <- NULL
         task_id <- shiny_item_picker(tasks_df$title |> stats::setNames(tasks_df$id),
                                      oversized = which(tasks_df$is_like),
@@ -545,6 +551,11 @@ planner_task_search <- function(search_term = ".*",
           return(tasks[[which(get_azure_property(tasks, "id") == task_id)]])
         }
       } else {
+        texts <- paste0(font_blue(tasks_df$title, collapse = NULL),
+                        " (", ifelse(is.na(tasks_df$createdDateTime),
+                                     "",
+                                     paste0(format2(tasks_df$createdDateTime, "ddd d mmm yyyy"), ", ")),
+                        tasks_df$bucket, ")")
         choice <- utils::menu(texts, graphics = FALSE,
                               title = paste0(ifelse(is.infinite(limit), "Tasks", paste("First", limit, "tasks")),
                                              " in '", get_azure_property(account, "title"), "' found (0 to Cancel):"))

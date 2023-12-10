@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.17.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.18.0</span>
       </span>
     </div>
 
@@ -80,25 +80,56 @@
 <span></span>
 <span><span class="fu">project_identifier</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_folder</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_folder</span><span class="op">(</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_folder_full</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_folder_full</span><span class="op">(</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  projects_path <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"projects.path"</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_get_title</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_get_title</span><span class="op">(</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">project_get_file</span><span class="op">(</span></span>
 <span>  <span class="va">filename</span>,</span>
 <span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  fixed <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  fixed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_set_file</span><span class="op">(</span><span class="va">filename</span>, project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_set_file</span><span class="op">(</span></span>
+<span>  <span class="va">filename</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_set_folder</span><span class="op">(</span><span class="va">foldername</span>, project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_set_folder</span><span class="op">(</span></span>
+<span>  <span class="va">foldername</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_open_analysis_file</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">project_open_analysis_file</span><span class="op">(</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_open_folder</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">project_open_folder</span><span class="op">(</span></span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">project_add_qmd_skeleton</span><span class="op">(</span></span>
+<span>  filename <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu">project_get_current_id</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -111,8 +142,16 @@
 <dd><p>Planner project number</p></dd>
 
 
+<dt>account</dt>
+<dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="connect.html">connect_planner()</a></code> or via <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code><code>$get_group(name)$get_plan(plan_title)</code>.</p></dd>
+
+
+<dt>projects_path</dt>
+<dd><p>location of the folder that contains all department projects</p></dd>
+
+
 <dt>filename</dt>
-<dd><p>filename to set or get, case-insensitive, and can also be a <a href="https://rdrr.io/r/base/regex.html" class="external-link">regular expression</a></p></dd>
+<dd><p>name for the new Quarto file</p></dd>
 
 
 <dt>fixed</dt>
@@ -129,12 +168,13 @@
 <p><code>project_identifier()</code> generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: 'runner
 '), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).</p>
 <p><code>project_set_folder()</code> will create the folder if it does not exist.</p>
+<p><code>project_add_qmd_skeleton()</code> initializes a new Quarto skeleton for a project.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">project_identifier</span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2312101111-123"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2312101336-123"</span>
 </code></pre></div>
     </div>
   </div>

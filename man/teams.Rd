@@ -5,6 +5,7 @@
 \alias{teams_projects_channel}
 \alias{teams_new_project}
 \alias{teams_browse_project}
+\alias{teams_list_project_files}
 \alias{teams_download_project_file}
 \alias{teams_get_project_file}
 \alias{teams_open_project_analysis_file}
@@ -37,6 +38,12 @@ teams_new_project(
 )
 
 teams_browse_project(
+  task,
+  channel = teams_projects_channel(),
+  planner = connect_planner()
+)
+
+teams_list_project_files(
   task,
   channel = teams_projects_channel(),
   planner = connect_planner()

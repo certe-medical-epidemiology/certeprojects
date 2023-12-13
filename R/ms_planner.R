@@ -638,22 +638,22 @@ planner_retrieve_project_id <- function(task, account = connect_planner()) {
   if (title %like% "p[0-9]+") {
     structure(as.integer(gsub(".*p([0-9]+).*", "\\1", title)),
               task = task,
-              class = c("integer_task", "integer"))
+              class = c("certeprojects_planner_project_nr", "integer"))
   } else {
     structure(NA_integer_,
               task = NULL,
-              class = c("integer_task", "integer"))
+              class = c("certeprojects_planner_project_nr", "integer"))
   }
 }
 
 #' @noRd
-#' @method print integer_task
+#' @method print certeprojects_planner_project_nr
 #' @export
-print.integer_task <- function(x, ...) {
+print.certeprojects_planner_project_nr <- function(x, ...) {
   if (!is.null(attributes(x)$task)) {
-    cat("Planner Task (Project ID) of: ", attributes(x)$task |> get_azure_property("title"), "\n", sep = "")
+    cat("MS Planner Project ID of: ", attributes(x)$task |> get_azure_property("title"), "\n", sep = "")
   } else {
-    cat("Planner Task (Project ID)\n")
+    cat("MS Planner Project ID\n")
   }
   print(as.integer(x))
 }

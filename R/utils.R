@@ -56,7 +56,7 @@ count_lines <- function(x) {
 }
 
 is_empty <- function(x) {
-  is.null(x) || isFALSE(x) || identical(x, "") || all(is.na(as.character(x)))
+  !is.environment(x) && (is.null(x) || isFALSE(x) || identical(x, "") || all(is.na(as.character(x))))
 }
 
 arg_is_empty <- function(x) {

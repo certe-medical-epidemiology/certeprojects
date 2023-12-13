@@ -30,7 +30,7 @@
 #' @rdname project_properties
 #' @importFrom rstudioapi getSourceEditorContext showPrompt isAvailable
 #' @export
-project_get_current_id <- function(ask = NULL) {
+project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   # first try project number from full file location:
   # /folder/p123 Name.Rmd
   # /p123 folder/Name.Rmd
@@ -51,8 +51,11 @@ project_get_current_id <- function(ask = NULL) {
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
-      if (is.null(search_term)) return(invisible(FALSE))
-      id <- planner_retrieve_project_id(planner_task_search(search_term = search_term, limit = 25))
+      if (is_empty(search_term)) return(invisible(FALSE))
+      id <- search_project_first_local_then_planner(search_term = search_term, account = account)
+      if (is_empty(id)) {
+        return(NULL)
+      }
       return(fix_id(id))
     } else if (is.null(path)) {
       # for when ask == FALSE
@@ -69,35 +72,66 @@ project_get_current_id <- function(ask = NULL) {
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
     search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
-    if (is.null(search_term)) return(invisible(FALSE))
-    task <- planner_task_search(search_term = search_term, limit = 25)
-    if (is.null(task) || suppressWarnings(all(is.na(task)))) {
-      return(invisible())
+    if (is_empty(search_term)) return(invisible(FALSE))
+    id <- search_project_first_local_then_planner(search_term = search_term, account = account)
+    if (is_empty(id)) {
+      return(NULL)
     }
-    id <- planner_retrieve_project_id(task)
     asked <- TRUE
   }
   
   if (identical(ask, TRUE) && asked == FALSE) {
     if (interactive() && (length(id) == 0 || is.na(id))) {
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
-      if (is.null(search_term)) return(invisible(FALSE))
+      if (is_empty(search_term)) return(invisible(FALSE))
     } else {
       search_term <- ""
     }
-    task <- planner_task_search(search_term = ifelse(!is.na(id) & length(id) > 0,
-                                                     paste0("p", fix_id(id)),
-                                                     search_term),
-                                limit = 25)
-    if (is.null(task) || suppressWarnings(all(is.na(task)))) {
-      return(invisible())
-    }
-    id <- planner_retrieve_project_id(task)
-    if (is.null(id) || all(is.na(id))) {
+    id <- search_project_first_local_then_planner(search_term = ifelse(!is.na(id) & length(id) > 0,
+                                                                       paste0("p", fix_id(id)),
+                                                                       search_term),
+                                                  account = account)
+    if (is_empty(id)) {
       return(NULL)
     }
   }
   fix_id(id)
+}
+
+# only needed when projects are also locally available (on Z or local OneDrive)
+search_project_first_local_then_planner <- function(search_term, as_title = FALSE, account = connect_planner()) {
+  if (dir.exists(read_secret("projects.path")) && search_term %like% "p?[0-9]+") {
+    projects <- list.dirs(read_secret("projects.path"), full.names = FALSE, recursive = FALSE)
+    search_parts <- unlist(strsplit(search_term, "[^a-zA-Z0-9]"))
+    if (any(search_parts %like% "^p?[0-9]+$", na.rm = TRUE)) {
+      # term contains project number, only keep that
+      search_term2 <- search_parts[search_parts %like% "^p?[0-9]+$"][1]
+      id <- projects[projects %like% paste0(search_term2, "$")]
+      if (length(id) > 0) {
+        if (as_title == TRUE) {
+          return(id[1])
+        } else {
+          return(as.integer(gsub(".*p([0-9]+).*", "\\1", id[1])))
+        }
+      }
+    }
+  }
+  
+  # didn't find it locally, now try via MS Planner
+  task <- planner_task_search(search_term = search_term,
+                              limit = 25,
+                              include_completed = TRUE,
+                              include_description = FALSE,
+                              account = account)
+  if (is_empty(task)) {
+    return(NULL)
+  } else {
+    if (as_title == TRUE) {
+      return(task |> get_azure_property("title"))
+    } else {
+      return(planner_retrieve_project_id(task))
+    }
+  }
 }
 
 #' @rdname project_properties
@@ -129,18 +163,14 @@ project_get_folder <- function(project_number = project_get_current_id(),
 project_get_folder_full <- function(project_number = project_get_current_id(),
                                     projects_path = read_secret("projects.path"),
                                     account = connect_planner()) {
-  if (isFALSE(project_number)) {
+  if (is_empty(project_number)) {
     return(NA_character_)
   }
   if (!is.null(attributes(project_number)$task)) {
     # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
     project_title <- attributes(project_number)$task |> get_azure_property("title")
   } else {
-    project_title <- planner_task_search(project_number,
-                                         include_completed = TRUE,
-                                         include_description = FALSE,
-                                         account = account) |> 
-      get_azure_property("title")
+    project_title <- search_project_first_local_then_planner(project_number, as_title = TRUE, account = account)
   }
   
   folders <- list.dirs(projects_path,

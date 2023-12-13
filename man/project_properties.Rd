@@ -15,7 +15,7 @@
 \alias{project_add_qmd_skeleton}
 \title{Project Properties}
 \usage{
-project_get_current_id(ask = NULL)
+project_get_current_id(ask = NULL, account = connect_planner())
 
 project_identifier(project_number = project_get_current_id())
 
@@ -36,7 +36,7 @@ project_get_title(
 )
 
 project_get_file(
-  filename,
+  filename = ".*",
   project_number = project_get_current_id(),
   fixed = FALSE,
   account = connect_planner()
@@ -73,9 +73,9 @@ project_add_qmd_skeleton(
 \arguments{
 \item{ask}{logical to indicate whether the project number should always be asked. The default, \code{NULL}, will show a popup in \link[=interactive]{interactive} \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current \link[=getwd]{working directory} to determine the project number.}
 
-\item{project_number}{Planner project number}
-
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
+
+\item{project_number}{Planner project number}
 
 \item{projects_path}{location of the folder that contains all department projects}
 

@@ -84,7 +84,7 @@ teams_projects_channel <- function(projects_channel_id = read_secret("teams.proj
                          error = function(e) stop("Could not retrieve Channel list: ", e$message))
       pkg_env$teams_project_folder <- folder
       pkg_env$teams_project_folder_from_callr <- FALSE
-      message("OK.")
+      message("OK")
     }
   }
   return(pkg_env$teams_project_folder)
@@ -123,6 +123,14 @@ teams_browse_project <- function(task, channel = teams_projects_channel(), plann
   task <- planner_task_find(task, account = planner)
   # open in the browser
   channel$get_item(get_azure_property(task, "title"))$open()
+}
+
+#' @rdname teams
+#' @export
+teams_list_project_files <- function(task, channel = teams_projects_channel(), planner = connect_planner()) {
+  # validate that the task exists
+  task <- planner_task_find(task, account = planner)
+  channel$get_item(get_azure_property(task, "title"))$list_files()$name
 }
 
 #' @rdname teams
@@ -185,7 +193,7 @@ teams_get_project_file <- function(file, task, channel = teams_projects_channel(
 #' @importFrom rstudioapi navigateToFile showDialog
 #' @export
 teams_open_project_analysis_file <- function(task, channel = teams_projects_channel(), planner = connect_planner()) {
-  task <- planner_task_find(task, account = planner)
+  task <- planner_task_search(task, account = planner)
   path <- teams_download_project_file(file = ".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$",
                                       task = task, channel = channel, planner = planner)
   if (is.na(path)) {
@@ -334,7 +342,7 @@ teams_download_file <- function(full_teams_path = NULL,
                       overwrite = overwrite,
                       recursive = FALSE,
                       parallel = FALSE)
-  message("OK.")
+  message("OK")
   return(invisible(paste0(destination_dir, "/", item$item_name)))
 }
 
@@ -364,7 +372,7 @@ teams_download_folder <- function(full_teams_path = NULL,
                       overwrite = overwrite,
                       recursive = recursive,
                       parallel = "parallel" %in% rownames(utils::installed.packages()))
-  message("OK.")
+  message("OK")
   return(invisible(paste0(destination_dir, "/", item$item_name)))
 }
 
@@ -422,7 +430,7 @@ teams_upload_file <- function(file_path,
                     dest = basename(file_path),
                     recursive = FALSE,
                     parallel = FALSE)
-  message("OK.")
+  message("OK")
 }
 
 #' @param folder_path local path of the folder to upload
@@ -452,7 +460,7 @@ teams_upload_folder <- function(folder_path,
                     dest = basename(folder_path),
                     recursive = recursive,
                     parallel = "parallel" %in% rownames(utils::installed.packages()))
-  message("OK.")
+  message("OK")
 }
 
 #' @importFrom certestyle format2 font_bold
@@ -484,14 +492,14 @@ pick_teams_item <- function(full_teams_path = NULL,
     } else {
       # a private channel
       is_private <- TRUE
-      message("OK.")
+      message("OK")
       message("Retrieving private channel '", path_parts[2], "'...", appendLF = FALSE)
       team <- group$get_team()
       channel <- team$get_channel(channel_name = path_parts[2])
       folder <- channel$get_folder()
       item <- folder$get_item(paste0(path_parts[-c(1, 2)], collapse = "/"))
     }
-    message("OK.")
+    message("OK")
     return(list(group_id = group$properties$id,
                 is_private = is_private,
                 channel_id = ifelse(is_private, channel$properties$id, NA_character_),
@@ -568,7 +576,7 @@ pick_teams_item <- function(full_teams_path = NULL,
   files_root <- files[order(tolower(trimws(gsub("[^a-zA-Z0-9 /.-]", "", files$name)))), ]
   file_choices_root <- paste0(font_bold(trimws(files_root$name), collapse = NULL),
                               " (", format_filesize(files_root$size), ")")
-  message("OK.")
+  message("OK")
   cat(font_bold("Current folder:\n\n\U1F465 "), group_name, "\n\n", sep = "")
   picked <- utils::menu(choices = file_choices_root,
                         graphics = FALSE,
@@ -772,7 +780,7 @@ teams_send_message <- function(body,
 #     saveRDS(object = local_path, file = tmp, compress = "xz")
 #     local_path <- tmp
 #     teams_path <- paste0(filename, ".rds")
-#     message("OK.")
+#     message("OK")
 #   }
 #   if (!is.null(project_number)) {
 #     local_path <- project_set_file(filename = local_path, project_number = project_number)
@@ -798,7 +806,7 @@ teams_send_message <- function(body,
 #       get_channel(channel)$
 #       upload_file(src = local_path,
 #                   dest = teams_path)
-#     message("OK.")
+#     message("OK")
 #   }, error = function(e) message("ERROR.\n", e$message))
 #   
 #   # remove temp file
@@ -840,7 +848,7 @@ teams_send_message <- function(body,
 #                     overwrite = TRUE),
 #     error = function(e) message("ERROR.\n", e$message))
 #   if (file.exists(local_path)) {
-#     message("OK.")
+#     message("OK")
 #     return(invisible(local_path))
 #   } else {
 #     return(NULL)
@@ -923,6 +931,51 @@ teams_get_link <- function(teams_path,
                         expiry = expire_after,
                         password = password)
   )
+}
+
+
+# SAVE HANDLER ------------------------------------------------------------
+
+get_temp_dir <- function() {
+  if (is.null(pkg_env$tempdir)) {
+    pkg_env$tempdir <- tools::file_path_as_absolute(tempdir())
+  }
+  pkg_env$tempdir
+}
+
+#' @importFrom rstudioapi navigateToFile
+rs_teams_open <- function(channel = teams_projects_channel(),
+                          planner = connect_planner()) {
+  search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+  if (is.null(search_term)) return(invisible())
+  task <- planner_task_search(search_term = search_term,
+                              include_completed = TRUE,
+                              include_description = FALSE,
+                              account = planner)
+  files <- teams_list_project_files(task, channel = channel, planner = planner)
+  file_picked <- shiny_item_picker(files,
+                                   title = "Bestand kiezen",
+                                   subtitle = paste("Project:", task |> get_azure_property("title")))
+  temp_file <- teams_get_project_file(file = file_picked, task = task)
+  tmp_folder <- get_temp_dir()
+  tmp_teams_folder <- file.path(tmp_folder, "tmp_teams_certeprojects", project |> get_azure_property("title"))
+  dir.create(tmp_teams_folder)
+  dest <- file.path(tmp_teams_folder, temp_file |> get_azure_property("name"))
+  temp_file$download(dest, overwrite = TRUE)
+  invisible(navigateToFile(dest))
+}
+
+#' @importFrom rstudioapi getSourceEditorContext documentSave isAvailable
+rs_teams_save <- function(planner = connect_planner()) {
+  if (!interactive() || !isAvailable()) return(invisible())
+  current_file <- getSourceEditorContext()
+  documentSave(id = current_file$id)
+  path <- current_file$path
+  if (path %like% "tmp_teams_certeprojects") {
+    # we are working on a temporary Teams projects file, so upload to Teams
+    project_number <- gsub(".*(p[0-9]+).*", "\\1", path)
+    teams_upload_project_file(path, task = project_number, planner = planner)
+  }
 }
 
 

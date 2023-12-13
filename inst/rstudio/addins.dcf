@@ -18,8 +18,12 @@ Name: 📊 Projectbestand openen...
 Binding: addin5_projects_open_file
 Interactive: true
 
-Name: 📂 Projectmap openen
-Binding: addin6_projects_open_folder
+# Name: 📊 Projectbestand openen uit Teams...
+# Binding: addin6_projects_teams_open_file
+# Interactive: true
+
+Name: 📂 Projectmap openen...
+Binding: addin7_projects_open_folder
 Interactive: true
 
 Name: 📁 Huidige map instellen...

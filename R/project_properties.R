@@ -51,6 +51,7 @@ project_get_current_id <- function(ask = NULL) {
     if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+      if (is.null(search_term)) return(invisible(FALSE))
       id <- planner_retrieve_project_id(planner_task_search(search_term = search_term, limit = 25))
       return(fix_id(id))
     } else if (is.null(path)) {
@@ -68,6 +69,7 @@ project_get_current_id <- function(ask = NULL) {
   id <- parts[parts %like% "^p[0-9]+$"][1]
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
     search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+    if (is.null(search_term)) return(invisible(FALSE))
     task <- planner_task_search(search_term = search_term, limit = 25)
     if (is.null(task) || suppressWarnings(all(is.na(task)))) {
       return(invisible())
@@ -79,6 +81,7 @@ project_get_current_id <- function(ask = NULL) {
   if (identical(ask, TRUE) && asked == FALSE) {
     if (interactive() && (length(id) == 0 || is.na(id))) {
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+      if (is.null(search_term)) return(invisible(FALSE))
     } else {
       search_term <- ""
     }
@@ -126,6 +129,9 @@ project_get_folder <- function(project_number = project_get_current_id(),
 project_get_folder_full <- function(project_number = project_get_current_id(),
                                     projects_path = read_secret("projects.path"),
                                     account = connect_planner()) {
+  if (isFALSE(project_number)) {
+    return(NA_character_)
+  }
   if (!is.null(attributes(project_number)$task)) {
     # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
     project_title <- attributes(project_number)$task |> get_azure_property("title")
@@ -163,7 +169,7 @@ project_get_title <- function(project_number = project_get_current_id(),
 #' @rdname project_properties
 #' @importFrom certestyle format2 font_bold font_blue
 #' @export
-project_get_file <- function(filename,
+project_get_file <- function(filename = ".*",
                              project_number = project_get_current_id(),
                              fixed = FALSE,
                              account = connect_planner()) {
@@ -182,6 +188,7 @@ project_get_file <- function(filename,
                                    all.files = FALSE,
                                    include.dirs = FALSE,
                                    ignore.case = TRUE))
+    files_found <- files_found[!basename(files_found) %like% "^~[$]"]
     files_found_base <- basename(files_found)
     # sort on last changed (desc):
     files_found_base <- files_found_base[order(file.mtime(files_found), files_found, decreasing = TRUE)]

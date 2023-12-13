@@ -32,7 +32,10 @@ addin4_projects_save <- function() {
 addin5_projects_open_file <- function() {
   project_open_analysis_file()
 }
-addin6_projects_open_folder <- function() {
+addin6_projects_teams_open_file <- function() {
+  rs_teams_open()
+}
+addin7_projects_open_folder <- function() {
   project_open_folder()
 }
 

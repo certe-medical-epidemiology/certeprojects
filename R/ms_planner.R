@@ -472,7 +472,7 @@ planner_task_search <- function(search_term = ".*",
   } else {
     search_term <- as.character(search_term)
   }
-  if (is.null(search_term) || search_term %in% c(NA, "")) {
+  if (is.null(search_term) || length(search_term) == 0 || search_term %in% c(NA, "")) {
     search_term <- ".*"
   }
   tasks <- planner_tasks_list(account = account,

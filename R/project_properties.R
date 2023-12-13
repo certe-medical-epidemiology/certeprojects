@@ -108,7 +108,7 @@ project_get_current_id <- function(ask = NULL) {
 #' project_identifier(123)
 project_identifier <- function(project_number = project_get_current_id()) {
   user_datetime <- paste0(Sys.info()["user"], "-", format2(Sys.time(), "yymmddHHMM"))
-  if (is.null(project_number) || all(project_number %in% c("", NA, FALSE))) {
+  if (is_empty(project_number)) {
     user_datetime
   } else {
     paste0(user_datetime, "-", project_number)
@@ -159,7 +159,7 @@ project_get_folder_full <- function(project_number = project_get_current_id(),
 #' @export
 project_get_title <- function(project_number = project_get_current_id(),
                               account = connect_planner()) {
-  if (is.null(project_number)) {
+  if (is_empty(project_number)) {
     return(NA_character_)
   }
   project_number <- gsub("[^0-9]", "", project_number)
@@ -265,7 +265,7 @@ project_set_folder <- function(foldername,
 #' @export
 project_open_analysis_file <- function(project_number = project_get_current_id(ask = TRUE),
                                        account = connect_planner()) {
-  if (is.null(project_number)) {
+  if (is_empty(project_number)) {
     return(invisible())
   }
   project_number <- gsub("[^0-9]", "", project_number)
@@ -284,7 +284,7 @@ project_open_analysis_file <- function(project_number = project_get_current_id(a
 #' @export
 project_open_folder <- function(project_number = project_get_current_id(ask = TRUE),
                                 account = connect_planner()) {
-  if (is.null(project_number)) {
+  if (is_empty(project_number)) {
     return(invisible())
   }
   path <- project_get_folder_full(project_number = project_number, account = account)
@@ -300,14 +300,14 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
     return(invisible(FALSE))
   }
   
-  if (is.null(project_number)) {
+  if (is_empty(project_number)) {
     path <- getwd()
   } else {
     path <- project_get_folder_full(project_number = project_number, account = account)
   }
   
   new_file <- showPrompt(title = "Save File",
-                         message = ifelse(is.null(project_number),
+                         message = ifelse(is_empty(project_number),
                                           paste0("In ", path, ":"),
                                           paste0("Project p", project_number, " in ", path, ":")),
                          default = ifelse(current$path != "",

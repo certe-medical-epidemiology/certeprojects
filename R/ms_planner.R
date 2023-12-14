@@ -479,7 +479,7 @@ planner_task_search <- function(search_term = ".*",
                               plain = FALSE,
                               include_completed = include_completed)
   
-  search_parts <- unlist(strsplit(search_term, "[^a-zA-Z0-9]"))
+  search_parts <- unlist(strsplit(as.character(search_term), "[^a-zA-Z0-9]"))
   if (any(search_parts %like% "^p[0-9]+$", na.rm = TRUE)) {
     # term contains project number, only keep that
     search_term <- search_parts[search_parts %like% "^p[0-9]+$"][1]

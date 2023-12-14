@@ -48,7 +48,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   path <- tryCatch(tools::file_path_as_absolute(getSourceEditorContext()$path), error = function(e) NULL)
   if (is.null(path)) {
     path <- full_path_to_currently_sourced_script()
-    if (is.null(path) && (is.null(ask) || isTRUE(ask))) {
+    if (is.null(path) && interactive() && (is.null(ask) || isTRUE(ask))) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
       if (is_empty(search_term)) return(invisible(FALSE))
@@ -58,14 +58,11 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
       }
       return(fix_id(id))
     } else if (is.null(path)) {
-      # for when ask == FALSE
+      # for when ask == FALSE, and for Quarto and R Markdown
       path <- getwd()
     }
-  } else if (is.null(path)) {
-    # for Quarto and R Markdown
-    path <- getwd()
   }
-  parts <- tryCatch(unlist(strsplit(path, "[^a-zA-Z0-9]")), error = function(e) NULL)
+  parts <- tryCatch(unlist(strsplit(as.character(path), "[^a-zA-Z0-9]")), error = function(e) NULL)
   if (is.null(parts)) {
     return(NULL)
   }
@@ -102,7 +99,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
 search_project_first_local_then_planner <- function(search_term, as_title = FALSE, account = connect_planner()) {
   if (dir.exists(read_secret("projects.path")) && search_term %like% "p?[0-9]+") {
     projects <- list.dirs(read_secret("projects.path"), full.names = FALSE, recursive = FALSE)
-    search_parts <- unlist(strsplit(search_term, "[^a-zA-Z0-9]"))
+    search_parts <- unlist(strsplit(as.character(search_term), "[^a-zA-Z0-9]"))
     if (any(search_parts %like% "^p?[0-9]+$", na.rm = TRUE)) {
       # term contains project number, only keep that
       search_term2 <- search_parts[search_parts %like% "^p?[0-9]+$"][1]

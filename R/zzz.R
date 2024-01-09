@@ -44,7 +44,7 @@
   # TODO remove the FALSE here to make it work
   if (FALSE && interactive() && isAvailable()) {
     try(
-      pkg_env$save_handle <- rstudioapi::registerCommandCallback(
+      pkg_env$save_handle <- registerCommandCallback(
         commandId = "saveSourceDoc",
         callback = function() {
           tryCatch(rs_teams_save(), error = function(e) message("Could not upload to Teams: ", e$message))
@@ -57,6 +57,6 @@
 .onDetach <- function(...) {
   # TODO remove the FALSE here to make it work
   if (FALSE && interactive() && isAvailable()) {
-    rstudioapi::unregisterCommandCallback(handle = pkg_env$save_handle)
+    unregisterCommandCallback(handle = pkg_env$save_handle)
   }
 }

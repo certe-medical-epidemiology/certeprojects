@@ -95,7 +95,12 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
       if (inherits(conn, "try-error")) {
         # try again with new JSON file
         rewrite_graph_logins.json(NULL)
-        Sys.sleep(1)
+        message("Microsoft 365 token could not be refreshed, waiting: 30...", appendLF = FALSE)
+        Sys.sleep(10)
+        message("20...", appendLF = FALSE)
+        Sys.sleep(10)
+        message("10...", appendLF = TRUE)
+        Sys.sleep(10)
         conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = TRUE)), silent = TRUE)
         if (inherits(conn, "try-error")) {
           if (interactive() == TRUE) {
@@ -112,16 +117,16 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
       return(invisible())
     }, error = function(e, fail = error_on_fail) {
       if (isTRUE(fail)) {
-        stop("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), call. = FALSE)
+        stop("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), " (code 1)", call. = FALSE)
       } else {
-        warning("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), call. = FALSE)
+        warning("Could not connect to Microsoft 365 - ", paste0(e$message, collapse = ", "), " (code 1)", call. = FALSE)
       }
       return(NULL)
     })
   }
   if (is.null(pkg_env$azure_token)) {
     if (isTRUE(error_on_fail)) {
-      stop("Could not connect to Microsoft 365 - Run certeprojects::get_microsoft365_token() to create a new token.", call. = FALSE)
+      stop("Could not connect to Microsoft 365 - Run certeprojects::get_microsoft365_token() to create a new token. (code 2)", call. = FALSE)
     } else {
       return(invisible(NULL))
     }

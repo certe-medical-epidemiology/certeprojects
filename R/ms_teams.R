@@ -958,7 +958,7 @@ rs_teams_open <- function(channel = teams_projects_channel(),
                                    subtitle = paste("Project:", task |> get_azure_property("title")))
   temp_file <- teams_get_project_file(file = file_picked, task = task)
   tmp_folder <- get_temp_dir()
-  tmp_teams_folder <- file.path(tmp_folder, "tmp_teams_certeprojects", project |> get_azure_property("title"))
+  tmp_teams_folder <- file.path(tmp_folder, "tmp_teams_certeprojects", task |> get_azure_property("title"))
   dir.create(tmp_teams_folder)
   dest <- file.path(tmp_teams_folder, temp_file |> get_azure_property("name"))
   temp_file$download(dest, overwrite = TRUE)

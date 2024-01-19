@@ -47,7 +47,7 @@
       pkg_env$save_handle <- registerCommandCallback(
         commandId = "saveSourceDoc",
         callback = function() {
-          tryCatch(rs_teams_save(), error = function(e) message("Could not upload to Teams: ", e$message))
+          tryCatch(rs_teams_save(), error = function(e) packageStartupMessage("Could not upload to Teams: ", e$message))
         }),
       silent = TRUE)
   }

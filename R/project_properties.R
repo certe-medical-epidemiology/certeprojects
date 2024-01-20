@@ -48,6 +48,9 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   path <- tryCatch(tools::file_path_as_absolute(getSourceEditorContext()$path), error = function(e) NULL)
   if (is.null(path)) {
     path <- full_path_to_currently_sourced_script()
+    if (path %unlike% "p[0-9]+") {
+      path <- NULL
+    }
     if (is.null(path) && interactive() && (is.null(ask) || isTRUE(ask))) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")

@@ -47,8 +47,8 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   asked <- FALSE
   path <- tryCatch(tools::file_path_as_absolute(getSourceEditorContext()$path), error = function(e) NULL)
   if (is.null(path)) {
-    path <- full_path_to_currently_sourced_script()
-    if (path %unlike% "p[0-9]+") {
+    path <- full_path_to_currently_sourced_project_file()
+    if (length(path) == 0 || path %unlike% "p[0-9]+") {
       path <- NULL
     }
     if (is.null(path) && interactive() && (is.null(ask) || isTRUE(ask))) {

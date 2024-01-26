@@ -531,7 +531,8 @@ pick_teams_item <- function(full_teams_path = NULL,
       levensthein <- as.double(utils::adist(searchterm, groups_names, counts = FALSE, ignore.case = TRUE))
       found_groups <- order(levensthein)[1]
     }
-    continue <- utils::askYesNo(paste0("Found Team '", groups_names[found_groups[1]], "'. Continue?"))
+    continue <- utils::askYesNo(msg = paste0("Found Team '", groups_names[found_groups[1]], "'. Continue?"),
+                                prompts = gettext(c("Yes", "No", "Cancel")))
     if (is.na(continue)) {
       # has chosen 'cancel'
       return(invisible())

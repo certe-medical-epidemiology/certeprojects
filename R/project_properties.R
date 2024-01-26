@@ -51,7 +51,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
     if (length(path) == 0 || path %unlike% "p[0-9]+") {
       path <- NULL
     }
-    if (is.null(path) && interactive() && (is.null(ask) || isTRUE(ask))) {
+    if (is.null(path) && interactive() && (is.null(ask))) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
       if (is_empty(search_term)) return(invisible(FALSE))
@@ -81,15 +81,18 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   }
   
   if (identical(ask, TRUE) && asked == FALSE) {
-    if (interactive() && (length(id) == 0 || is.na(id))) {
-      search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
+    if (interactive()) {
+      search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:",
+                                default = ifelse(!is.na(id) & length(id) > 0,
+                                                 paste0("p", fix_id(id)),
+                                                 search_term))
       if (is_empty(search_term)) return(invisible(FALSE))
     } else {
-      search_term <- ""
+      search_term <- ifelse(!is.na(id) & length(id) > 0,
+                            paste0("p", fix_id(id)),
+                            search_term)
     }
-    id <- search_project_first_local_then_planner(search_term = ifelse(!is.na(id) & length(id) > 0,
-                                                                       paste0("p", fix_id(id)),
-                                                                       search_term),
+    id <- search_project_first_local_then_planner(search_term = search_term,
                                                   account = account)
     if (is_empty(id)) {
       return(NULL)

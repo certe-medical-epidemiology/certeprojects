@@ -35,11 +35,12 @@ addin5_projects_open_file <- function() {
 addin6_projects_teams_open_file <- function() {
   teams_file <- teams_download_file()
   file_object <- certetoolbox::import(teams_file)
+  env <- base::globalenv()
   assign(x = gsub(paste0(".", tools::file_ext(basename(teams_file)), "$"),
                   "",
                   basename(teams_file)),
          value = file_object,
-         envir = base::globalenv())
+         envir = env)
 }
 addin7_projects_open_folder <- function() {
   project_open_folder()

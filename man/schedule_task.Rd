@@ -13,7 +13,12 @@ schedule_task(
   user,
   expr,
   log = TRUE,
-  ref_time = Sys.time()
+  ref_time = Sys.time(),
+  sent_check = FALSE,
+  sent_delay = 15,
+  sent_project = NULL,
+  sent_account = connect_outlook(),
+  sent_folder = read_secret("mail.sent_subfolder")
 )
 }
 \arguments{
@@ -34,6 +39,16 @@ schedule_task(
 \item{log}{a \link{logical} to indicate whether this message should be printed: \emph{Running scheduled task at...}}
 
 \item{ref_time}{time to use for reference, defaults to \code{\link[=Sys.time]{Sys.time()}}}
+
+\item{sent_check}{either \code{TRUE} or \code{FALSE} (default). Check if a certain project had a mail sent on the date of \code{ref_time}.}
+
+\item{sent_delay}{delay in minutes}
+
+\item{sent_project}{project number}
+
+\item{sent_account}{Outlook account, to search sent mails}
+
+\item{sent_folder}{Name of Outlook folder, to search sent mails}
 }
 \description{
 This will start an expression if requirements are met, using a CRON-like syntax (\url{https://cron.help}).
@@ -56,16 +71,25 @@ schedule_task(., ., ., ., ., "user", count_it()) # every minute
 schedule_task(0, ., ., ., ., "user", count_it()) # start of each hour
 schedule_task(0, 7, ., ., ., "user", count_it()) # everyday at 7h00
 schedule_task(0, 7, 1, ., ., "user", count_it()) # first day of month at 7h00
-schedule_task(0, 7, ., 1, ., "user", count_it()) # everyday day in January at 7h00
+schedule_task(0, 7, ., 2, ., "user", count_it()) # everyday day in February at 7h00
 schedule_task(0, 7, ., ., 1, "user", count_it()) # every Monday at 7h00
+schedule_task(0, 7, 1, 2, ., "user", count_it()) # every 1st of February at 7h00
+schedule_task(0, 7, ., 2, 1, "user", count_it()) # every Monday in February at 7h00
+schedule_task(0, 7, 1, 2, 1, "user", count_it()) # each February 1st if it's a Monday at 7h00
+schedule_task(0, 7,29, 2, ., "user", count_it()) # once every 4 years
 
-# every second Monday of the month at 7h00
-# (= alleen maandag tussen 8-14e dag in de maand)
+# examples of combinations
+
+# everyday at 7h00 and 7h30
+schedule_task(c(0, 30), 7, ., ., ., "user", count_it())
+# everyday at 7h00 and 15h00
+schedule_task(0, c(7, 15), ., ., ., "user", count_it())
+# everyday at 7h00 and 7h30 and 15h00 and 15h30
+schedule_task(c(0, 30), c(7, 15), ., ., ., "user", count_it())
+# every second Monday of the month at 7h00:
 schedule_task(0, 7, c(8:14), ., 1, "user", count_it())
-
-# every year on 15th of April at 8h30 and 16h30
+# every 15th of April at 8h30 and 16h30:
 schedule_task(30, c(8, 16), 15, 4, ., "user", count_it())
-
-# once per quarter at 8 on the first day of the month
+# once per quarter at 8h00 on the first day of the month:
 schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
 }

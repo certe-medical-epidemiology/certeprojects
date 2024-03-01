@@ -119,7 +119,9 @@ search_project_first_local_then_planner <- function(search_term, as_title = FALS
       }
     }
   }
-  
+  if (is.null(account)) {
+    return(NULL)
+  }
   # didn't find it locally, now try via MS Planner
   task <- planner_task_search(search_term = search_term,
                               limit = 25,

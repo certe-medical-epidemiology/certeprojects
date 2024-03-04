@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.5</span>
       </span>
     </div>
 
@@ -86,9 +86,8 @@
 <span>  <span class="va">expr</span>,</span>
 <span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ref_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  sent_check <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  check_sent_project <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sent_delay <span class="op">=</span> <span class="fl">15</span>,</span>
-<span>  sent_project <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sent_account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_outlook</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  sent_folder <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.sent_subfolder"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -133,16 +132,12 @@
 <dd><p>time to use for reference, defaults to <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time()</a></code></p></dd>
 
 
-<dt>sent_check</dt>
-<dd><p>either <code>TRUE</code> or <code>FALSE</code> (default). Check if a certain project had a mail sent on the date of <code>ref_time</code>.</p></dd>
+<dt>check_sent_project</dt>
+<dd><p>a project number to check if a certain project had a mail sent on the date of <code>ref_time</code>.</p></dd>
 
 
 <dt>sent_delay</dt>
 <dd><p>delay in minutes</p></dd>
-
-
-<dt>sent_project</dt>
-<dd><p>project number</p></dd>
 
 
 <dt>sent_account</dt>
@@ -192,6 +187,15 @@
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">30</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">16</span><span class="op">)</span>, <span class="fl">15</span>, <span class="fl">4</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">count_it</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># once per quarter at 8h00 on the first day of the month:</span></span></span>
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">8</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">7</span>, <span class="fl">10</span><span class="op">)</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">count_it</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># fall-back for failed jobs</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># this will run at 8h00 if current user is "user1"</span></span></span>
+<span class="r-in"><span><span class="co"># it will run again:</span></span></span>
+<span class="r-in"><span><span class="co"># - if current user is "user2"</span></span></span>
+<span class="r-in"><span><span class="co"># - if project 123 has no mail in Sent Items</span></span></span>
+<span class="r-in"><span><span class="co"># - at default 15 minutes later (so, 8h15)</span></span></span>
+<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">8</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"user1"</span>, <span class="st">"user2"</span><span class="op">)</span>, expr <span class="op">=</span> <span class="fu">count_it</span><span class="op">(</span><span class="op">)</span>, check_sent_project <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </div>

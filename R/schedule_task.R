@@ -29,9 +29,8 @@
 #' @param expr expression to run
 #' @param log a [logical] to indicate whether this message should be printed: *Running scheduled task at...*
 #' @param ref_time time to use for reference, defaults to [Sys.time()]
-#' @param sent_check either `TRUE` or `FALSE` (default). Check if a certain project had a mail sent on the date of `ref_time`.
+#' @param check_sent_project a project number to check if a certain project had a mail sent on the date of `ref_time`.
 #' @param sent_delay delay in minutes
-#' @param sent_project project number
 #' @param sent_account Outlook account, to search sent mails
 #' @param sent_folder Name of Outlook folder, to search sent mails
 #' @details
@@ -73,14 +72,22 @@
 #' schedule_task(30, c(8, 16), 15, 4, ., "user", count_it())
 #' # once per quarter at 8h00 on the first day of the month:
 #' schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
+#' 
+#' # fall-back for failed jobs
+#' 
+#' # this will run at 8h00 if current user is "user1"
+#' # it will run again:
+#' # - if current user is "user2"
+#' # - if project 123 has no mail in Sent Items
+#' # - at default 15 minutes later (so, 8h15)
+#' schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = count_it(), check_sent_project = 123)
 schedule_task <- function(minute, hour, day, month, weekday,
                           user,
                           expr,
                           log = TRUE,
                           ref_time = Sys.time(),
-                          sent_check = FALSE,
+                          check_sent_project = NULL,
                           sent_delay = 15,
-                          sent_project = NULL,
                           sent_account = connect_outlook(),
                           sent_folder = read_secret("mail.sent_subfolder")) {
   
@@ -88,10 +95,14 @@ schedule_task <- function(minute, hour, day, month, weekday,
     stop("username not set with `user`")
   }
   
-  if (isFALSE(sent_check)) {
-    user <- user[1]
+  if (!is.null(check_sent_project) && length(user) != 2) {
+    stop("`user` must be length 2 if `check_sent_project` is set")
   }
-  if (!get_current_user() %in% user) {
+  if (is.null(check_sent_project) && length(user) != 1) {
+    stop("`user` must be length 1 if `check_sent_project` is not set`")
+  }
+  user <- as.character(user)
+  if ((is.null(check_sent_project) && !get_current_user() == user[1]) || (!is.null(check_sent_project) && !get_current_user() == user[2])) {
     return(invisible())
   }
   
@@ -126,7 +137,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
   weekday <- as.integer(weekday)
   weekday[weekday == 7] <- 0
   
-  if (isTRUE(sent_check)) {
+  if (!is.null(check_sent_project)) {
+    # this if() only runs when current user == user[2]
     minute <- minute + sent_delay
     # if the minute-delay went over the 59th minute, set hour to 1 later
     if (length(minute) == 1 & length(hour) > 1) {
@@ -163,49 +175,42 @@ schedule_task <- function(minute, hour, day, month, weekday,
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
     
-    if (isTRUE(sent_check) && "certemail" %in% rownames(utils::installed.packages())) {
-      if (is.null(sent_project) || !is.numeric(sent_project)) {
-        stop("`sent_project` must be a project number, a numeric value")
+    if (!is.null(check_sent_project) && "certemail" %in% rownames(utils::installed.packages())) {
+      user <- user[2]
+      if (is.null(check_sent_project) || !is.numeric(check_sent_project)) {
+        stop("`check_sent_project` must be a project number, a numeric value")
       }
-      if (length(user) == 1) {
-        stop("`sent_check` requires a back-up user, i.e., `user` must be length 2.")
-      }
-      mail_sent <- tryCatch(certemail::mail_is_sent(project_number = sent_project,
+      mail_sent <- tryCatch(certemail::mail_is_sent(project_number = check_sent_project,
                                                     date = as.Date(ref_time),
                                                     account = sent_account,
                                                     sent_items = sent_folder),
-                            error = function(e) NULL)
-      if (is.null(mail_sent)) {
-        message("Could not determine whether mail of project ", sent_project, " was sent, ignoring.")
-        return(invisible())
-      } else if (mail_sent) {
+                            error = function(e) {
+                              message("Could not determine whether mail of project ", check_sent_project, " was sent, ignoring.\n", e)
+                              NULL
+                            })
+      if (is.null(mail_sent) || isTRUE(mail_sent)) {
         return(invisible())
       }
-      user <- user[2]
-      if (!get_current_user() %in% user) {
-        return(invisible())
-      } else {
-        message("!! Project p", sent_project, " was not sent, now retrying with user ", user, "")
-        proj_name <- search_project_first_local_then_planner(search_term = sent_project, as_title = TRUE, account = TRUE)
-        if (is.null(proj_name)) {
-          proj_name <- paste0("p", sent_project)
-        }
-        certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
-                        subject = paste0("! Project niet verzonden: ", sent_project),
-                        body = paste0("! Project '", proj_name,
-                                      "' is eerder niet verzonden, was gepland om ",
-                                      format2(rounded_time - sent_delay * 60, "h:MM"),
-                                      " uur.\n\nNieuwe poging met gebruiker ", user, " om ",
-                                      format2(rounded_time, "h:MM"), " uur."),
-                        signature = FALSE,
-                        background = colourpicker("certeroze3"),
-                        account = sent_account)
+      message("!! Project p", check_sent_project, " was not sent, now retrying with user ", user, "")
+      proj_name <- search_project_first_local_then_planner(search_term = check_sent_project, as_title = TRUE, account = NULL)
+      if (is.null(proj_name)) {
+        proj_name <- paste0("p", check_sent_project)
       }
+      certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
+                      subject = paste0("! Project niet verzonden: p", check_sent_project),
+                      body = paste0("! Project ", proj_name,
+                                    " is eerder niet verzonden, was gepland om ",
+                                    format2(rounded_time - sent_delay * 60, "h:MM"),
+                                    " uur.\n\nNieuwe poging met gebruiker '", user, "' om ",
+                                    format2(rounded_time, "h:MM"), " uur."),
+                      signature = FALSE,
+                      background = colourpicker("certeroze3"),
+                      account = sent_account)
     }
     
     if (isTRUE(log)) {
       message("Running scheduled task at ", format2(Sys.time(), "h:MM:ss"),
-              ifelse(isTRUE(sent_check),
+              ifelse(!is.null(check_sent_project),
                      paste0("\n*** Originally planned at ", format2(rounded_time - sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))
       message("`ref_time` was set as: ", format2(ref_time, "h:MM:ss"), ",\n",

@@ -14,9 +14,8 @@ schedule_task(
   expr,
   log = TRUE,
   ref_time = Sys.time(),
-  sent_check = FALSE,
+  check_sent_project = NULL,
   sent_delay = 15,
-  sent_project = NULL,
   sent_account = connect_outlook(),
   sent_folder = read_secret("mail.sent_subfolder")
 )
@@ -40,11 +39,9 @@ schedule_task(
 
 \item{ref_time}{time to use for reference, defaults to \code{\link[=Sys.time]{Sys.time()}}}
 
-\item{sent_check}{either \code{TRUE} or \code{FALSE} (default). Check if a certain project had a mail sent on the date of \code{ref_time}.}
+\item{check_sent_project}{a project number to check if a certain project had a mail sent on the date of \code{ref_time}.}
 
 \item{sent_delay}{delay in minutes}
-
-\item{sent_project}{project number}
 
 \item{sent_account}{Outlook account, to search sent mails}
 
@@ -92,4 +89,13 @@ schedule_task(0, 7, c(8:14), ., 1, "user", count_it())
 schedule_task(30, c(8, 16), 15, 4, ., "user", count_it())
 # once per quarter at 8h00 on the first day of the month:
 schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
+
+# fall-back for failed jobs
+
+# this will run at 8h00 if current user is "user1"
+# it will run again:
+# - if current user is "user2"
+# - if project 123 has no mail in Sent Items
+# - at default 15 minutes later (so, 8h15)
+schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = count_it(), check_sent_project = 123)
 }

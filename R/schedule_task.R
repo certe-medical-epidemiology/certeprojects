@@ -25,12 +25,12 @@
 #' @param day one or more values between 1-31, or `.` or `"*"` for each day
 #' @param month one or more values between 1-12, or `.` or `"*"` for each mpnth
 #' @param weekday one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or `.` or `"*"` for each weekday
-#' @param user logged in user, must correspond with `Sys.info()["user"]`. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}".
+#' @param user logged in user, must correspond with `Sys.info()["user"]`. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This can be any length > 1 if `check_sent_project` is set.
 #' @param expr expression to run
 #' @param log a [logical] to indicate whether this message should be printed: *Running scheduled task at...*
 #' @param ref_time time to use for reference, defaults to [Sys.time()]
 #' @param check_sent_project a project number to check if a certain project had a mail sent on the date of `ref_time`.
-#' @param sent_delay delay in minutes
+#' @param sent_delay delay in minutes. This will be multiplied by the position of the current user in `user` minus 1. For example, when `sent_delay = 15`, this will be `15` for user 2, and `30` for user 3.
 #' @param sent_account Outlook account, to search sent mails
 #' @param sent_folder Name of Outlook folder, to search sent mails
 #' @details
@@ -42,36 +42,36 @@
 #' @export
 #' @importFrom certestyle format2 colourpicker
 #' @examples
-#' count_it <- function() {
+#' something_to_run <- function() {
 #'   1 + 1
 #' }
 #'
 #' # units:      M  H  d  m  wd
-#' schedule_task(., ., ., ., ., "user", count_it()) # every minute
-#' schedule_task(0, ., ., ., ., "user", count_it()) # start of each hour
-#' schedule_task(0, 7, ., ., ., "user", count_it()) # everyday at 7h00
-#' schedule_task(0, 7, 1, ., ., "user", count_it()) # first day of month at 7h00
-#' schedule_task(0, 7, ., 2, ., "user", count_it()) # everyday day in February at 7h00
-#' schedule_task(0, 7, ., ., 1, "user", count_it()) # every Monday at 7h00
-#' schedule_task(0, 7, 1, 2, ., "user", count_it()) # every 1st of February at 7h00
-#' schedule_task(0, 7, ., 2, 1, "user", count_it()) # every Monday in February at 7h00
-#' schedule_task(0, 7, 1, 2, 1, "user", count_it()) # each February 1st if it's a Monday at 7h00
-#' schedule_task(0, 7,29, 2, ., "user", count_it()) # once every 4 years
+#' schedule_task(., ., ., ., ., "user", something_to_run()) # every minute
+#' schedule_task(0, ., ., ., ., "user", something_to_run()) # start of each hour
+#' schedule_task(0, 7, ., ., ., "user", something_to_run()) # everyday at 7h00
+#' schedule_task(0, 7, 1, ., ., "user", something_to_run()) # first day of month at 7h00
+#' schedule_task(0, 7, ., 2, ., "user", something_to_run()) # everyday day in February at 7h00
+#' schedule_task(0, 7, ., ., 1, "user", something_to_run()) # every Monday at 7h00
+#' schedule_task(0, 7, 1, 2, ., "user", something_to_run()) # every 1st of February at 7h00
+#' schedule_task(0, 7, ., 2, 1, "user", something_to_run()) # every Monday in February at 7h00
+#' schedule_task(0, 7, 1, 2, 1, "user", something_to_run()) # each February 1st if it's a Monday at 7h00
+#' schedule_task(0, 7,29, 2, ., "user", something_to_run()) # once every 4 years at 7h00
 #' 
 #' # examples of combinations
 #' 
 #' # everyday at 7h00 and 7h30
-#' schedule_task(c(0, 30), 7, ., ., ., "user", count_it())
+#' schedule_task(c(0, 30), 7,        .,       .,              ., "user", something_to_run())
 #' # everyday at 7h00 and 15h00
-#' schedule_task(0, c(7, 15), ., ., ., "user", count_it())
+#' schedule_task(0,        c(7, 15), .,       .,              ., "user", something_to_run())
 #' # everyday at 7h00 and 7h30 and 15h00 and 15h30
-#' schedule_task(c(0, 30), c(7, 15), ., ., ., "user", count_it())
+#' schedule_task(c(0, 30), c(7, 15), .,       .,              ., "user", something_to_run())
 #' # every second Monday of the month at 7h00:
-#' schedule_task(0, 7, c(8:14), ., 1, "user", count_it())
+#' schedule_task(0,        7,        c(8:14), .,              1, "user", something_to_run())
 #' # every 15th of April at 8h30 and 16h30:
-#' schedule_task(30, c(8, 16), 15, 4, ., "user", count_it())
+#' schedule_task(30,       c(8, 16), 15,      4,              ., "user", something_to_run())
 #' # once per quarter at 8h00 on the first day of the month:
-#' schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
+#' schedule_task(0,        8,        1,       c(1, 4, 7, 10), ., "user", something_to_run())
 #' 
 #' # fall-back for failed jobs
 #' 
@@ -80,7 +80,7 @@
 #' # - if current user is "user2"
 #' # - if project 123 has no mail in Sent Items
 #' # - at default 15 minutes later (so, 8h15)
-#' schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = count_it(), check_sent_project = 123)
+#' schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(), check_sent_project = 123)
 schedule_task <- function(minute, hour, day, month, weekday,
                           user,
                           expr,
@@ -95,14 +95,14 @@ schedule_task <- function(minute, hour, day, month, weekday,
     stop("username not set with `user`")
   }
   
-  if (!is.null(check_sent_project) && length(user) != 2) {
-    stop("`user` must be length 2 if `check_sent_project` is set")
+  if (!is.null(check_sent_project) && length(user) == 1) {
+    stop("`user` must at least be length 2 if `check_sent_project` is set")
   }
   if (is.null(check_sent_project) && length(user) != 1) {
     stop("`user` must be length 1 if `check_sent_project` is not set`")
   }
   user <- as.character(user)
-  if ((is.null(check_sent_project) && !get_current_user() == user[1]) || (!is.null(check_sent_project) && !get_current_user() == user[2])) {
+  if ((is.null(check_sent_project) && !get_current_user() == user[1]) || (!is.null(check_sent_project) && !get_current_user() %in% user)) {
     return(invisible())
   }
   
@@ -137,9 +137,10 @@ schedule_task <- function(minute, hour, day, month, weekday,
   weekday <- as.integer(weekday)
   weekday[weekday == 7] <- 0
   
-  if (!is.null(check_sent_project)) {
-    # this if() only runs when current user == user[2]
-    minute <- minute + sent_delay
+  backup_user <- FALSE
+  if (!is.null(check_sent_project) && get_current_user() != user[1]) {
+    backup_user <- TRUE
+    minute <- minute + (which(user == get_current_user()) - 1) * sent_delay
     # if the minute-delay went over the 59th minute, set hour to 1 later
     if (length(minute) == 1 & length(hour) > 1) {
       minute <- rep(minute, length(hour))
@@ -153,6 +154,9 @@ schedule_task <- function(minute, hour, day, month, weekday,
     hour[minute > 59] <- hour[minute > 59] + 1
     minute[minute > 59] <- minute[minute > 59] - 60
   }
+  
+  print(hour)
+  print(minute)
   
   if ("lubridate" %in% rownames(utils::installed.packages())) {
     # round time, since Windows Task Scheduler is sometimes 1-10 seconds off
@@ -175,8 +179,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
     
-    if (!is.null(check_sent_project) && "certemail" %in% rownames(utils::installed.packages())) {
-      user <- user[2]
+    if (!is.null(check_sent_project) && get_current_user() != user[1] && "certemail" %in% rownames(utils::installed.packages())) {
       if (is.null(check_sent_project) || !is.numeric(check_sent_project)) {
         stop("`check_sent_project` must be a project number, a numeric value")
       }
@@ -191,26 +194,27 @@ schedule_task <- function(minute, hour, day, month, weekday,
       if (is.null(mail_sent) || isTRUE(mail_sent)) {
         return(invisible())
       }
-      message("!! Project p", check_sent_project, " was not sent, now retrying with user ", user, "")
+      message("!! Project p", check_sent_project, " was not sent, now retrying with user ", get_current_user(), "")
       proj_name <- search_project_first_local_then_planner(search_term = check_sent_project, as_title = TRUE, account = NULL)
       if (is.null(proj_name)) {
         proj_name <- paste0("p", check_sent_project)
       }
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                       subject = paste0("! Project niet verzonden: p", check_sent_project),
-                      body = paste0("! Project ", proj_name,
-                                    " is eerder niet verzonden, was gepland om ",
+                      body = paste0("! Project **", proj_name,
+                                    "** is eerder niet verzonden, was gepland om ",
                                     format2(rounded_time - sent_delay * 60, "h:MM"),
-                                    " uur.\n\nNieuwe poging met gebruiker '", user, "' om ",
+                                    " uur.\n\nNieuwe poging met gebruiker '", get_current_user(), "' om ",
                                     format2(rounded_time, "h:MM"), " uur."),
                       signature = FALSE,
                       background = colourpicker("certeroze3"),
+                      identifier = project_identifier(project_number = check_sent_project),
                       account = sent_account)
     }
     
     if (isTRUE(log)) {
       message("Running scheduled task at ", format2(Sys.time(), "h:MM:ss"),
-              ifelse(!is.null(check_sent_project),
+              ifelse(!is.null(check_sent_project) & isTRUE(backup_user),
                      paste0("\n*** Originally planned at ", format2(rounded_time - sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))
       message("`ref_time` was set as: ", format2(ref_time, "h:MM:ss"), ",\n",

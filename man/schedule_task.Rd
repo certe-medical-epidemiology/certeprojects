@@ -31,7 +31,7 @@ schedule_task(
 
 \item{weekday}{one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or \code{.} or \code{"*"} for each weekday}
 
-\item{user}{logged in user, must correspond with \code{Sys.info()["user"]}. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}".}
+\item{user}{logged in user, must correspond with \code{Sys.info()["user"]}. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This can be any length > 1 if \code{check_sent_project} is set.}
 
 \item{expr}{expression to run}
 
@@ -41,7 +41,7 @@ schedule_task(
 
 \item{check_sent_project}{a project number to check if a certain project had a mail sent on the date of \code{ref_time}.}
 
-\item{sent_delay}{delay in minutes}
+\item{sent_delay}{delay in minutes. This will be multiplied by the position of the current user in \code{user} minus 1. For example, when \code{sent_delay = 15}, this will be \code{15} for user 2, and \code{30} for user 3.}
 
 \item{sent_account}{Outlook account, to search sent mails}
 
@@ -59,36 +59,36 @@ The Windows Task Scheduler must be set up to use this function. Most convenient 
 }
 }
 \examples{
-count_it <- function() {
+something_to_run <- function() {
   1 + 1
 }
 
 # units:      M  H  d  m  wd
-schedule_task(., ., ., ., ., "user", count_it()) # every minute
-schedule_task(0, ., ., ., ., "user", count_it()) # start of each hour
-schedule_task(0, 7, ., ., ., "user", count_it()) # everyday at 7h00
-schedule_task(0, 7, 1, ., ., "user", count_it()) # first day of month at 7h00
-schedule_task(0, 7, ., 2, ., "user", count_it()) # everyday day in February at 7h00
-schedule_task(0, 7, ., ., 1, "user", count_it()) # every Monday at 7h00
-schedule_task(0, 7, 1, 2, ., "user", count_it()) # every 1st of February at 7h00
-schedule_task(0, 7, ., 2, 1, "user", count_it()) # every Monday in February at 7h00
-schedule_task(0, 7, 1, 2, 1, "user", count_it()) # each February 1st if it's a Monday at 7h00
-schedule_task(0, 7,29, 2, ., "user", count_it()) # once every 4 years
+schedule_task(., ., ., ., ., "user", something_to_run()) # every minute
+schedule_task(0, ., ., ., ., "user", something_to_run()) # start of each hour
+schedule_task(0, 7, ., ., ., "user", something_to_run()) # everyday at 7h00
+schedule_task(0, 7, 1, ., ., "user", something_to_run()) # first day of month at 7h00
+schedule_task(0, 7, ., 2, ., "user", something_to_run()) # everyday day in February at 7h00
+schedule_task(0, 7, ., ., 1, "user", something_to_run()) # every Monday at 7h00
+schedule_task(0, 7, 1, 2, ., "user", something_to_run()) # every 1st of February at 7h00
+schedule_task(0, 7, ., 2, 1, "user", something_to_run()) # every Monday in February at 7h00
+schedule_task(0, 7, 1, 2, 1, "user", something_to_run()) # each February 1st if it's a Monday at 7h00
+schedule_task(0, 7,29, 2, ., "user", something_to_run()) # once every 4 years at 7h00
 
 # examples of combinations
 
 # everyday at 7h00 and 7h30
-schedule_task(c(0, 30), 7, ., ., ., "user", count_it())
+schedule_task(c(0, 30), 7,        .,       .,              ., "user", something_to_run())
 # everyday at 7h00 and 15h00
-schedule_task(0, c(7, 15), ., ., ., "user", count_it())
+schedule_task(0,        c(7, 15), .,       .,              ., "user", something_to_run())
 # everyday at 7h00 and 7h30 and 15h00 and 15h30
-schedule_task(c(0, 30), c(7, 15), ., ., ., "user", count_it())
+schedule_task(c(0, 30), c(7, 15), .,       .,              ., "user", something_to_run())
 # every second Monday of the month at 7h00:
-schedule_task(0, 7, c(8:14), ., 1, "user", count_it())
+schedule_task(0,        7,        c(8:14), .,              1, "user", something_to_run())
 # every 15th of April at 8h30 and 16h30:
-schedule_task(30, c(8, 16), 15, 4, ., "user", count_it())
+schedule_task(30,       c(8, 16), 15,      4,              ., "user", something_to_run())
 # once per quarter at 8h00 on the first day of the month:
-schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
+schedule_task(0,        8,        1,       c(1, 4, 7, 10), ., "user", something_to_run())
 
 # fall-back for failed jobs
 
@@ -97,5 +97,5 @@ schedule_task(0, 8, 1, c(1, 4, 7, 10), ., "user", count_it())
 # - if current user is "user2"
 # - if project 123 has no mail in Sent Items
 # - at default 15 minutes later (so, 8h15)
-schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = count_it(), check_sent_project = 123)
+schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(), check_sent_project = 123)
 }

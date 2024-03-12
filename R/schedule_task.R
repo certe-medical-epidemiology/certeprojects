@@ -155,9 +155,6 @@ schedule_task <- function(minute, hour, day, month, weekday,
     minute[minute > 59] <- minute[minute > 59] - 60
   }
   
-  print(hour)
-  print(minute)
-  
   if ("lubridate" %in% rownames(utils::installed.packages())) {
     # round time, since Windows Task Scheduler is sometimes 1-10 seconds off
     rounded_time <- lubridate::round_date(ref_time, unit = "1 minute")
@@ -203,7 +200,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
                       subject = paste0("! Project niet verzonden: p", check_sent_project),
                       body = paste0("! Project **", proj_name,
                                     "** is eerder niet verzonden, was gepland om ",
-                                    format2(rounded_time - sent_delay * 60, "h:MM"),
+                                    format2(rounded_time - (which(user == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
                                     " uur.\n\nNieuwe poging met gebruiker '", get_current_user(), "' om ",
                                     format2(rounded_time, "h:MM"), " uur."),
                       signature = FALSE,
@@ -215,7 +212,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
     if (isTRUE(log)) {
       message("Running scheduled task at ", format2(Sys.time(), "h:MM:ss"),
               ifelse(!is.null(check_sent_project) & isTRUE(backup_user),
-                     paste0("\n*** Originally planned at ", format2(rounded_time - sent_delay * 60, "h:MM:ss"), " ***"),
+                     paste0("\n*** Originally planned at ", format2(rounded_time - (which(user == get_current_user()) - 1) * sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))
       message("`ref_time` was set as: ", format2(ref_time, "h:MM:ss"), ",\n",
               "   -> interpreting as: ", format2(rounded_time, "h:MM:ss"), ".\n")

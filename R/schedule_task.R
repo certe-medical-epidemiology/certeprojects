@@ -83,13 +83,16 @@
 #' schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(), check_sent_project = 123)
 schedule_task <- function(minute, hour, day, month, weekday,
                           user,
-                          expr,
+                          file,
+                          project_number,
                           log = TRUE,
                           ref_time = Sys.time(),
+                          account = connect_planner(),
                           check_sent_project = NULL,
                           sent_delay = 15,
                           sent_account = connect_outlook(),
-                          sent_folder = read_secret("mail.sent_subfolder")) {
+                          sent_to = read_secret("mail.error_to"),
+                          log_folder = read_secret("projects.log_folder")) {
   
   if (missing(user)) {
     stop("username not set with `user`")
@@ -191,6 +194,11 @@ schedule_task <- function(minute, hour, day, month, weekday,
       if (is.null(mail_sent) || isTRUE(mail_sent)) {
         return(invisible())
       }
+      # check log file if previous user had error
+      previous_user <- user[which(user == get_current_user()) - 1]
+      if (!log_contains_error(user = previous_user, hour = hour, minute = minute, sent_delay - sent_delay, log_folder = log_folder)) {
+        return(invisible())
+      }
       message("!! Project p", check_sent_project, " was not sent, now retrying with user ", get_current_user(), "")
       proj_name <- search_project_first_local_then_planner(search_term = check_sent_project, as_title = TRUE, account = NULL)
       if (is.null(proj_name)) {
@@ -199,26 +207,85 @@ schedule_task <- function(minute, hour, day, month, weekday,
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                       subject = paste0("! Project niet verzonden: p", check_sent_project),
                       body = paste0("! Project **", proj_name,
-                                    "** is eerder niet verzonden, was gepland om ",
-                                    format2(rounded_time - (which(user == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
+                                    "** is eerder niet verzonden door gebruiker ", paste0("'", user[seq_len(which(user == get_current_user()) - 1)], "'", collapse = " en "),
+                                    ", was gepland om ", format2(rounded_time - (which(user == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
                                     " uur.\n\nNieuwe poging met gebruiker '", get_current_user(), "' om ",
                                     format2(rounded_time, "h:MM"), " uur."),
                       signature = FALSE,
                       background = colourpicker("certeroze3"),
-                      identifier = project_identifier(project_number = check_sent_project),
+                      identifier = FALSE,
                       account = sent_account)
     }
     
     if (isTRUE(log)) {
-      message("Running scheduled task at ", format2(Sys.time(), "h:MM:ss"),
+      message("Running scheduled task (project ", ") at ", format2(Sys.time(), "h:MM:ss"),
               ifelse(!is.null(check_sent_project) & isTRUE(backup_user),
                      paste0("\n*** Originally planned at ", format2(rounded_time - (which(user == get_current_user()) - 1) * sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))
       message("`ref_time` was set as: ", format2(ref_time, "h:MM:ss"), ",\n",
               "   -> interpreting as: ", format2(rounded_time, "h:MM:ss"), ".\n")
     }
-    try(expr)
+    project_file <- project_get_file(filename = file, project_number = project_number, account = account)
+    tryCatch(source(project_file),
+             error = function(e) {
+               if (interactive()) {
+                 stop(e)
+               } else {
+                 message("ERROR:\n", format_error(e))
+                 if ("certemail" %in% rownames(utils::installed.packages())) {
+                   certemail::mail(to = sent_to,
+                                   cc = NULL,
+                                   bcc = NULL,
+                                   subject = paste0("! Fout in project: p", check_sent_project),
+                                   body = paste0("! Project **", proj_name,
+                                                 "** heeft een fout opgeleverd:\n\n",
+                                                 "Gebruiker: ", get_current_user(), "\n",
+                                                 "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n",
+                                                 "Fout: ", format_error(e)),
+                                   signature = FALSE,
+                                   background = colourpicker("certeroze3"),
+                                   identifier = FALSE,
+                                   account = sent_account)
+                 }
+               }
+             })
   } else {
     invisible()
   }
+}
+
+log_contains_error <- function(user, hour, minute, sent_delay, log_folder) {
+  minute <- minute - sent_delay
+  if (minute < 0) {
+    hour <- hour - 1
+    minute <- minute + 60
+  }
+  log_file <- list.files(path = log_folder, pattern = paste0(user, ".*", hour, "h", minute), full.names = TRUE, recursive = FALSE)
+  if (length(log_file) == 0) {
+    # no files, that's bad (if project runs, logs should be kept - or computer was even turned off)
+    return(TRUE)
+  }
+  
+}
+
+#' @importFrom certestyle font_stripstyle
+format_error <- function (e) {
+  if (inherits(e, "rlang_error") && "rlang" %in% rownames(utils::installed.packages())) {
+    txt <- rlang::cnd_message(e)
+    txt <- font_stripstyle(txt)
+    txt <- gsub(".*Caused by error[:](\n!)?", "", txt)
+  }
+  else {
+    txt <- c(e$message, e$parent$message, e$parent$parent$message, 
+             e$parent$parent$parent$message, e$call)
+  }
+  txt <- txt[txt %unlike% "^Problem while"]
+  if (length(txt) == 0) {
+    stop(e, call. = FALSE)
+  }
+  if (all(txt == "")) {
+    txt <- "Unknown error"
+  }
+  txt <- trimws(txt)
+  paste0(txt, collapse = "\n")
 }

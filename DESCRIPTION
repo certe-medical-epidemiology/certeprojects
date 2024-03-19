@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.20.7
+Version: 1.20.8
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -44,6 +44,7 @@ Suggests:
   certemail,
   clipr (>= 0.8.0),
   lubridate (>= 1.9.0),
+  rlang (>= 1.1.0),
   rmarkdown,
   testthat (>= 2.0.0)
 License: GPL-2

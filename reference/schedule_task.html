@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.8</span>
       </span>
     </div>
 
@@ -196,6 +196,7 @@
 <span class="r-in"><span><span class="co"># - if project 123 has no mail in Sent Items</span></span></span>
 <span class="r-in"><span><span class="co"># - at default 15 minutes later (so, 8h15)</span></span></span>
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">8</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"user1"</span>, <span class="st">"user2"</span><span class="op">)</span>, expr <span class="op">=</span> <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span>, check_sent_project <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(),     check_sent_project = 123):</span> unused argument (expr = something_to_run())</span>
 </code></pre></div>
     </div>
   </div>

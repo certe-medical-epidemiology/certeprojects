@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.8</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.9</span>
       </span>
     </div>
 
@@ -82,14 +82,18 @@
 <span>  <span class="va">day</span>,</span>
 <span>  <span class="va">month</span>,</span>
 <span>  <span class="va">weekday</span>,</span>
-<span>  <span class="va">user</span>,</span>
-<span>  <span class="va">expr</span>,</span>
+<span>  <span class="va">users</span>,</span>
+<span>  <span class="va">file</span>,</span>
+<span>  <span class="va">project_number</span>,</span>
 <span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ref_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  check_sent_project <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  check_mail <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  check_log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  sent_delay <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>  sent_account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_outlook</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  sent_folder <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.sent_subfolder"</span><span class="op">)</span></span>
+<span>  sent_to <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"mail.error_to"</span><span class="op">)</span>,</span>
+<span>  log_folder <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"projects.log_path"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -115,13 +119,17 @@
 <dd><p>one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or <code>.</code> or <code>"*"</code> for each weekday</p></dd>
 
 
-<dt>user</dt>
-<dd><p>logged in user, must correspond with <code>Sys.info()["user"]</code>. Currently logged in user is "runner
-". This can be any length &gt; 1 if <code>check_sent_project</code> is set.</p></dd>
+<dt>users</dt>
+<dd><p>logged in users, must correspond with <code>Sys.info()["users"]</code>. Currently logged in users is "runner
+". This must be length &gt; 1 if <code>check_mail</code> is <code>TRUE</code>.</p></dd>
 
 
-<dt>expr</dt>
-<dd><p>expression to run</p></dd>
+<dt>file</dt>
+<dd><p>file name within the project, supports regular expression</p></dd>
+
+
+<dt>project_number</dt>
+<dd><p>number of the project, must be numeric and exist in <code><a href="planner.html">planner_tasks_list()</a></code></p></dd>
 
 
 <dt>log</dt>
@@ -132,20 +140,36 @@
 <dd><p>time to use for reference, defaults to <code><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time()</a></code></p></dd>
 
 
-<dt>check_sent_project</dt>
-<dd><p>a project number to check if a certain project had a mail sent on the date of <code>ref_time</code>.</p></dd>
+<dt>account</dt>
+<dd><p>Planner account</p></dd>
+
+
+<dt>check_mail</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether a project was sent by a previous user, by running <code><a href="https://certe-medical-epidemiology.github.io/certemail/reference/mail.html" class="external-link">certemail::mail_is_sent()</a></code></p></dd>
+
+
+<dt>check_log</dt>
+<dd><p>a <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to indicate whether a log file exist for the project from a previous user</p></dd>
 
 
 <dt>sent_delay</dt>
-<dd><p>delay in minutes. This will be multiplied by the position of the current user in <code>user</code> minus 1. For example, when <code>sent_delay = 15</code>, this will be <code>15</code> for user 2, and <code>30</code> for user 3.</p></dd>
+<dd><p>delay in minutes. This will be multiplied by the position of the current users in <code>users</code> minus 1. For example, when <code>sent_delay = 15</code>, this will be <code>15</code> for users 2, and <code>30</code> for users 3.</p></dd>
 
 
 <dt>sent_account</dt>
 <dd><p>Outlook account, to search sent mails</p></dd>
 
 
-<dt>sent_folder</dt>
-<dd><p>Name of Outlook folder, to search sent mails</p></dd>
+<dt>sent_to</dt>
+<dd><p>users to send error mail to</p></dd>
+
+
+<dt>log_folder</dt>
+<dd><p>path that contains log files</p></dd>
+
+
+<dt>check_sent_project</dt>
+<dd><p>a project number to check if a certain project had a mail sent on the date of <code>ref_time</code>.</p></dd>
 
 </dl></div>
     <div id="details">
@@ -157,47 +181,7 @@
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">something_to_run</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="fl">1</span> <span class="op">+</span> <span class="fl">1</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># units:      M  H  d  m  wd</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># every minute</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># start of each hour</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># everyday at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="fl">1</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># first day of month at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="va">.</span>, <span class="fl">2</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># everyday day in February at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="fl">1</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># every Monday at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># every 1st of February at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="va">.</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># every Monday in February at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># each February 1st if it's a Monday at 7h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>,<span class="fl">29</span>, <span class="fl">2</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># once every 4 years at 7h00</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># examples of combinations</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># everyday at 7h00 and 7h30</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span><span class="op">)</span>, <span class="fl">7</span>,        <span class="va">.</span>,       <span class="va">.</span>,              <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># everyday at 7h00 and 15h00</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>,        <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>, <span class="fl">15</span><span class="op">)</span>, <span class="va">.</span>,       <span class="va">.</span>,              <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># everyday at 7h00 and 7h30 and 15h00 and 15h30</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">30</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>, <span class="fl">15</span><span class="op">)</span>, <span class="va">.</span>,       <span class="va">.</span>,              <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># every second Monday of the month at 7h00:</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>,        <span class="fl">7</span>,        <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span><span class="op">:</span><span class="fl">14</span><span class="op">)</span>, <span class="va">.</span>,              <span class="fl">1</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># every 15th of April at 8h30 and 16h30:</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">30</span>,       <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">16</span><span class="op">)</span>, <span class="fl">15</span>,      <span class="fl">4</span>,              <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># once per quarter at 8h00 on the first day of the month:</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>,        <span class="fl">8</span>,        <span class="fl">1</span>,       <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">7</span>, <span class="fl">10</span><span class="op">)</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># fall-back for failed jobs</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># this will run at 8h00 if current user is "user1"</span></span></span>
-<span class="r-in"><span><span class="co"># it will run again:</span></span></span>
-<span class="r-in"><span><span class="co"># - if current user is "user2"</span></span></span>
-<span class="r-in"><span><span class="co"># - if project 123 has no mail in Sent Items</span></span></span>
-<span class="r-in"><span><span class="co"># - at default 15 minutes later (so, 8h15)</span></span></span>
-<span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">8</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"user1"</span>, <span class="st">"user2"</span><span class="op">)</span>, expr <span class="op">=</span> <span class="fu">something_to_run</span><span class="op">(</span><span class="op">)</span>, check_sent_project <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(),     check_sent_project = 123):</span> unused argument (expr = something_to_run())</span>
-</code></pre></div>
+    
     </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

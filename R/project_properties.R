@@ -85,7 +85,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:",
                                 default = ifelse(!is.na(id) & length(id) > 0,
                                                  paste0("p", fix_id(id)),
-                                                 search_term))
+                                                 ""))
       if (is_empty(search_term)) return(invisible(FALSE))
     } else {
       search_term <- ifelse(!is.na(id) & length(id) > 0,

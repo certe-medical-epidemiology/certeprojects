@@ -16,8 +16,8 @@ schedule_task(
   log = TRUE,
   ref_time = Sys.time(),
   account = connect_planner(),
-  check_mail = TRUE,
-  check_log = TRUE,
+  check_mail = length(users) > 1,
+  check_log = length(users) > 1,
   sent_delay = 15,
   sent_account = connect_outlook(),
   sent_to = read_secret("mail.error_to"),
@@ -51,7 +51,7 @@ schedule_task(
 
 \item{check_log}{a \link{logical} to indicate whether a log file exist for the project from a previous user}
 
-\item{sent_delay}{delay in minutes. This will be multiplied by the position of the current users in \code{users} minus 1. For example, when \code{sent_delay = 15}, this will be \code{15} for users 2, and \code{30} for users 3.}
+\item{sent_delay}{delay in minutes. This will be multiplied by the position of the current users in \code{users} minus 1. For example, when \code{sent_delay = 15}, this will be \code{15} for user 2, and \code{30} for user 3.}
 
 \item{sent_account}{Outlook account, to search sent mails}
 
@@ -62,7 +62,7 @@ schedule_task(
 \item{check_sent_project}{a project number to check if a certain project had a mail sent on the date of \code{ref_time}.}
 }
 \description{
-This will start an expression if requirements are met, using a CRON-like syntax (\url{https://cron.help}).
+This will \link[=source]{source} a project file if time and user requirements are met, using a CRON-like syntax (\url{https://cron.help}).
 }
 \details{
 The Windows Task Scheduler must be set up to use this function. Most convenient is to:
@@ -111,5 +111,5 @@ schedule_task(0,        8,        1,       c(1, 4, 7, 10), ., "user", "file", 12
 # - if current users is "user2"
 # - if project 123 has no mail in Sent Items
 # - at default 15 minutes later (so, 8h15)
-schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(), check_sent_project = 123)
+schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)
 }

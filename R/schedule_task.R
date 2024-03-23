@@ -19,7 +19,7 @@
 
 #' Schedule Task (CRON-like)
 #'
-#' This will start an expression if requirements are met, using a CRON-like syntax (<https://cron.help>).
+#' This will [source][source()] a project file if time and user requirements are met, using a CRON-like syntax (<https://cron.help>).
 #' @param minute one or more values between 0-59, or `.` or `"*"` for each minute
 #' @param hour one or more values between 0-23, or `.` or `"*"` for each hour
 #' @param day one or more values between 1-31, or `.` or `"*"` for each day
@@ -36,7 +36,7 @@
 #' @param log_folder path that contains log files
 #' @param ref_time time to use for reference, defaults to [Sys.time()]
 #' @param check_sent_project a project number to check if a certain project had a mail sent on the date of `ref_time`.
-#' @param sent_delay delay in minutes. This will be multiplied by the position of the current users in `users` minus 1. For example, when `sent_delay = 15`, this will be `15` for users 2, and `30` for users 3.
+#' @param sent_delay delay in minutes. This will be multiplied by the position of the current users in `users` minus 1. For example, when `sent_delay = 15`, this will be `15` for user 2, and `30` for user 3.
 #' @param sent_account Outlook account, to search sent mails
 #' @details
 #' The Windows Task Scheduler must be set up to use this function. Most convenient is to:
@@ -85,7 +85,7 @@
 #' # - if current users is "user2"
 #' # - if project 123 has no mail in Sent Items
 #' # - at default 15 minutes later (so, 8h15)
-#' schedule_task(0, 8, ., ., ., c("user1", "user2"), expr = something_to_run(), check_sent_project = 123)
+#' schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)
 schedule_task <- function(minute, hour, day, month, weekday,
                           users,
                           file,
@@ -93,8 +93,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
                           log = TRUE,
                           ref_time = Sys.time(),
                           account = connect_planner(),
-                          check_mail = TRUE,
-                          check_log = TRUE,
+                          check_mail = length(users) > 1,
+                          check_log = length(users) > 1,
                           sent_delay = 15,
                           sent_account = connect_outlook(),
                           sent_to = read_secret("mail.error_to"),
@@ -211,7 +211,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
       message("!! Project p", project_number, " was not sent, now retrying with users ", get_current_user(), "")
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                       subject = paste0("! Project niet verzonden: p", project_number),
-                      body = paste0("! Project **", proj_name,
+                      body = paste0("Project **", proj_name,
                                     "** is eerder niet verzonden door gebruiker ", paste0("'", users[seq_len(which(users == get_current_user()) - 1)], "'", collapse = " en "),
                                     ", was gepland om ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
                                     " uur.\n\nNieuwe poging met gebruiker '", get_current_user(), "' om ",
@@ -237,11 +237,13 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                  cc = NULL,
                                  bcc = NULL,
                                  subject = paste0("! Fout in project: p", project_number),
-                                 body = paste0("! Project **", proj_name,
-                                               "** heeft een fout opgeleverd:\n\n\n\n",
+                                 body = paste0("Project **", proj_name,
+                                               "** heeft een fout opgeleverd.\n\n",
+                                               "## AVD-details\n\n",
                                                "Gebruiker: ", get_current_user(), "\n\n",
                                                "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
-                                               "Fout: ", format_error(e)),
+                                               "## Foutdetails\n\n",
+                                               format_error(e)),
                                  signature = FALSE,
                                  background = colourpicker("certeroze3"),
                                  identifier = FALSE,
@@ -251,8 +253,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
              })
   } else {
     message(paste0("User not required to run project (ref_time ",
-                   format2(rounded_time, "HHMM"), " not current time ",
-                   hourminute, "), ignoring"))
+                   paste0(format2(rounded_time, "HHMM"), collapse = "/"), " not current time ",
+                   paste0(hourminute, collapse = "/"), "), ignoring"))
     return(invisible())
   }
 }

@@ -203,10 +203,27 @@ schedule_task <- function(minute, hour, day, month, weekday,
         return(invisible())
       }
       # check log file if previous users had error
-      previous_user <- users[which(users == get_current_user()) - 1]
-      if (!log_contains_error(user = previous_user, date = as.Date(ref_time), hour = hour, minute = minute, sent_delay - sent_delay, log_folder = log_folder)) {
-        message("Log file of previous user contains no error, ignoring")
+      user1_has_log <- user_has_log(user = users[1], date = as.Date(ref_time),
+                                    hour = hour, minute = minute,
+                                    sent_delay = sent_delay, log_folder = log_folder)
+      log_error_user1 <- log_contains_error(user = users[1], date = as.Date(ref_time),
+                                            hour = hour, minute = minute,
+                                            sent_delay = sent_delay, log_folder = log_folder)
+      if (user1_has_log && !log_error_user1) {
+        message("Log file of user 1 contains no error, ignoring")
         return(invisible())
+      }
+      if (get_current_user() == users[3]) {
+        user2_has_log <- user_has_log(user = users[2], date = as.Date(ref_time),
+                                      hour = hour, minute = minute,
+                                      sent_delay = sent_delay, log_folder = log_folder)
+        log_error_user2 <- log_contains_error(user = users[2], date = as.Date(ref_time),
+                                              hour = hour, minute = minute,
+                                              sent_delay = sent_delay, log_folder = log_folder)
+        if (user1_has_log && !log_error_user1) {
+          message("Log file of user 2 contains no error, ignoring")
+          return(invisible())
+        }
       }
       message("!! Project p", project_number, " was not sent, now retrying with users ", get_current_user(), "")
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
@@ -252,11 +269,30 @@ schedule_task <- function(minute, hour, day, month, weekday,
                message("ERROR: ", format_error(e))
              })
   } else {
-    message(paste0("User not required to run project (ref_time ",
+    message(paste0("User not required to run project, ignoring (ref_time ",
                    paste0(format2(rounded_time, "HHMM"), collapse = "/"), " not current time ",
-                   paste0(hourminute, collapse = "/"), "), ignoring"))
+                   paste0(hourminute, collapse = "/"), ")"))
     return(invisible())
   }
+}
+
+user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
+  minute <- as.integer(minute) - sent_delay
+  hour <- as.integer(hour)
+  if (minute < 0) {
+    hour <- hour - 1
+    minute <- minute + 60
+  }
+  minute <- formatC(minute, flag = 0, width = 2)
+  hour <- formatC(hour, flag = 0, width = 2)
+  
+  path <- paste0(log_folder, format2(Sys.Date(), "yyyy/mm"), "/", user, "/")
+  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"), ".*", hour, "u", minute, ".*[.]Rout")
+  log_file <- list.files(path = path,
+                         pattern = pattern,
+                         full.names = TRUE,
+                         recursive = FALSE)
+  length(log_file) > 0
 }
 
 log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder) {

@@ -209,8 +209,10 @@ schedule_task <- function(minute, hour, day, month, weekday,
       log_error_user1 <- log_contains_error(user = users[1], date = as.Date(ref_time),
                                             hour = hour, minute = minute,
                                             sent_delay = sent_delay, log_folder = log_folder)
-      if (user1_has_log && !log_error_user1) {
-        message("Log file of user 1 contains no error, ignoring")
+      if (!user1_has_log) {
+        message("No log file of user 1 (", users[1], ") found!")
+      } else if (user1_has_log && !log_error_user1) {
+        message("Log file of user 1 (", users[1], ") contains no error, ignoring")
         return(invisible())
       }
       if (get_current_user() == users[3]) {
@@ -221,17 +223,17 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                               hour = hour, minute = minute,
                                               sent_delay = sent_delay, log_folder = log_folder)
         if (user1_has_log && !log_error_user1) {
-          message("Log file of user 2 contains no error, ignoring")
+          message("Log file of user 2 (", users[2], ") contains no error, ignoring")
           return(invisible())
         }
       }
-      message("!! Project p", project_number, " was not sent, now retrying with users ", get_current_user(), "")
+      message("!! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                       subject = paste0("! Project niet verzonden: p", project_number),
                       body = paste0("Project **", proj_name,
-                                    "** is eerder niet verzonden door gebruiker ", paste0("'", users[seq_len(which(users == get_current_user()) - 1)], "'", collapse = " en "),
+                                    "** is eerder niet verzonden door gebruiker ", paste0(users[seq_len(which(users == get_current_user()) - 1)], collapse = " en "),
                                     ", was gepland om ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
-                                    " uur.\n\nNieuwe poging met gebruiker '", get_current_user(), "' om ",
+                                    " uur.\n\nNieuwe poging met gebruiker ", get_current_user(), " om ",
                                     format2(rounded_time, "h:MM"), " uur."),
                       signature = FALSE,
                       background = colourpicker("certeroze3"),
@@ -256,10 +258,10 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                  subject = paste0("! Fout in project: p", project_number),
                                  body = paste0("Project **", proj_name,
                                                "** heeft een fout opgeleverd.\n\n",
-                                               "## AVD-details\n\n",
+                                               "# AVD-details\n\n",
                                                "Gebruiker: ", get_current_user(), "\n\n",
                                                "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
-                                               "## Foutdetails\n\n",
+                                               "# Foutdetails\n\n",
                                                format_error(e)),
                                  signature = FALSE,
                                  background = colourpicker("certeroze3"),

@@ -99,13 +99,6 @@ schedule_task <- function(minute, hour, day, month, weekday,
                           sent_to = read_secret("mail.error_to"),
                           log_folder = read_secret("projects.log_path")) {
   
-  project_number <- as.integer(gsub("p", "", project_number))
-  proj_name <- search_project_first_local_then_planner(search_term = project_number, as_title = TRUE, account = NULL)
-  if (is.null(proj_name)) {
-    proj_name <- paste0("p", project_number)
-  }
-  project_file <- project_get_file(filename = file, project_number = project_number, account = account)
-  
   if (isTRUE(check_mail) && length(users) == 1) {
     stop("`users` must at least be length 2 if `check_mail` is set")
   }
@@ -114,7 +107,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
   }
   users <- as.character(users)
   if ((isFALSE(check_mail) && !get_current_user() == users[1]) || (isTRUE(check_mail) && !get_current_user() %in% users)) {
-    message("User not required to run project, ignoring")
+    # message("User not required to run project, ignoring")
     return(invisible())
   }
   
@@ -188,6 +181,13 @@ schedule_task <- function(minute, hour, day, month, weekday,
       any(day == rounded_time$mday) &
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
+    
+    project_number <- as.integer(gsub("p", "", project_number))
+    proj_name <- search_project_first_local_then_planner(search_term = project_number, as_title = TRUE, account = NULL)
+    if (is.null(proj_name)) {
+      proj_name <- paste0("p", project_number)
+    }
+    project_file <- project_get_file(filename = file, project_number = project_number, account = account)
     
     if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)] && "certemail" %in% rownames(utils::installed.packages())) {
       mail_sent <- tryCatch(certemail::mail_is_sent(project_number = project_number,
@@ -276,9 +276,9 @@ schedule_task <- function(minute, hour, day, month, weekday,
                message("ERROR: ", format_error(e))
              })
   } else {
-    message(paste0("User not required to run project, ignoring (ref_time ",
-                   paste0(format2(unique(rounded_time), "HH:MM"), collapse = "/"), " is not planned time ",
-                   paste0(gsub("(.*)(..)$", "\\1:\\2", unique(hourminute)), collapse = "/"), " or ", sent_delay, " minutes later)"))
+    # message(paste0("User not required to run project, ignoring (ref_time ",
+    #                paste0(format2(unique(rounded_time), "HH:MM"), collapse = "/"), " is not planned time ",
+    #                paste0(gsub("(.*)(..)$", "\\1:\\2", unique(hourminute)), collapse = "/"), " or ", sent_delay, " minutes later)"))
     return(invisible())
   }
 }

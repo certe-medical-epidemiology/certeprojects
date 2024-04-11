@@ -35,7 +35,7 @@ schedule_task(
 
 \item{weekday}{one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or \code{.} or \code{"*"} for each weekday}
 
-\item{users}{logged in users, must correspond with \code{Sys.info()["users"]}. Currently logged in users is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if \code{check_mail} is \code{TRUE}.}
+\item{users}{logged in users, must correspond with \code{Sys.info()["user"]}. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if \code{check_mail} is \code{TRUE}.}
 
 \item{file}{file name within the project, supports regular expression}
 
@@ -51,15 +51,13 @@ schedule_task(
 
 \item{check_log}{a \link{logical} to indicate whether a log file exist for the project from a previous user}
 
-\item{sent_delay}{delay in minutes. This will be multiplied by the position of the current users in \code{users} minus 1. For example, when \code{sent_delay = 15}, this will be \code{15} for user 2, and \code{30} for user 3.}
+\item{sent_delay}{delay in minutes. This will be multiplied by the position of the current user in \code{users} minus 1. For example, when \code{sent_delay = 15}, this will be \code{15} for user 2, and \code{30} for user 3.}
 
 \item{sent_account}{Outlook account, to search sent mails}
 
 \item{sent_to}{users to send error mail to}
 
 \item{log_folder}{path that contains log files}
-
-\item{check_sent_project}{a project number to check if a certain project had a mail sent on the date of \code{ref_time}.}
 }
 \description{
 This will \link[=source]{source} a project file if time and user requirements are met, using a CRON-like syntax (\url{https://cron.help}).
@@ -78,7 +76,7 @@ something_to_run <- function() {
 }
 
 # units:      M  H  d  m  wd
-schedule_task(., ., ., ., ., "user", "file", 123) every minute
+schedule_task(., ., ., ., ., "user", "file", 123) # every minute
 schedule_task(0, ., ., ., ., "user", "file", 123) # start of each hour
 schedule_task(0, 7, ., ., ., "user", "file", 123) # everyday at 7h00
 schedule_task(0, 7, 1, ., ., "user", "file", 123) # first day of month at 7h00
@@ -106,9 +104,9 @@ schedule_task(0,        8,        1,       c(1, 4, 7, 10), ., "user", "file", 12
 
 # fall-back for failed jobs
 
-# this will run at 8h00 if current users is "user1"
+# this will run at 8h00 if current user is "user1"
 # it will run again:
-# - if current users is "user2"
+# - if current user is "user2"
 # - if project 123 has no mail in Sent Items
 # - at default 15 minutes later (so, 8h15)
 schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)

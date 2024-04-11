@@ -18,7 +18,7 @@ get_microsoft365_token(
   error_on_fail = TRUE
 )
 
-connect_outlook(email = read_secret("mail.auto_from"), overwrite = FALSE, ...)
+connect_outlook(email = read_secret("department.mail"), overwrite = FALSE, ...)
 
 connect_planner(
   plan = read_secret("planner.name"),

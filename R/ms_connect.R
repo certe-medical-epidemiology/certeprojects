@@ -233,7 +233,7 @@ get_scope_list <- function(scope) {
 #' @rdname connect
 #' @importFrom Microsoft365R ms_outlook
 #' @export
-connect_outlook <- function(email = read_secret("mail.auto_from"),
+connect_outlook <- function(email = read_secret("department.mail"),
                             overwrite = FALSE,
                             ...) {
   if (!is.null(pkg_env$outlook) && !isTRUE(overwrite) && !missing(email) && !identical(email, get_azure_property(pkg_env$outlook, "mail"))) {

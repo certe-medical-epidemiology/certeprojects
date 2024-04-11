@@ -25,7 +25,7 @@
 #' @param day one or more values between 1-31, or `.` or `"*"` for each day
 #' @param month one or more values between 1-12, or `.` or `"*"` for each mpnth
 #' @param weekday one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or `.` or `"*"` for each weekday
-#' @param users logged in users, must correspond with `Sys.info()["users"]`. Currently logged in users is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if `check_mail` is `TRUE`.
+#' @param users logged in users, must correspond with `Sys.info()["user"]`. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if `check_mail` is `TRUE`.
 #' @param file file name within the project, supports regular expression
 #' @param project_number number of the project, must be numeric and exist in [planner_tasks_list()]
 #' @param log a [logical] to indicate whether this message should be printed: *Running scheduled task at...*
@@ -35,8 +35,7 @@
 #' @param sent_to users to send error mail to
 #' @param log_folder path that contains log files
 #' @param ref_time time to use for reference, defaults to [Sys.time()]
-#' @param check_sent_project a project number to check if a certain project had a mail sent on the date of `ref_time`.
-#' @param sent_delay delay in minutes. This will be multiplied by the position of the current users in `users` minus 1. For example, when `sent_delay = 15`, this will be `15` for user 2, and `30` for user 3.
+#' @param sent_delay delay in minutes. This will be multiplied by the position of the current user in `users` minus 1. For example, when `sent_delay = 15`, this will be `15` for user 2, and `30` for user 3.
 #' @param sent_account Outlook account, to search sent mails
 #' @details
 #' The Windows Task Scheduler must be set up to use this function. Most convenient is to:
@@ -52,7 +51,7 @@
 #' }
 #'
 #' # units:      M  H  d  m  wd
-#' schedule_task(., ., ., ., ., "user", "file", 123) every minute
+#' schedule_task(., ., ., ., ., "user", "file", 123) # every minute
 #' schedule_task(0, ., ., ., ., "user", "file", 123) # start of each hour
 #' schedule_task(0, 7, ., ., ., "user", "file", 123) # everyday at 7h00
 #' schedule_task(0, 7, 1, ., ., "user", "file", 123) # first day of month at 7h00
@@ -80,9 +79,9 @@
 #' 
 #' # fall-back for failed jobs
 #' 
-#' # this will run at 8h00 if current users is "user1"
+#' # this will run at 8h00 if current user is "user1"
 #' # it will run again:
-#' # - if current users is "user2"
+#' # - if current user is "user2"
 #' # - if project 123 has no mail in Sent Items
 #' # - at default 15 minutes later (so, 8h15)
 #' schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)
@@ -151,7 +150,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
   weekday[weekday == 7] <- 0
   
   backup_user <- FALSE
-  if (isTRUE(check_mail) && get_current_user() != users[1]) {
+  if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)]) {
     backup_user <- TRUE
     minute <- minute + (which(users == get_current_user()) - 1) * sent_delay
     # if the minute-delay went over the 59th minute, set hour to 1 later
@@ -190,7 +189,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
     
-    if (isTRUE(check_mail) && get_current_user() != users[1] && "certemail" %in% rownames(utils::installed.packages())) {
+    if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)] && "certemail" %in% rownames(utils::installed.packages())) {
       mail_sent <- tryCatch(certemail::mail_is_sent(project_number = project_number,
                                                     date = as.Date(ref_time),
                                                     account = sent_account),
@@ -199,20 +198,23 @@ schedule_task <- function(minute, hour, day, month, weekday,
                               NULL
                             })
       if (isTRUE(mail_sent)) {
-        message("Project was already sent by mail, ignoring")
+        message("Project was already sent by mail (", names(mail_sent), "), ignoring")
         return(invisible())
       }
       # check log file if previous users had error
       user1_has_log <- user_has_log(user = users[1], date = as.Date(ref_time),
                                     hour = hour, minute = minute,
-                                    sent_delay = sent_delay, log_folder = log_folder)
+                                    sent_delay = (which(users == get_current_user()) - 1) * sent_delay,
+                                    log_folder = log_folder)
       log_error_user1 <- log_contains_error(user = users[1], date = as.Date(ref_time),
                                             hour = hour, minute = minute,
-                                            sent_delay = sent_delay, log_folder = log_folder)
+                                            sent_delay = (which(users == get_current_user()) - 1) * sent_delay,
+                                            log_folder = log_folder)
       if (!user1_has_log) {
-        message("No log file of user 1 (", users[1], ") found!")
+        message("No log file of user 1 (", users[1], ") found")
       } else if (user1_has_log && !log_error_user1) {
-        message("Log file of user 1 (", users[1], ") contains no error, ignoring")
+        message("Log file of user 1 (", users[1], ") found: ", names(user1_has_log), "\n",
+                "This log file contains no error, ignoring")
         return(invisible())
       }
       if (get_current_user() == users[3]) {
@@ -222,8 +224,11 @@ schedule_task <- function(minute, hour, day, month, weekday,
         log_error_user2 <- log_contains_error(user = users[2], date = as.Date(ref_time),
                                               hour = hour, minute = minute,
                                               sent_delay = sent_delay, log_folder = log_folder)
-        if (user1_has_log && !log_error_user1) {
-          message("Log file of user 2 (", users[2], ") contains no error, ignoring")
+        if (!user2_has_log) {
+          message("No log file of user 2 (", users[2], ") found")
+        } else if (user2_has_log && !log_error_user2) {
+          message("Log file of user 2 (", users[2], ") found: ", names(user2_has_log), "\n",
+                  "This log file contains no error, ignoring")
           return(invisible())
         }
       }
@@ -236,7 +241,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                     " uur.\n\nNieuwe poging met gebruiker ", get_current_user(), " om ",
                                     format2(rounded_time, "h:MM"), " uur."),
                       signature = FALSE,
-                      background = colourpicker("certeroze3"),
+                      background = colourpicker("certeroze4"),
                       identifier = FALSE,
                       account = sent_account)
     }
@@ -264,7 +269,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                                "# Foutdetails\n\n",
                                                format_error(e)),
                                  signature = FALSE,
-                                 background = colourpicker("certeroze3"),
+                                 background = colourpicker("certeroze4"),
                                  identifier = FALSE,
                                  account = sent_account)
                }
@@ -272,8 +277,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
              })
   } else {
     message(paste0("User not required to run project, ignoring (ref_time ",
-                   paste0(format2(rounded_time, "HHMM"), collapse = "/"), " not current time ",
-                   paste0(hourminute, collapse = "/"), ")"))
+                   paste0(format2(unique(rounded_time), "HH:MM"), collapse = "/"), " is not planned time ",
+                   paste0(gsub("(.*)(..)$", "\\1:\\2", unique(hourminute)), collapse = "/"), " or ", sent_delay, " minutes later)"))
     return(invisible())
   }
 }
@@ -281,34 +286,37 @@ schedule_task <- function(minute, hour, day, month, weekday,
 user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
   minute <- as.integer(minute) - sent_delay
   hour <- as.integer(hour)
-  if (minute < 0) {
-    hour <- hour - 1
-    minute <- minute + 60
-  }
+  
+  hour[minute < 0] <- hour[minute < 0] - 1
+  minute[minute < 0] <- minute[minute < 0] + 60
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
   path <- paste0(log_folder, format2(Sys.Date(), "yyyy/mm"), "/", user, "/")
-  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"), ".*", hour, "u", minute, ".*[.]Rout")
+  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
+                    ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
+                    ").*[.]Rout")
   log_file <- list.files(path = path,
                          pattern = pattern,
                          full.names = TRUE,
                          recursive = FALSE)
-  length(log_file) > 0
+  stats::setNames(length(log_file) > 0,
+                  paste0(log_file, collapse = ", "))
 }
 
 log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder) {
   minute <- as.integer(minute) - sent_delay
   hour <- as.integer(hour)
-  if (minute < 0) {
-    hour <- hour - 1
-    minute <- minute + 60
-  }
+  
+  hour[minute < 0] <- hour[minute < 0] - 1
+  minute[minute < 0] <- minute[minute < 0] + 60
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
   path <- paste0(log_folder, format2(Sys.Date(), "yyyy/mm"), "/", user, "/")
-  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"), ".*", hour, "u", minute, ".*[.]Rout")
+  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
+                    ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
+                    ").*[.]Rout")
   log_file <- list.files(path = path,
                          pattern = pattern,
                          full.names = TRUE,

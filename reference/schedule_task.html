@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.15</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.16</span>
       </span>
     </div>
 
@@ -211,11 +211,10 @@
 <span class="r-in"><span><span class="co"># fall-back for failed jobs</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># this will run at 8h00 if current user is "user1"</span></span></span>
-<span class="r-in"><span><span class="co"># it will run again:</span></span></span>
-<span class="r-in"><span><span class="co"># - if current user is "user2"</span></span></span>
-<span class="r-in"><span><span class="co"># - if project 123 has no mail in Sent Items</span></span></span>
-<span class="r-in"><span><span class="co"># - at default 15 minutes later (so, 8h15)</span></span></span>
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">8</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="va">.</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"user1"</span>, <span class="st">"user2"</span><span class="op">)</span>, <span class="st">"file"</span>, <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># it will run again at default 15 minutes later (so, 8h15), if:</span></span></span>
+<span class="r-in"><span><span class="co"># - current user is "user2"</span></span></span>
+<span class="r-in"><span><span class="co"># - project 123 has no mail in Sent Items or log of "user1" contains errors</span></span></span>
 </code></pre></div>
     </div>
   </div>

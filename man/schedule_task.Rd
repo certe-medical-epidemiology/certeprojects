@@ -105,9 +105,8 @@ schedule_task(0,        8,        1,       c(1, 4, 7, 10), ., "user", "file", 12
 # fall-back for failed jobs
 
 # this will run at 8h00 if current user is "user1"
-# it will run again:
-# - if current user is "user2"
-# - if project 123 has no mail in Sent Items
-# - at default 15 minutes later (so, 8h15)
 schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)
+# it will run again at default 15 minutes later (so, 8h15), if:
+# - current user is "user2"
+# - project 123 has no mail in Sent Items or log of "user1" contains errors
 }

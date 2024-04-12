@@ -80,11 +80,10 @@
 #' # fall-back for failed jobs
 #' 
 #' # this will run at 8h00 if current user is "user1"
-#' # it will run again:
-#' # - if current user is "user2"
-#' # - if project 123 has no mail in Sent Items
-#' # - at default 15 minutes later (so, 8h15)
 #' schedule_task(0, 8, ., ., ., c("user1", "user2"), "file", 123)
+#' # it will run again at default 15 minutes later (so, 8h15), if:
+#' # - current user is "user2"
+#' # - project 123 has no mail in Sent Items or log of "user1" contains errors
 schedule_task <- function(minute, hour, day, month, weekday,
                           users,
                           file,
@@ -201,7 +200,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
         message("Project was already sent by mail (", names(mail_sent), "), ignoring")
         return(invisible())
       }
-      # check log file if previous users had error
+      # check log file if previous user had error
       user1_has_log <- user_has_log(user = users[1], date = as.Date(ref_time),
                                     hour = hour, minute = minute,
                                     sent_delay = (which(users == get_current_user()) - 1) * sent_delay,
@@ -217,7 +216,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
                 "This log file contains no error, ignoring")
         return(invisible())
       }
-      if (get_current_user() == users[3]) {
+      if (length(users) > 2 && get_current_user() == users[3]) {
+        # also check logs of user 2
         user2_has_log <- user_has_log(user = users[2], date = as.Date(ref_time),
                                       hour = hour, minute = minute,
                                       sent_delay = sent_delay, log_folder = log_folder)
@@ -232,7 +232,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
           return(invisible())
         }
       }
-      message("!! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
+      message("! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
       certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                       subject = paste0("! Project niet verzonden: p", project_number),
                       body = paste0("Project **", proj_name,
@@ -327,7 +327,8 @@ log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder)
   }
   failed <- logical(length(log_file))
   for (i in seq_len(length(log_file))) {
-    failed[i] <- any(readLines(log_file[i]) %like% "(Error[a-z0-9 ]*:|Could not connect)")
+    lines <- readLines(log_file[i])
+    failed[i] <- any(lines %like% "Could not connect", na.rm = TRUE) | any(lines %like_case% "Error", na.rm = TRUE)
   }
   any(failed, na.rm = TRUE)
 }

@@ -328,7 +328,7 @@ log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder)
   failed <- logical(length(log_file))
   for (i in seq_len(length(log_file))) {
     lines <- readLines(log_file[i])
-    failed[i] <- any(lines %like% "Could not connect", na.rm = TRUE) | any(lines %like_case% "Error", na.rm = TRUE)
+    failed[i] <- any(lines %like% "Could not connect", na.rm = TRUE) | any(lines %like_case% "Error|ERROR", na.rm = TRUE)
   }
   any(failed, na.rm = TRUE)
 }

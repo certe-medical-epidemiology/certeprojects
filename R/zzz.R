@@ -19,7 +19,7 @@
 
 #' @importFrom callr r_bg
 #' @importFrom AzureGraph create_graph_login
-#' @importFrom rstudioapi registerCommandCallback isAvailable
+#' @importFrom rstudioapi isAvailable
 .onAttach <- function(...) {
   # connect on attach with a background R process
   # this will make sure that using Outlook, Planner, or Teams can be done instantly
@@ -44,7 +44,8 @@
   # TODO remove the FALSE here to make it work
   if (FALSE && interactive() && isAvailable()) {
     try(
-      pkg_env$save_handle <- registerCommandCallback(
+      # use rstudioapi:: here, to support RStudio Pro which does not contain this function
+      pkg_env$save_handle <- rstudioapi::registerCommandCallback(
         commandId = "saveSourceDoc",
         callback = function() {
           tryCatch(rs_teams_save(), error = function(e) packageStartupMessage("Could not upload to Teams: ", e$message))
@@ -53,10 +54,13 @@
   }
 }
 
-#' @importFrom rstudioapi unregisterCommandCallback isAvailable
+#' @importFrom rstudioapi isAvailable
 .onDetach <- function(...) {
   # TODO remove the FALSE here to make it work
   if (FALSE && interactive() && isAvailable()) {
-    unregisterCommandCallback(handle = pkg_env$save_handle)
+    try(
+      # use rstudioapi:: here, to support RStudio Pro which does not contain this function
+      rstudioapi::unregisterCommandCallback(handle = pkg_env$save_handle),
+      silent = TRUE)
   }
 }

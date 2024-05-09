@@ -110,6 +110,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
     return(invisible())
   }
   
+  notify_redone <- FALSE
+  
   if (deparse(substitute(minute)) == ".") minute <- "."
   if (deparse(substitute(hour)) == ".") hour <- "."
   if (deparse(substitute(day)) == ".") day <- "."
@@ -232,18 +234,9 @@ schedule_task <- function(minute, hour, day, month, weekday,
           return(invisible())
         }
       }
+      
       message("! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
-      certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
-                      subject = paste0("! Project niet verzonden: p", project_number),
-                      body = paste0("Project **", proj_name,
-                                    "** is eerder niet verzonden door gebruiker ", paste0(users[seq_len(which(users == get_current_user()) - 1)], collapse = " en "),
-                                    ", was gepland om ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
-                                    " uur.\n\nNieuwe poging met gebruiker ", get_current_user(), " om ",
-                                    format2(rounded_time, "h:MM"), " uur."),
-                      signature = FALSE,
-                      background = colourpicker("certeroze4"),
-                      identifier = FALSE,
-                      account = sent_account)
+      notify_redone <- TRUE
     }
     
     if (isTRUE(log)) {
@@ -254,31 +247,45 @@ schedule_task <- function(minute, hour, day, month, weekday,
       message("`ref_time` was set as: ", format2(ref_time, "h:MM:ss"), ",\n",
               "   -> interpreting as: ", format2(rounded_time, "h:MM:ss"), ".\n")
     }
-    tryCatch(source(project_file),
-             error = function(e) {
-               if ("certemail" %in% rownames(utils::installed.packages())) {
-                 certemail::mail(to = sent_to,
-                                 cc = NULL,
-                                 bcc = NULL,
-                                 subject = paste0("! Fout in project: p", project_number),
-                                 body = paste0("Project **", proj_name,
-                                               "** heeft een fout opgeleverd.\n\n",
-                                               "# AVD-details\n\n",
-                                               "Gebruiker: ", get_current_user(), "\n\n",
-                                               "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
-                                               "# Foutdetails\n\n",
-                                               format_error(e)),
-                                 signature = FALSE,
-                                 background = colourpicker("certeroze4"),
-                                 identifier = FALSE,
-                                 account = sent_account)
-               }
-               message("ERROR: ", format_error(e))
-             })
+    
+    tryCatch({
+      source(project_file)
+      if (isTRUE(notify_redone) && "certemail" %in% rownames(utils::installed.packages())) {
+        certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
+                        subject = paste0("! Niet-verzonden project hersteld: p", project_number),
+                        body = paste0("Project **", proj_name,
+                                      "** was eerder niet verzonden door gebruiker ", paste0(users[seq_len(which(users == get_current_user()) - 1)], collapse = " en "),
+                                      ", was gepland om ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
+                                      " uur.\n\nNieuwe poging **is geslaagd** met gebruiker ", get_current_user(), " om ",
+                                      format2(rounded_time, "h:MM"), " uur."),
+                        signature = FALSE,
+                        background = colourpicker("certegroen4"),
+                        identifier = FALSE,
+                        account = sent_account)
+      }
+    },
+    error = function(e) {
+      if ("certemail" %in% rownames(utils::installed.packages())) {
+        certemail::mail(to = sent_to,
+                        cc = NULL,
+                        bcc = NULL,
+                        subject = paste0("! Fout in project: p", project_number),
+                        body = paste0("Project **", proj_name,
+                                      "** heeft een fout opgeleverd.\n\n",
+                                      "# AVD-details\n\n",
+                                      "Gebruiker: ", get_current_user(), "\n\n",
+                                      "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
+                                      "# Foutdetails\n\n",
+                                      format_error(e)),
+                        signature = FALSE,
+                        background = colourpicker("certeroze4"),
+                        identifier = FALSE,
+                        account = sent_account)
+      }
+      message("ERROR: ", format_error(e))
+    })
   } else {
-    # message(paste0("User not required to run project, ignoring (ref_time ",
-    #                paste0(format2(unique(rounded_time), "HH:MM"), collapse = "/"), " is not planned time ",
-    #                paste0(gsub("(.*)(..)$", "\\1:\\2", unique(hourminute)), collapse = "/"), " or ", sent_delay, " minutes later)"))
+    # user not required to run project
     return(invisible())
   }
 }

@@ -3,7 +3,7 @@
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
-    
+
 
     <div class="container template-reference-topic">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.20.19</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.0</span>
       </span>
     </div>
 
@@ -25,35 +25,35 @@
       <ul class="nav navbar-nav"><li>
   <a href="../index.html">
     <span class="fa fa-home"></span>
-     
+
     Home
   </a>
 </li>
 <li>
   <a href="../reference/index.html">
     <span class="fa fa-book-open"></span>
-     
+
     Manual
   </a>
 </li>
 <li>
   <a href="https://github.com/certe-medical-epidemiology/certeprojects" class="external-link">
     <span class="fab fa-github"></span>
-     
+
     Source Code
   </a>
 </li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
   <a href="https://github.com/certe-medical-epidemiology" class="external-link">
     <span class="fab fa-github"></span>
-     
+
     Certe Med Epi
   </a>
 </li>
 <li>
   <a href="https://certe.nl" class="external-link">
     <span class="fa fa-flask"></span>
-     
+
     Certe Website
   </a>
 </li>
@@ -61,13 +61,13 @@
   </div><!--/.container -->
 </div><!--/.navbar -->
 
-      
+
 
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Project Properties</h1>
-    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/HEAD/R/project_properties.R" class="external-link"><code>R/project_properties.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/certe-medical-epidemiology/certeprojects/blob/main/R/project_properties.R" class="external-link"><code>R/project_properties.R</code></a></small>
     <div class="hidden name"><code>project_properties.Rd</code></div>
     </div>
 
@@ -134,31 +134,33 @@
 
     <div id="arguments">
     <h2>Arguments</h2>
-    <dl><dt>ask</dt>
+
+
+<dl><dt id="arg-ask">ask<a class="anchor" aria-label="anchor" href="#arg-ask"></a></dt>
 <dd><p>logical to indicate whether the project number should always be asked. The default, <code>NULL</code>, will show a popup in <a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a> <span style="R">R</span> sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current <a href="https://rdrr.io/r/base/getwd.html" class="external-link">working directory</a> to determine the project number.</p></dd>
 
 
-<dt>account</dt>
+<dt id="arg-account">account<a class="anchor" aria-label="anchor" href="#arg-account"></a></dt>
 <dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="connect.html">connect_planner()</a></code> or via <code><a href="https://rdrr.io/pkg/AzureGraph/man/graph_login.html" class="external-link">AzureGraph::create_graph_login()</a></code><code>$get_group(name)$get_plan(plan_title)</code>.</p></dd>
 
 
-<dt>project_number</dt>
+<dt id="arg-project-number">project_number<a class="anchor" aria-label="anchor" href="#arg-project-number"></a></dt>
 <dd><p>Planner project number</p></dd>
 
 
-<dt>projects_path</dt>
+<dt id="arg-projects-path">projects_path<a class="anchor" aria-label="anchor" href="#arg-projects-path"></a></dt>
 <dd><p>location of the folder that contains all department projects</p></dd>
 
 
-<dt>filename</dt>
+<dt id="arg-filename">filename<a class="anchor" aria-label="anchor" href="#arg-filename"></a></dt>
 <dd><p>name for the new Quarto file</p></dd>
 
 
-<dt>fixed</dt>
+<dt id="arg-fixed">fixed<a class="anchor" aria-label="anchor" href="#arg-fixed"></a></dt>
 <dd><p><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> to turn off regular expressions</p></dd>
 
 
-<dt>foldername</dt>
+<dt id="arg-foldername">foldername<a class="anchor" aria-label="anchor" href="#arg-foldername"></a></dt>
 <dd><p>foldername to set</p></dd>
 
 </dl></div>
@@ -174,7 +176,7 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">project_identifier</span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2405091229-123"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2408301447-123"</span>
 </code></pre></div>
     </div>
   </div>
@@ -189,15 +191,15 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
 </div>
 
       </footer></div>
 
-  
 
 
-  
+
+
 
   </body></html>
 

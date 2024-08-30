@@ -722,7 +722,7 @@ consult_add <- function(planner = connect_planner(),
     actionButton("cancel", "Annuleren (Esc)", width = "49.5%", icon = icon("ban"), class = "btn-danger"),
     br(),
     br(),
-    actionButton("search_mail", "Info uit mail halen...", width = "100%", icon = icon("envelope")),
+    actionButton("search_mail", "Info uit e-mail ophalen...", width = "100%", icon = icon("envelope")),
     uiOutput("mail_list"),
     hr(),
     uiOutput("Rhistory"),
@@ -757,7 +757,19 @@ consult_add <- function(planner = connect_planner(),
     
     lines_reactive <- reactive({
       # Read all lines from the RStudio history file
-      lines <- readLines(file.path(Sys.getenv("LOCALAPPDATA"), "RStudio", "history_database"))
+      suppressWarnings(
+        lines <- tryCatch({
+          if (.Platform$OS.type == "unix") {
+            # since RStudio 1.3 (was ~/.rstudio-desktop until then)
+            readLines(file.path("~", ".local", "share", "rstudio", "history_database"))
+          } else {
+            readLines(file.path(Sys.getenv("LOCALAPPDATA"), "RStudio", "history_database"))
+          }
+        }, error = function(e) NULL)
+      )
+      if (is.null(lines)) {
+        return(character(0))
+      }
       lines <- lines[!is.na(lines)]  # Remove any NA values
       
       # Use input$history_items to determine how many lines to keep
@@ -775,7 +787,9 @@ consult_add <- function(planner = connect_planner(),
     
     output$Rhistory <- renderUI({
       lines <- lines_reactive()
-      
+      if (length(lines) == 0) {
+        return(tagList())
+      }
       tagList(
         h4("R syntax"),
         p("De geselecteerde syntax wordt bij Notities op de Plannertaak geplaatst, als er iets geselecteerd is."),
@@ -787,10 +801,9 @@ consult_add <- function(planner = connect_planner(),
                            width = "100%"),
         div(class = "history_settings",
             numericInput("history_items",
-                         label = "Aantal items in geschiedenis",
+                         label = "Aantal items weergeven",
                          value = pkg_env$max_history,
                          min = 1,
-                         max = length(lines),
                          width = "50%"),
             actionButton("history_clear",
                          label = "Selectie opheffen",
@@ -806,7 +819,15 @@ consult_add <- function(planner = connect_planner(),
     output$mail_list <- renderUI(tagList())
     
     observeEvent(input$search_mail, {
-      pkg_env$mails <- connect_outlook()$get_inbox()$list_emails(n = 50)
+      pkg_env$mails <- tryCatch(
+        connect_outlook()$get_inbox()$list_emails(n = 50),
+        error = function(e) {
+          showDialog(title = "! Fout bij ophalen van mails", message = e$message)
+          NULL
+        })
+      if (is.null(pkg_env$mails)) {
+        return(tagList())
+      }
       mails <- pkg_env$mails
       mail_ids <- vapply(FUN.VALUE = character(1), mails, function(mail) mail$properties$id)
       mail_names <- vapply(FUN.VALUE = character(1),
@@ -900,9 +921,9 @@ consult_add <- function(planner = connect_planner(),
       
       title <- trimws(input$title)
       title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
-      if (empty_field("Titel", title) || invalid_title(title)) return(invisible())
+      if (empty_field("Titel voor Planner", title) || invalid_title(title)) return(invisible())
       requested_by <- input$requested_by
-      if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
+      if (empty_field("Van", requested_by)) return(invisible())
       description1 <- input$description1
       if (empty_field("Vraag/verzoek", description1)) return(invisible())
       description2 <- input$description2

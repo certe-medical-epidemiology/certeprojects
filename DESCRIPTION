@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.20.19
+Version: 1.21.0
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -46,6 +46,7 @@ Suggests:
   lubridate (>= 1.9.0),
   rlang (>= 1.1.0),
   rmarkdown,
+  rvest,
   testthat (>= 2.0.0)
 License: GPL-2
 Encoding: UTF-8

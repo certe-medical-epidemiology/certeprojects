@@ -17,6 +17,7 @@
 \alias{planner_create_project_from_path}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
+\alias{planner_highest_consult_id}
 \alias{as.data.frame.ms_object}
 \alias{as_tibble.ms_object}
 \title{Connect to Microsoft Planner via Microsoft 365}
@@ -40,7 +41,8 @@ planner_task_create(
   bucket_name = read_secret("planner.default.bucket"),
   attachment_urls = NULL,
   account = connect_planner(),
-  project_number = planner_highest_project_id() + 1
+  project_number = planner_highest_project_id() + 1,
+  consult_number = planner_highest_consult_id() + 1
 )
 
 planner_task_update(
@@ -110,7 +112,12 @@ planner_user_property(
 )
 
 planner_highest_project_id(
-  task = read_secret("planner.dummy.project"),
+  task = read_secret("planner.dummy.project.id"),
+  account = connect_planner()
+)
+
+planner_highest_consult_id(
+  task = read_secret("planner.dummy.consult.id"),
   account = connect_planner()
 )
 
@@ -152,6 +159,8 @@ planner_highest_project_id(
 \item{attachment_urls}{URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task.}
 
 \item{project_number}{the new project number to assign. Use \code{NULL} or \code{FALSE} to not assign a project number. Defaults to the currently highest project ID + 1.}
+
+\item{consult_number}{the new consult number to assign. Use \code{NULL} or \code{FALSE} to not assign a consult number. Defaults to the currently highest consult ID + 1.}
 
 \item{task}{exact task ID or title, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
 
@@ -211,6 +220,8 @@ These functions use the connection to Microsoft Planner set up with \code{\link[
 Use \code{\link[=planner_create_project_from_path]{planner_create_project_from_path()}} to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
 
 \code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy project.
+
+\code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy project. \code{\link[=planner_highest_consult_id]{planner_highest_consult_id()}} does this for consults.
 
 Using \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} on an \code{ms_object}, such as \code{ms_plan_task}, will return the properties and details of the object as a \link{data.frame}. For transforming many \code{ms_object}s to a data.frame, use \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[=as_tibble]{as_tibble()}} in \code{\link[=lapply]{lapply()}} and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
 

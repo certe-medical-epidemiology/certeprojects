@@ -20,16 +20,19 @@
 addin1_projects_new <- function() {
   project_add()
 }
+addin1b_consult_new <- function() {
+  consult_add()
+}
 addin2_projects_update <- function() {
   project_update()
 }
-addin3_quarto_skeleton <- function() {
+addin5_quarto_skeleton <- function() {
   project_add_qmd_skeleton()
 }
-addin4_projects_save <- function() {
+addin6_projects_save <- function() {
   project_save_file()
 }
-addin5_projects_open_file <- function() {
+addin3_projects_open_file <- function() {
   project_open_analysis_file()
 }
 addin6_projects_teams_open_file <- function() {
@@ -42,7 +45,7 @@ addin6_projects_teams_open_file <- function() {
          value = file_object,
          envir = env)
 }
-addin7_projects_open_folder <- function() {
+addin4_projects_open_folder <- function() {
   project_open_folder()
 }
 

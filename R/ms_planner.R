@@ -78,6 +78,7 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
 #' @param categories names of categories to add, can be multiple, but must exactly match existing category names
 #' @param attachment_urls URLs to add as attachment, can be named characters to give the URLs a title. If they are Excel, PowerPoint or Word files, a preview will be shown on the task.
 #' @param project_number the new project number to assign. Use `NULL` or `FALSE` to not assign a project number. Defaults to the currently highest project ID + 1.
+#' @param consult_number the new consult number to assign. Use `NULL` or `FALSE` to not assign a consult number. Defaults to the currently highest consult ID + 1.
 #' @importFrom httr add_headers stop_for_status POST
 #' @importFrom jsonlite toJSON
 #' @export
@@ -94,17 +95,26 @@ planner_task_create <- function(title,
                                 bucket_name = read_secret("planner.default.bucket"),
                                 attachment_urls = NULL,
                                 account = connect_planner(),
-                                project_number = planner_highest_project_id() + 1) {
+                                project_number = planner_highest_project_id() + 1,
+                                consult_number = planner_highest_consult_id() + 1) {
   # see this for all the possible fields: https://learn.microsoft.com/en-us/graph/api/resources/plannertask?view=graph-rest-1.0
   
-  # assign project ID
+  # assign project ID or consult ID
   if (!is.null(project_number) && !isFALSE(project_number)) {
     if (!is.numeric(project_number)) {
       stop("project_number must be numeric, or NULL or FALSE")
     }
     title <- paste0(title, " - p", project_number)
+    consult_number <- NULL
+  } else if (!is.null(consult_number) && !isFALSE(consult_number)) {
+    if (!is.numeric(consult_number)) {
+      stop("consult_number must be numeric, or NULL or FALSE")
+    }
+    title <- paste0(title, " - c", consult_number)
+    project_number <- NULL
   } else {
     project_number <- NULL
+    consult_number <- NULL
   }
   
   if (!arg_is_empty(categories) && isTRUE("Project" %in% categories)) {
@@ -157,7 +167,11 @@ planner_task_create <- function(title,
   }
   
   if (!arg_is_empty(requested_by)) {
-    description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), "."), description)
+    if (!is.null(project_number)) {
+      description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), "."), description)
+    } else {
+      description <- c(paste0("Van ", paste0(requested_by, collapse = " en "), "."), description)
+    }
   }
   
   # run request:
@@ -173,6 +187,8 @@ planner_task_create <- function(title,
   # went well, so increase the highest ID by 1
   if (!is.null(project_number)) {
     increase_highest_project_id(account = account)
+  } else if (!is.null(consult_number)) {
+    increase_highest_consult_id(account = account)
   }
   
   # some properties can only be added as update (using PATCH)
@@ -199,7 +215,7 @@ planner_task_create <- function(title,
     title <- get_azure_property(title, property = "title")
   }
   
-  return(invisible(list(id = project_number, title = title)))
+  return(invisible(list(id = if (!is.null(project_number)) project_number else consult_number, title = title)))
 }
 
 #' @rdname planner
@@ -794,10 +810,20 @@ planner_user_property <- function(user,
 #' @rdname planner
 #' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy project.
 #' @export
-planner_highest_project_id <- function(task = read_secret("planner.dummy.project"),
+planner_highest_project_id <- function(task = read_secret("planner.dummy.project.id"),
                                        account = connect_planner()) {
   # this returns the currently highest project number, which is saved to the description
-  task <- planner_task_find(task, account = account)
+  task <- account$get_task(task_id = task)
+  as.integer(gsub("[^0-9]+", "", task$do_operation("details")$description))
+}
+
+#' @rdname planner
+#' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy project. [planner_highest_consult_id()] does this for consults.
+#' @export
+planner_highest_consult_id <- function(task = read_secret("planner.dummy.consult.id"),
+                                       account = connect_planner()) {
+  # this returns the currently highest project number, which is saved to the description
+  task <- account$get_task(task_id = task)
   as.integer(gsub("[^0-9]+", "", task$do_operation("details")$description))
 }
 
@@ -870,11 +896,18 @@ planner_bucket_object <- function(bucket_name = read_secret("planner.default.buc
   }
 }
 
-increase_highest_project_id <- function(task = read_secret("planner.dummy.project"),
+increase_highest_project_id <- function(task = read_secret("planner.dummy.project.id"),
                                         account = connect_planner()) {
   highest <- planner_highest_project_id(task = task, account = account)
-  planner_task_update(task = task, description = highest + 1, account = account)
+  planner_task_update(task = task, description = paste0("p", highest + 1), account = account)
 }
+
+increase_highest_consult_id <- function(task = read_secret("planner.dummy.consult.id"),
+                                        account = connect_planner()) {
+  highest <- planner_highest_consult_id(task = task, account = account)
+  planner_task_update(task = task, description = paste0("c", highest + 1), account = account)
+}
+
 
 get_internal_category_name <- function(category_name, account = connect_planner()) {
   categories <- planner_categories_list(account = account)

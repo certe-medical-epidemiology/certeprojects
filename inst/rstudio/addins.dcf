@@ -1,29 +1,29 @@
-Name: 🚀 Nieuw project...
+Name: ⭐ Nieuw project...
 Binding: addin1_projects_new
+Interactive: true
+
+Name: 🌟 Nieuw consult / Q&A...
+Binding: addin1b_consult_new
 Interactive: true
 
 Name: ✅ Taak verplaatsen...
 Binding: addin2_projects_update
 Interactive: true
 
-Name: 🌟 Nieuw Quarto-document voor project...
-Binding: addin3_quarto_skeleton
-Interactive: true
-
-Name: 💾 Opslaan in projectmap...
-Binding: addin4_projects_save
-Interactive: true
-
 Name: 📊 Bestand openen uit project...
-Binding: addin5_projects_open_file
-Interactive: true
-
-Name: 📊 Bestand openen uit Teams...
-Binding: addin6_projects_teams_open_file
+Binding: addin3_projects_open_file
 Interactive: true
 
 Name: 📂 Projectmap openen...
-Binding: addin7_projects_open_folder
+Binding: addin4_projects_open_folder
+Interactive: true
+
+Name: 🗋 Nieuw Quarto-document voor project...
+Binding: addin5_quarto_skeleton
+Interactive: true
+
+Name: 💾 Opslaan in projectmap...
+Binding: addin6_projects_save
 Interactive: true
 
 Name: 📁 Huidige map instellen...

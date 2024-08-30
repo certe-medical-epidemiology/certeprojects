@@ -17,9 +17,9 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-#' Add Project Using Shiny
+#' Add Project Or Consult Using Shiny
 #' 
-#' This is a Shiny app to add a new project: it creates a project folder locally [or in Teams][connect_teams()], generates the required Quarto or R Markdown or R file, and creates a [new task in Planner][connect_planner()]. These functions come with RStudio addins to quickly access existing projects.
+#' This is a Shiny app to add a new project: it creates a project folder locally [or in Teams][connect_teams()], generates the required Quarto or R Markdown or R file, and creates a [new task in Planner][connect_planner()]. These functions come with RStudio addins to quickly access existing projects. For consults, it only adds a Planner task and creates the card in the background.
 #' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
 #' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
@@ -30,13 +30,13 @@
 #' @importFrom certestyle colourpicker format2
 #  certestyle for R Markdown:
 #' @importFrom certestyle rmarkdown_author rmarkdown_date rmarkdown_template rmarkdown_logo
-#' @importFrom rstudioapi initializeProject openProject navigateToFile getActiveProject showDialog showQuestion
+#' @importFrom rstudioapi initializeProject openProject navigateToFile showDialog showQuestion
 #' @importFrom Microsoft365R ms_plan ms_team ms_drive_item
 #' @rdname planner_add
 #' @export
 project_add <- function(planner = connect_planner(),
-                        teams = connect_teams(),
-                        channel = teams_projects_channel(account = teams)) {
+                        teams = NULL,
+                        channel = NULL) {
   
   if (!inherits(planner, "ms_plan")) {
     stop("Maak eerst verbinding met Planner via connect_planner().")
@@ -49,10 +49,21 @@ project_add <- function(planner = connect_planner(),
   # ui ----
   ui <- fluidPage(
     useShinyjs(),
-    tags$script('$(document).ready(function() {
-                var textbox = document.getElementById("title");
-                textbox.focus();
-                });'),
+    tags$script(HTML('$(document).ready(function() {
+                        var textbox = document.getElementById("title");
+                        textbox.focus();
+                
+                        $(document).keydown(function(event) {
+                          // Add event listener for Ctrl + Enter
+                          if (event.ctrlKey && event.key === "Enter") {
+                            $("#create").click();
+                          }
+                          // Add event listener for Esc key
+                          if (event.key === "Escape") {
+                            $("#cancel").click();
+                          }
+                        });
+                      });')),
     tags$style(paste0("* { font-family: Calibri, Helvetica Neue, Arial; }
                       .container-fluid { margin-top: 15px; }
                       .well { background-color: ", colourpicker("certeblauw6"), "; }
@@ -100,8 +111,8 @@ project_add <- function(planner = connect_planner(),
                   weekstart = 1), # Monday
         br(),
         br(),
-        actionButton("create", "Aanmaken", width = "49%", icon = icon("check"), class = "btn-success"),
-        actionButton("cancel", "Annuleren", width = "49%", icon = icon("ban"), class = "btn-danger"),
+        actionButton("create", "Aanmaken (Ctrl+Enter)", width = "49%", icon = icon("check"), class = "btn-success"),
+        actionButton("cancel", "Annuleren (Esc)", width = "49%", icon = icon("ban"), class = "btn-danger"),
         width = 6),
       
       mainPanel(
@@ -153,8 +164,6 @@ project_add <- function(planner = connect_planner(),
   
   # server ----
   server <- function(input, output, session) {
-    
-    is_active_project <- !is.null(getActiveProject())
     
     output$teamconnect <- renderUI({
       tagList(
@@ -274,7 +283,7 @@ project_add <- function(planner = connect_planner(),
     observeEvent(input$create, {
       
       empty_field <- function(field, value) {
-        if (is.null(value) || length(value) == 0 || value == "") {
+        if (is.null(value) || length(value) == 0 || all(value == "", na.rm = TRUE)) {
           showDialog(title = field,
                      message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
           TRUE
@@ -647,6 +656,315 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
               port = 4123)
   )
 }
+
+#' @rdname planner_add
+#' @importFrom shiny updateCheckboxGroupInput checkboxGroupInput div numericInput reactive updateSelectizeInput updateTextAreaInput
+#' @importFrom shinyWidgets addSpinner
+#' @export
+consult_add <- function(planner = connect_planner(),
+                        teams = NULL,
+                        channel = NULL) {
+  
+  if (!inherits(planner, "ms_plan")) {
+    stop("Maak eerst verbinding met Planner via connect_planner().")
+  }
+  if (!inherits(teams, "ms_team") || !inherits(channel, "ms_drive_item")) {
+    teams <- NULL
+    channel <- NULL
+  }
+  
+  # ui ----
+  ui <- fluidPage(
+    useShinyjs(),
+    tags$script(HTML('$(document).ready(function() {
+                        var textbox = document.getElementById("title");
+                        textbox.focus();
+                
+                        $(document).keydown(function(event) {
+                          // Add event listener for Ctrl + Enter
+                          if (event.ctrlKey && event.key === "Enter") {
+                            $("#create").click();
+                          }
+                          // Add event listener for Esc key
+                          if (event.key === "Escape") {
+                            $("#cancel").click();
+                          }
+                        });
+                      });')),
+    tags$style(paste0("* { font-family: Calibri, Helvetica Neue, Arial; }
+                      .container-fluid { background-color: ", colourpicker("certegroen6"), "; border-radius: 10px; margin: 10px; padding-top: 10px; }
+                      .form-group { margin-bottom: 5px; }
+                      .h2, h2, h4 { color: ", colourpicker("certegroen"), "; }
+                      h5 { font-size: 12px; }
+                      a, .control-label, .intro { color: ", colourpicker("certegroen"), "; }
+                      #history .checkbox * { font-family: \"Fira Code\", monospace; font-size: 8pt; line-height: 2; color: ", colourpicker("certegroen0"), "; }
+                      #history .checkbox { margin-top: 0px; margin-bottom: 0; }
+                      certegroen, .certegroen { color: ", colourpicker("certegroen"), "; }
+                      certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
+                      label[for=title] { font-size: 16px; }
+                      #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #create:hover { background-color: ", colourpicker("certegroen0"), "; border-color: ", colourpicker("certegroen"), "; }
+                      #cancel, #search_mail { background-color: white; color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), ";}
+                      #cancel:hover { color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certegroen6"), " !important; }
+                      .selectize-input .item.active { color: white; background-color: ", colourpicker("certegroen"), " !important; }",
+                      '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), " ;}",
+                      ".checkbox label { width: 100% }")),
+    
+    p("Een consult wordt na aanmaken direct in Planner opgeslagen onder 'Voorlopig voltooid' en krijgt een C-nummer, maar geen (project)map.", class = "intro"),
+    
+    textInput("title", "Titel voor Planner", placeholder = "", width = "100%"),
+    uiOutput("requested_by"),
+    textAreaInput("description1", "Vraag/verzoek", cols = 1, rows = 6, resize = "vertical", width = "100%"),
+    textAreaInput("description2", "Antwoord", cols = 1, rows = 6, resize = "vertical", width = "100%"),
+    br(),
+    actionButton("create", "Aanmaken (Ctrl+Enter)", width = "49.5%", icon = icon("check"), class = "btn-success"),
+    actionButton("cancel", "Annuleren (Esc)", width = "49.5%", icon = icon("ban"), class = "btn-danger"),
+    br(),
+    br(),
+    actionButton("search_mail", "Info uit mail halen...", width = "100%", icon = icon("envelope")),
+    uiOutput("mail_list"),
+    hr(),
+    uiOutput("Rhistory"),
+    
+  )
+  
+  # server ----
+  server <- function(input, output, session) {
+    
+    output$requested_by <- renderUI({
+      # retrieve user list with names and job titles
+      users <- get_user()
+      if (!is.null(users) && !identical(users, "")) {
+        suppressWarnings(tagList(
+          selectizeInput("requested_by",
+                         label = "Van",
+                         choices = users,
+                         multiple = TRUE,
+                         options = list(
+                           # support non-existing requesters
+                           create = TRUE,
+                           # creates new item on field leave
+                           createOnBlur = TRUE,
+                           closeAfterSelect = TRUE), width = "100%")
+        ))
+      } else {
+        tagList(
+          textInput("requested_by", "Van", width = "100%")
+        )
+      }
+    })
+    
+    lines_reactive <- reactive({
+      # Read all lines from the RStudio history file
+      lines <- readLines(file.path(Sys.getenv("LOCALAPPDATA"), "RStudio", "history_database"))
+      lines <- lines[!is.na(lines)]  # Remove any NA values
+      
+      # Use input$history_items to determine how many lines to keep
+      pkg_env$max_history <- input$history_items
+      if (is.null(pkg_env$max_history) || input$history_items < 0) {
+        pkg_env$max_history <- 15 # Default value if input$history_items is not yet set
+      }
+      
+      lines <- rev(lines)  # Reverse the order of lines
+      lines <- lines[seq_len(min(pkg_env$max_history, length(lines)))] # Limit lines based on input
+      lines <- rev(lines)
+      lines <- gsub("^[0-9]+:", "", lines)  # Remove line numbers
+      lines
+    })
+    
+    output$Rhistory <- renderUI({
+      lines <- lines_reactive()
+      
+      tagList(
+        h4("R syntax"),
+        p("De geselecteerde syntax wordt bij Notities op de Plannertaak geplaatst, als er iets geselecteerd is."),
+        p("Geschiedenis van oud naar nieuw:"),
+        checkboxGroupInput("history",
+                           label = NULL,
+                           choices = lines,
+                           selected = NULL, # lines[seq_len(min(5, length(lines)))],
+                           width = "100%"),
+        div(class = "history_settings",
+            numericInput("history_items",
+                         label = "Aantal items in geschiedenis",
+                         value = pkg_env$max_history,
+                         min = 1,
+                         max = length(lines),
+                         width = "50%"),
+            actionButton("history_clear",
+                         label = "Selectie opheffen",
+                         width = "50%")
+        ),
+      )
+    })
+    
+    observeEvent(input$history_clear, {
+      updateCheckboxGroupInput(session = session, inputId = "history", selected = character(0))
+    })
+    
+    output$mail_list <- renderUI(tagList())
+    
+    observeEvent(input$search_mail, {
+      pkg_env$mails <- connect_outlook()$get_inbox()$list_emails(n = 50)
+      mails <- pkg_env$mails
+      mail_ids <- vapply(FUN.VALUE = character(1), mails, function(mail) mail$properties$id)
+      mail_names <- vapply(FUN.VALUE = character(1),
+                           mails, function(mail) paste0(
+                             paste(unlist(mail$properties$sender), collapse = ", "),
+                             " (", format2(as.POSIXct(gsub("T", " ", mail$properties$sentDateTime), tz = "Europe/Amsterdam"), "d mmm H:MM"), "u):\n ",
+                             mail$properties$subject
+                           ))
+      
+      output$mail_list <- renderUI({
+        tagList(
+          br(),
+          selectInput("mail",
+                      label = "Selecteer e-mail",
+                      choices = c("", stats::setNames(mail_ids, mail_names)),
+                      selected = FALSE,
+                      width = "100%")
+        )
+      })
+    })
+    
+    observeEvent(input$mail, {
+      mails <- pkg_env$mails
+      mail_ids <- vapply(FUN.VALUE = character(1), mails, function(mail) mail$properties$id)
+      mail <- mails[mail_ids == input$mail]
+      if (length(mail) > 0) {
+        mail <- mail[[1]]
+        
+        title <- trimws(gsub("^.*(RE|FWD?|Antw?d?): ", "", mail$properties$subject, ignore.case = TRUE))
+        title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
+        updateTextInput(session = session, inputId = "title", value = title)
+        
+        users <- get_user()
+        mail_sent <- mail$properties$sender$emailAddress$name
+        if (!mail_sent %in% users) {
+          suppressWarnings(
+            updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent, choices = c(mail_sent, users))
+          )
+        } else {
+          updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent)
+        }
+        
+        mail_txt <- mail$properties$body$content
+        if (identical(mail$properties$body$contentType, "html")) {
+          mail_txt <- mail_txt |> rvest::read_html() |> rvest::html_text2()
+        }
+        mail_txt <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", mail_txt)
+        mail_txt <- gsub("\nOorspronkelijk bericht\n.*", "", mail_txt)
+        mail_txt <- gsub("\nVan:.*Verzonden:.*", "", mail_txt)
+        mail_txt <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", mail_txt)
+        mail_txt <- gsub("(\n)+", "\n", mail_txt)
+        mail_txt <- gsub("\nGroet(en)?,.*", "", mail_txt)
+        mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
+        updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
+      }
+      
+    })
+    
+    
+    # SAVE ----
+    observeEvent(input$create, {
+      
+      empty_field <- function(field, value) {
+        if (is.null(value) || length(value) == 0 || all(value == "", na.rm = TRUE)) {
+          showDialog(title = field,
+                     message = paste("Het veld<b>", field, "</b>moet ingevuld zijn."))
+          TRUE
+        } else {
+          FALSE
+        }
+      }
+      invalid_title <- function(title) {
+        # if (title %like% "[/\\><*|?\"]") {
+        #   q <- showQuestion(title = " Titel",
+        #                     message = paste("De titel mag de volgende tekens niet bevatten: / \\ | < > * ? \". Vervangen door een streepje (-)?"),
+        #                     ok = "OK",
+        #                     cancel = "Annuleren")
+        #   if (q == TRUE) {
+        #     title <<- gsub("[/\\><*|?\"]+", "-", title)
+        #     # is invalid?
+        #     return(FALSE)
+        #   } else {
+        #     # is invalid?
+        #     return(TRUE)
+        #   }
+        # } else {
+        #   # is invalid?
+          FALSE
+        # }
+      }
+      
+      title <- trimws(input$title)
+      title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
+      if (empty_field("Titel", title) || invalid_title(title)) return(invisible())
+      requested_by <- input$requested_by
+      if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
+      description1 <- input$description1
+      if (empty_field("Vraag/verzoek", description1)) return(invisible())
+      description2 <- input$description2
+      if (empty_field("Antwoord", description2)) return(invisible())
+      description <- paste0("\nVRAAG:\n", trimws(description1), "\n\nANTWOORD:\n", trimws(description2))
+      if (length(description) == 0) {
+        description <- ""
+      } else {
+        description <- gsub("[.][.]", ".", paste0(description, "."))
+      }
+      if (description == ".") {
+        description <- ""
+      }
+      
+      if (!is.null(input$history)) {
+        if (description != "") {
+          description <- paste0(description, "\n\n")
+        }
+        description <- paste0(description, "R SYNTAX:\n", paste0(rev(input$history), collapse = "\n"))
+      }
+      
+      pkg_env$last_consult <- callr::r_bg(
+        func = function(planner, title, requested_by, description) {
+          get_current_user <- get("get_current_user", envir = asNamespace("certeprojects"))
+          read_secret <- get("read_secret", envir = asNamespace("certeprojects"))
+          active_user <- certeprojects::planner_user_property(get_current_user(),
+                                                              property = "name",
+                                                              account = planner)    
+          certeprojects::planner_task_create(title = title,
+                                             description = description,
+                                             startdate = Sys.Date(),
+                                             categories = "Consult / Q&A",
+                                             bucket_name = read_secret("planner.default.bucket.consult"),
+                                             requested_by = requested_by,
+                                             assigned = active_user,
+                                             project_number = NULL,
+                                             account = planner)
+        }, 
+        args = list(planner = planner, title = title, requested_by = requested_by, description = description)
+      )
+      
+      stopApp()
+    })
+    
+    observeEvent(input$cancel, {
+      stopApp()
+    })
+  }
+  
+  viewer <- dialogViewer(dialogName = paste("Nieuw consult -", ifelse(!is.null(teams),
+                                                                      get_azure_property(teams, "displayName"),
+                                                                      read_secret("department.name"))),
+                         width = 660,
+                         height = 660)
+  
+  suppressMessages(
+    runGadget(app = ui,
+              server = server,
+              viewer = viewer,
+              stopOnCancel = FALSE))
+}
+
 
 #' @importFrom miniUI miniPage miniContentPanel
 #' @importFrom shiny actionButton observe runApp paneViewer stopApp reactiveValuesToList

@@ -12,10 +12,8 @@ render(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
 \arguments{
 \item{input_file}{file to be rendered, can be R Markdown (\code{.Rmd}) or Quarto (\code{.qmd}), or a lot of other formats such as \code{.md}, \code{.ipynb} and \href{https://quarto.org/docs/reference/}{many other formats that Quarto supports}.}
 
-\item{output_file}{The name of the output file. If using \code{NULL}, the output
-filename will be based on the filename for the input file. \code{output_file} is
-mapped to the \code{--output} option flag of the \code{quarto} CLI. It is expected to
-be a filename only, not a path, relative or absolute.}
+\item{output_file}{The name of the output file. If using \code{NULL} then the
+output filename will be based on filename for the input file.}
 
 \item{quiet}{Suppress warning and other messages.}
 

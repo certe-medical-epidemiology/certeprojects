@@ -64,7 +64,7 @@ project_add <- function(planner = connect_planner(),
                           }
                         });
                       });')),
-    tags$style(paste0("* { font-family: Calibri, Helvetica Neue, Arial; }
+    tags$style(paste0("* { font-family: Source Sans Pro, Helvetica Neue, Arial; }
                       .container-fluid { margin-top: 15px; }
                       .well { background-color: ", colourpicker("certeblauw6"), "; }
                       .well label { color: ", colourpicker("certeblauw"), "; }
@@ -565,7 +565,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
         background-color: ", colourpicker("certeblauw6"), ";
      }",
       "* {
-        font-family: Calibri, Helvetica Neue, Arial;
+        font-family: Source Sans Pro, Helvetica Neue, Arial;
         text-align: center;
      }",
       ".move_btn {
@@ -691,7 +691,7 @@ consult_add <- function(planner = connect_planner(),
                           }
                         });
                       });')),
-    tags$style(paste0("* { font-family: Calibri, Helvetica Neue, Arial; }
+    tags$style(paste0("* { font-family: Source Sans Pro, Helvetica Neue, Arial; }
                       .container-fluid { background-color: ", colourpicker("certegroen6"), "; border-radius: 10px; margin: 10px; padding-top: 10px; }
                       .form-group { margin-bottom: 5px; }
                       .h2, h2, h4 { color: ", colourpicker("certegroen"), "; }
@@ -704,12 +704,16 @@ consult_add <- function(planner = connect_planner(),
                       label[for=title] { font-size: 16px; }
                       #create { background-color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; }
                       #create:hover { background-color: ", colourpicker("certegroen0"), "; border-color: ", colourpicker("certegroen"), "; }
-                      #cancel, #search_mail { background-color: white; color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), ";}
+                      #cancel, #search_mail, .btn-file { background-color: white; color: ", colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), "; border-radius: 3px !important; }
                       #cancel:hover { color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
                       .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker("certegroen6"), " !important; }
                       .selectize-input .item.active { color: white; background-color: ", colourpicker("certegroen"), " !important; }",
                       '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker("certegroen"), "; border-color: ", colourpicker("certegroen"), " ;}",
-                      ".checkbox label { width: 100% }")),
+                      ".checkbox label { width: 100% }",
+                      "#file_upload_progress, input.form-control[placeholder=\"No file selected\"] { display: none; }",
+                      "label.input-group-btn.input-group-prepend { width: 0px; }",
+                      ".mails-div { display: flex; align-items: flex-start; }"
+                      )),
     
     p("Een consult wordt na aanmaken direct in Planner opgeslagen onder 'Voorlopig voltooid' en krijgt een C-nummer, maar geen (project)map.", class = "intro"),
     
@@ -722,7 +726,10 @@ consult_add <- function(planner = connect_planner(),
     actionButton("cancel", "Annuleren (Esc)", width = "49.5%", icon = icon("ban"), class = "btn-danger"),
     br(),
     br(),
-    actionButton("search_mail", "Info uit e-mail ophalen...", width = "100%", icon = icon("envelope")),
+    div(class = "mails-div",
+        actionButton("search_mail", "Info uit e-mail ophalen...", width = "90%", icon = icon("envelope")),
+        fileInput("file_upload", label = NULL, width = "86px"),
+    ),
     uiOutput("mail_list"),
     hr(),
     uiOutput("Rhistory"),
@@ -807,7 +814,9 @@ consult_add <- function(planner = connect_planner(),
                          width = "50%"),
             actionButton("history_clear",
                          label = "Selectie opheffen",
-                         width = "50%")
+                         width = "50%"),
+            br(),
+            br()
         ),
       )
     })
@@ -862,7 +871,9 @@ consult_add <- function(planner = connect_planner(),
         
         users <- get_user()
         mail_sent <- mail$properties$sender$emailAddress$name
-        if (!mail_sent %in% users) {
+        if (identical(users, "")) {
+          updateTextInput(session = session, inputId = "requested_by", value = mail_sent)
+        } else if (!mail_sent %in% users) {
           suppressWarnings(
             updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent, choices = c(mail_sent, users))
           )
@@ -883,7 +894,46 @@ consult_add <- function(planner = connect_planner(),
         mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
         updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
       }
+    })
+    
+    observeEvent(input$file_upload, {
+      req(input$file_upload)
+      txt <- readLines(input$file_upload$datapath)
       
+      subject <- trimws(gsub("^Subject: ", "", txt[txt %like% "^Subject: "]))
+      
+      txt_body <- which(txt %like% "^--_000")
+      body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
+      body <- body[body %unlike% "^Content-" & body != ""]
+      body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
+      body <- paste(body, collapse = "\n")
+      body <- gsub("####\n", "", body)
+      
+      title <- trimws(gsub("^.*(RE|FWD?|Antw?d?): ", "", subject, ignore.case = TRUE))
+      title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
+      updateTextInput(session = session, inputId = "title", value = title)
+      
+      users <- get_user()
+      mail_sent <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
+      mail_sent <- gsub(" <.*>", "", mail_sent)
+      if (identical(users, "")) {
+        updateTextInput(session = session, inputId = "requested_by", value = mail_sent)
+      } else if (!mail_sent %in% users) {
+        suppressWarnings(
+          updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent, choices = c(mail_sent, users))
+        )
+      } else {
+        updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent)
+      }
+      
+      mail_txt <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", body)
+      mail_txt <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", mail_txt)
+      mail_txt <- gsub("\nOorspronkelijk bericht\n.*", "", mail_txt)
+      mail_txt <- gsub("\nVan:.*Verzonden:.*", "", mail_txt)
+      mail_txt <- gsub("(\n)+", "\n", mail_txt)
+      mail_txt <- gsub("\nGroet(en)?,.*", "", mail_txt)
+      mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
+      updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
     })
     
     
@@ -1001,7 +1051,7 @@ shiny_item_picker <- function(values, oversized = character(0), title = "", subt
         background-color: ", colourpicker("certeblauw6"), ";
      }
      * {
-        font-family: Calibri, Helvetica Neue, Arial;
+        font-family: Source Sans Pro, Helvetica Neue, Arial;
         text-align: center;
      }
      h4 {

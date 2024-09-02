@@ -658,7 +658,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
 }
 
 #' @rdname planner_add
-#' @importFrom shiny updateCheckboxGroupInput checkboxGroupInput div numericInput reactive updateSelectizeInput updateTextAreaInput
+#' @importFrom shiny updateCheckboxGroupInput checkboxGroupInput div numericInput reactive updateSelectizeInput updateTextAreaInput fileInput
 #' @importFrom shinyWidgets addSpinner
 #' @export
 consult_add <- function(planner = connect_planner(),
@@ -859,6 +859,7 @@ consult_add <- function(planner = connect_planner(),
     })
     
     observeEvent(input$mail, {
+      ## Read from selected mail object (when using select input) ----
       mails <- pkg_env$mails
       mail_ids <- vapply(FUN.VALUE = character(1), mails, function(mail) mail$properties$id)
       mail <- mails[mail_ids == input$mail]
@@ -870,15 +871,15 @@ consult_add <- function(planner = connect_planner(),
         updateTextInput(session = session, inputId = "title", value = title)
         
         users <- get_user()
-        mail_sent <- mail$properties$sender$emailAddress$name
+        from <- mail$properties$sender$emailAddress$name
         if (identical(users, "")) {
-          updateTextInput(session = session, inputId = "requested_by", value = mail_sent)
-        } else if (!mail_sent %in% users) {
+          updateTextInput(session = session, inputId = "requested_by", value = from)
+        } else if (!from %in% users) {
           suppressWarnings(
-            updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent, choices = c(mail_sent, users))
+            updateSelectizeInput(session = session, inputId = "requested_by", selected = from, choices = c(from, users))
           )
         } else {
-          updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent)
+          updateSelectizeInput(session = session, inputId = "requested_by", selected = from)
         }
         
         mail_txt <- mail$properties$body$content
@@ -892,48 +893,63 @@ consult_add <- function(planner = connect_planner(),
         mail_txt <- gsub("(\n)+", "\n", mail_txt)
         mail_txt <- gsub("\nGroet(en)?,.*", "", mail_txt)
         mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
+        mail_txt <- gsub("^(Hoi|Ha|Beste|Dag) .*?\n", "", mail_txt)
         updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
       }
     })
     
     observeEvent(input$file_upload, {
+      ## Read EML file (created when using drag/drop) ----
       req(input$file_upload)
       txt <- readLines(input$file_upload$datapath)
+      txt_body <- which(txt %like% "^--_000")
       
       subject <- trimws(gsub("^Subject: ", "", txt[txt %like% "^Subject: "]))
-      
-      txt_body <- which(txt %like% "^--_000")
-      body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
-      body <- body[body %unlike% "^Content-" & body != ""]
-      body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
-      body <- paste(body, collapse = "\n")
-      body <- gsub("####\n", "", body)
       
       title <- trimws(gsub("^.*(RE|FWD?|Antw?d?): ", "", subject, ignore.case = TRUE))
       title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
       updateTextInput(session = session, inputId = "title", value = title)
       
       users <- get_user()
-      mail_sent <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
-      mail_sent <- gsub(" <.*>", "", mail_sent)
+      from <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
+      from <- gsub(" <.*>", "", from)
+      sent_by_us <- from == read_secret("department.name")
+      if (sent_by_us) {
+        # sent by us, so get To field, and take upper part as our response, lower part as their question/request
+        from <- trimws(gsub('"', "", gsub("^To: ", "", txt[txt %like% "^To: "])))
+        from <- gsub(" <.*>", "", from)
+      }
       if (identical(users, "")) {
-        updateTextInput(session = session, inputId = "requested_by", value = mail_sent)
-      } else if (!mail_sent %in% users) {
+        updateTextInput(session = session, inputId = "requested_by", value = from)
+      } else if (!from %in% users) {
         suppressWarnings(
-          updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent, choices = c(mail_sent, users))
+          updateSelectizeInput(session = session, inputId = "requested_by", selected = from, choices = c(from, users))
         )
       } else {
-        updateSelectizeInput(session = session, inputId = "requested_by", selected = mail_sent)
+        updateSelectizeInput(session = session, inputId = "requested_by", selected = from)
       }
-      
-      mail_txt <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", body)
-      mail_txt <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", mail_txt)
-      mail_txt <- gsub("\nOorspronkelijk bericht\n.*", "", mail_txt)
-      mail_txt <- gsub("\nVan:.*Verzonden:.*", "", mail_txt)
-      mail_txt <- gsub("(\n)+", "\n", mail_txt)
-      mail_txt <- gsub("\nGroet(en)?,.*", "", mail_txt)
-      mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
-      updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
+    
+      body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
+      body <- body[body %unlike% "^Content-" & body != ""]
+      body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
+      body <- paste(body, collapse = "\n")
+      body <- gsub("####\n", "", body)
+      # translate accents
+      body <- decode_quoted_printable_encoding(body)
+      if (sent_by_us) {
+        our_txt <- gsub("(.*)\nVan: .*", "\\1", body)
+        updateTextAreaInput(session = session, inputId = "description2", value = our_txt)
+        body <- gsub(".*\nOnderwerp: .*?\n(.*)", "\\1", body)
+      }
+      body <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", body)
+      body <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", body)
+      body <- gsub("\nOorspronkelijk bericht\n.*", "", body)
+      body <- gsub("\nVan:.*Verzonden:.*", "", body)
+      body <- gsub("(\n)+", "\n", body)
+      body <- gsub("\nGroet(en)?,.*", "", body)
+      body <- gsub("\nMet vriendelijke groet,.*", "", body)
+      body <- gsub("^(Hoi|Ha|Beste|Dag) .*?\n", "", body)
+      updateTextAreaInput(session = session, inputId = "description1", value = body)
     })
     
     
@@ -995,6 +1011,7 @@ consult_add <- function(planner = connect_planner(),
         description <- paste0(description, "R SYNTAX:\n", paste0(rev(input$history), collapse = "\n"))
       }
       
+      # add to Planner in background process, so that window will close immediately
       pkg_env$last_consult <- callr::r_bg(
         func = function(planner, title, requested_by, description) {
           get_current_user <- get("get_current_user", envir = asNamespace("certeprojects"))
@@ -1036,6 +1053,56 @@ consult_add <- function(planner = connect_planner(),
               stopOnCancel = FALSE))
 }
 
+decode_quoted_printable_encoding <- function(text) {
+  # Decoding quoted-printable accents
+  decoded_text <- text
+  decoded_text <- gsub("=E0", "à", decoded_text)  # a grave
+  decoded_text <- gsub("=E1", "á", decoded_text)  # a aigu
+  decoded_text <- gsub("=E2", "â", decoded_text)  # a circumflex
+  decoded_text <- gsub("=E3", "ã", decoded_text)  # a tilde
+  decoded_text <- gsub("=E4", "ä", decoded_text)  # a diaeresis
+  decoded_text <- gsub("=E5", "å", decoded_text)  # a ring
+  
+  decoded_text <- gsub("=E8", "è", decoded_text)  # e grave
+  decoded_text <- gsub("=E9", "é", decoded_text)  # e aigu
+  decoded_text <- gsub("=EA", "ê", decoded_text)  # e circumflex
+  decoded_text <- gsub("=EB", "ë", decoded_text)  # e diaeresis
+  
+  decoded_text <- gsub("=EC", "ì", decoded_text)  # i grave
+  decoded_text <- gsub("=ED", "í", decoded_text)  # i aigu
+  decoded_text <- gsub("=EE", "î", decoded_text)  # i circumflex
+  decoded_text <- gsub("=EF", "ï", decoded_text)  # i diaeresis
+  
+  decoded_text <- gsub("=F2", "ò", decoded_text)  # o grave
+  decoded_text <- gsub("=F3", "ó", decoded_text)  # o aigu
+  decoded_text <- gsub("=F4", "ô", decoded_text)  # o circumflex
+  decoded_text <- gsub("=F5", "õ", decoded_text)  # o tilde
+  decoded_text <- gsub("=F6", "ö", decoded_text)  # o diaeresis
+  
+  decoded_text <- gsub("=F9", "ù", decoded_text)  # u grave
+  decoded_text <- gsub("=FA", "ú", decoded_text)  # u aigu
+  decoded_text <- gsub("=FB", "û", decoded_text)  # u circumflex
+  decoded_text <- gsub("=FC", "ü", decoded_text)  # u diaeresis
+  
+  # Additional common accented characters
+  decoded_text <- gsub("=C0", "À", decoded_text)  # A grave
+  decoded_text <- gsub("=C1", "Á", decoded_text)  # A aigu
+  decoded_text <- gsub("=C8", "È", decoded_text)  # E grave
+  decoded_text <- gsub("=C9", "É", decoded_text)  # E aigu
+  decoded_text <- gsub("=CC", "Ì", decoded_text)  # I grave
+  decoded_text <- gsub("=CD", "Í", decoded_text)  # I aigu
+  decoded_text <- gsub("=D2", "Ò", decoded_text)  # O grave
+  decoded_text <- gsub("=D3", "Ó", decoded_text)  # O aigu
+  decoded_text <- gsub("=D9", "Ù", decoded_text)  # U grave
+  decoded_text <- gsub("=DA", "Ú", decoded_text)  # U aigu
+  
+  # Common special characters
+  decoded_text <- gsub("=E7", "ç", decoded_text)  # c cedilla
+  decoded_text <- gsub("=F1", "ñ", decoded_text)  # n tilde
+  decoded_text <- gsub("=C7", "Ç", decoded_text)  # C cedilla
+  decoded_text <- gsub("=D1", "Ñ", decoded_text)  # N tilde
+  decoded_text
+}
 
 #' @importFrom miniUI miniPage miniContentPanel
 #' @importFrom shiny actionButton observe runApp paneViewer stopApp reactiveValuesToList

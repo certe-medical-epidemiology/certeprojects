@@ -658,7 +658,7 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
 }
 
 #' @rdname planner_add
-#' @importFrom shiny updateCheckboxGroupInput checkboxGroupInput div numericInput reactive updateSelectizeInput updateTextAreaInput fileInput
+#' @importFrom shiny updateCheckboxGroupInput checkboxGroupInput div numericInput reactive updateSelectizeInput updateTextAreaInput fileInput req
 #' @importFrom shinyWidgets addSpinner
 #' @importFrom rstudioapi showDialog
 #' @export
@@ -1094,53 +1094,54 @@ consult_add <- function(planner = connect_planner(),
 decode_quoted_printable_encoding <- function(text) {
   # Decoding quoted-printable accents
   decoded_text <- text
-  decoded_text <- gsub("=E0", "à", decoded_text)  # a grave
-  decoded_text <- gsub("=E1", "á", decoded_text)  # a aigu
-  decoded_text <- gsub("=E2", "â", decoded_text)  # a circumflex
-  decoded_text <- gsub("=E3", "ã", decoded_text)  # a tilde
-  decoded_text <- gsub("=E4", "ä", decoded_text)  # a diaeresis
-  decoded_text <- gsub("=E5", "å", decoded_text)  # a ring
+  decoded_text <- gsub("=E0", "\u00E0", decoded_text)  # a grave
+  decoded_text <- gsub("=E1", "\u00E1", decoded_text)  # a aigu
+  decoded_text <- gsub("=E2", "\u00E2", decoded_text)  # a circumflex
+  decoded_text <- gsub("=E3", "\u00E3", decoded_text)  # a tilde
+  decoded_text <- gsub("=E4", "\u00E4", decoded_text)  # a diaeresis
+  decoded_text <- gsub("=E5", "\u00E5", decoded_text)  # a ring
   
-  decoded_text <- gsub("=E8", "è", decoded_text)  # e grave
-  decoded_text <- gsub("=E9", "é", decoded_text)  # e aigu
-  decoded_text <- gsub("=EA", "ê", decoded_text)  # e circumflex
-  decoded_text <- gsub("=EB", "ë", decoded_text)  # e diaeresis
+  decoded_text <- gsub("=E8", "\u00E8", decoded_text)  # e grave
+  decoded_text <- gsub("=E9", "\u00E9", decoded_text)  # e aigu
+  decoded_text <- gsub("=EA", "\u00EA", decoded_text)  # e circumflex
+  decoded_text <- gsub("=EB", "\u00EB", decoded_text)  # e diaeresis
   
-  decoded_text <- gsub("=EC", "ì", decoded_text)  # i grave
-  decoded_text <- gsub("=ED", "í", decoded_text)  # i aigu
-  decoded_text <- gsub("=EE", "î", decoded_text)  # i circumflex
-  decoded_text <- gsub("=EF", "ï", decoded_text)  # i diaeresis
+  decoded_text <- gsub("=EC", "\u00EC", decoded_text)  # i grave
+  decoded_text <- gsub("=ED", "\u00ED", decoded_text)  # i aigu
+  decoded_text <- gsub("=EE", "\u00EE", decoded_text)  # i circumflex
+  decoded_text <- gsub("=EF", "\u00EF", decoded_text)  # i diaeresis
   
-  decoded_text <- gsub("=F2", "ò", decoded_text)  # o grave
-  decoded_text <- gsub("=F3", "ó", decoded_text)  # o aigu
-  decoded_text <- gsub("=F4", "ô", decoded_text)  # o circumflex
-  decoded_text <- gsub("=F5", "õ", decoded_text)  # o tilde
-  decoded_text <- gsub("=F6", "ö", decoded_text)  # o diaeresis
+  decoded_text <- gsub("=F2", "\u00F2", decoded_text)  # o grave
+  decoded_text <- gsub("=F3", "\u00F3", decoded_text)  # o aigu
+  decoded_text <- gsub("=F4", "\u00F4", decoded_text)  # o circumflex
+  decoded_text <- gsub("=F5", "\u00F5", decoded_text)  # o tilde
+  decoded_text <- gsub("=F6", "\u00F6", decoded_text)  # o diaeresis
   
-  decoded_text <- gsub("=F9", "ù", decoded_text)  # u grave
-  decoded_text <- gsub("=FA", "ú", decoded_text)  # u aigu
-  decoded_text <- gsub("=FB", "û", decoded_text)  # u circumflex
-  decoded_text <- gsub("=FC", "ü", decoded_text)  # u diaeresis
+  decoded_text <- gsub("=F9", "\u00F9", decoded_text)  # u grave
+  decoded_text <- gsub("=FA", "\u00FA", decoded_text)  # u aigu
+  decoded_text <- gsub("=FB", "\u00FB", decoded_text)  # u circumflex
+  decoded_text <- gsub("=FC", "\u00FC", decoded_text)  # u diaeresis
   
   # Additional common accented characters
-  decoded_text <- gsub("=C0", "À", decoded_text)  # A grave
-  decoded_text <- gsub("=C1", "Á", decoded_text)  # A aigu
-  decoded_text <- gsub("=C8", "È", decoded_text)  # E grave
-  decoded_text <- gsub("=C9", "É", decoded_text)  # E aigu
-  decoded_text <- gsub("=CC", "Ì", decoded_text)  # I grave
-  decoded_text <- gsub("=CD", "Í", decoded_text)  # I aigu
-  decoded_text <- gsub("=D2", "Ò", decoded_text)  # O grave
-  decoded_text <- gsub("=D3", "Ó", decoded_text)  # O aigu
-  decoded_text <- gsub("=D9", "Ù", decoded_text)  # U grave
-  decoded_text <- gsub("=DA", "Ú", decoded_text)  # U aigu
+  decoded_text <- gsub("=C0", "\u00C0", decoded_text)  # A grave
+  decoded_text <- gsub("=C1", "\u00C1", decoded_text)  # A aigu
+  decoded_text <- gsub("=C8", "\u00C8", decoded_text)  # E grave
+  decoded_text <- gsub("=C9", "\u00C9", decoded_text)  # E aigu
+  decoded_text <- gsub("=CC", "\u00CC", decoded_text)  # I grave
+  decoded_text <- gsub("=CD", "\u00CD", decoded_text)  # I aigu
+  decoded_text <- gsub("=D2", "\u00D2", decoded_text)  # O grave
+  decoded_text <- gsub("=D3", "\u00D3", decoded_text)  # O aigu
+  decoded_text <- gsub("=D9", "\u00D9", decoded_text)  # U grave
+  decoded_text <- gsub("=DA", "\u00DA", decoded_text)  # U aigu
   
   # Common special characters
-  decoded_text <- gsub("=E7", "ç", decoded_text)  # c cedilla
-  decoded_text <- gsub("=F1", "ñ", decoded_text)  # n tilde
-  decoded_text <- gsub("=C7", "Ç", decoded_text)  # C cedilla
-  decoded_text <- gsub("=D1", "Ñ", decoded_text)  # N tilde
+  decoded_text <- gsub("=E7", "\u00E7", decoded_text)  # c cedilla
+  decoded_text <- gsub("=F1", "\u00F1", decoded_text)  # n tilde
+  decoded_text <- gsub("=C7", "\u00C7", decoded_text)  # C cedilla
+  decoded_text <- gsub("=D1", "\u00D1", decoded_text)  # N tilde
   decoded_text
 }
+
 
 #' @importFrom miniUI miniPage miniContentPanel
 #' @importFrom shiny actionButton observe runApp paneViewer stopApp reactiveValuesToList

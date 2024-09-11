@@ -890,16 +890,8 @@ consult_add <- function(planner = connect_planner(),
         if (identical(mail$properties$body$contentType, "html")) {
           mail_txt <- mail_txt |> rvest::read_html() |> rvest::html_text2()
         }
-        # remove emojis
-        mail_txt <- gsub("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U0001F1E6-\U0001F1FF]", "(emoji)", mail_txt)
-        mail_txt <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", mail_txt)
-        mail_txt <- gsub("\nOorspronkelijk bericht\n.*", "", mail_txt)
-        mail_txt <- gsub("\nVan:.*Verzonden:.*", "", mail_txt)
-        mail_txt <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", mail_txt)
-        mail_txt <- gsub("(\n)+", "\n", mail_txt)
-        mail_txt <- gsub("\nGroet(en)?,?.*", "", mail_txt)
-        mail_txt <- gsub("\nMet vriendelijke groet,.*", "", mail_txt)
-        mail_txt <- gsub("^(Hoi|Ha|Beste|Dag) .*?\n", "", mail_txt)
+        # remove emojis and greetings etc
+        mail_txt <- clean_text(mail_txt)
         updateTextAreaInput(session = session, inputId = "description1", value = mail_txt)
       }
     })
@@ -907,53 +899,60 @@ consult_add <- function(planner = connect_planner(),
     observeEvent(input$file_upload, {
       ## Read EML file (created when using drag/drop) ----
       req(input$file_upload)
-      if (input$file_upload$datapath %like% "[.]msg$") {
-        # MSG file
-        if (!"msgxtractr" %in% rownames(utils::installed.packages())) {
-          showDialog(title = "Missing Package",
-                     message = "Dropping msg files requires the 'msgxtractr' package.",
-                     url = "https://github.com/certe-medical-epidemiology/msgxtractr")
-          return(invisible())
-        }
-        txt <- msgxtractr::read_msg(input$file_upload$datapath)
+      
+      if (input$file_upload$datapath %like% "[.](msg|eml)$") {
         
-        subject <- txt$subject
-        from <- txt$sender$sender_name
-        body <- txt$body$text
-        body <- paste0(body[nchar(body) != 2], collapse = " ")
-        body <- gsub("\r\n", "\n", body)
-        sent_by_us <- from == read_secret("department.name")
-        if (sent_by_us) {
-          our_txt <- gsub("(.*)\nVan: .*", "\\1", body)
-          updateTextAreaInput(session = session, inputId = "description2", value = our_txt)
-          body <- gsub(".*\nOnderwerp: .*?\n(.*)", "\\1", body)
-        }
-        
-      } else if (input$file_upload$datapath %like% "[.]eml$") {
-        # EML file
-        txt <- readLines(input$file_upload$datapath)
-        txt_body <- which(txt %like% "^--_000")
-        subject <- trimws(gsub("^Subject: ", "", txt[txt %like% "^Subject: "]))
-        from <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
-        from <- gsub(" <.*>", "", from)
-        sent_by_us <- from == read_secret("department.name")
-        if (sent_by_us) {
-          # sent by us, so get To field, and take upper part as our response, lower part as their question/request
-          from <- trimws(gsub('"', "", gsub("^To: ", "", txt[txt %like% "^To: "])))
+        if (input$file_upload$datapath %like% "[.]msg$") {
+          # MSG file
+          if (!"msgxtractr" %in% rownames(utils::installed.packages())) {
+            showDialog(title = "Missing Package",
+                       message = "Dropping msg files requires the 'msgxtractr' package.",
+                       url = "https://github.com/certe-medical-epidemiology/msgxtractr")
+            return(invisible())
+          }
+          txt <- msgxtractr::read_msg(input$file_upload$datapath)
+          
+          subject <- txt$subject
+          from <- txt$sender$sender_name
+          body <- txt$body$text
+          body <- paste0(body[nchar(body) != 2], collapse = " ")
+          body <- gsub("\r\n", "\n", body)
+          sent_by_us <- from == read_secret("department.name") || certemail::get_certe_name() %like% from
+          
+        } else if (input$file_upload$datapath %like% "[.]eml$") {
+          # EML file
+          txt <- readLines(input$file_upload$datapath)
+          txt_body <- which(txt %like% "^--_000")
+          subject <- trimws(gsub("^Subject: ", "", txt[txt %like% "^Subject: "]))
+          from <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
           from <- gsub(" <.*>", "", from)
+          sent_by_us <- from == read_secret("department.name")
+          if (sent_by_us) {
+            # sent by us, so get To field, and take upper part as our response, lower part as their question/request
+            from <- trimws(gsub('"', "", gsub("^To: ", "", txt[txt %like% "^To: "])))
+            from <- gsub(" <.*>", "", from)
+          }
+          body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
+          body <- body[body %unlike% "^Content-" & body != ""]
+          body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
+          body <- paste(body, collapse = "\n")
+          body <- gsub("####\n", "", body)
+          # translate accents
+          body <- decode_quoted_printable_encoding(body)
         }
-        body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
-        body <- body[body %unlike% "^Content-" & body != ""]
-        body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
-        body <- paste(body, collapse = "\n")
-        body <- gsub("####\n", "", body)
-        # translate accents
-        body <- decode_quoted_printable_encoding(body)
+        
+        # for both MSG and EML
         if (sent_by_us) {
-          our_txt <- gsub("(.*)\nVan: .*", "\\1", body)
+          from <- gsub(".*\n(Van|From): (.*?)\n.*", "\\2", body)
+          from <- gsub(" <.*>", "", from)
+          our_txt <- gsub("(.*)\n(Van|From): .*", "\\1", body)
+          our_txt <- clean_text(our_txt)
           updateTextAreaInput(session = session, inputId = "description2", value = our_txt)
-          body <- gsub(".*\nOnderwerp: .*?\n(.*)", "\\1", body)
+          body <- gsub(".*\n(Onderwerp|Subject): .*?(\n)+(.*)", "\\3", body)
         }
+        
+        # remove emojis and greetings etc
+        body <- clean_text(body)
         
       } else {
         # Other file - don't support this
@@ -977,16 +976,6 @@ consult_add <- function(planner = connect_planner(),
         updateSelectizeInput(session = session, inputId = "requested_by", selected = from)
       }
       
-      # remove emojis
-      body <- gsub("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U0001F1E6-\U0001F1FF]", "(emoji)", body, perl = TRUE)
-      body <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", body)
-      body <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", body)
-      body <- gsub("\nOorspronkelijk bericht\n.*", "", body)
-      body <- gsub("\nVan:.*Verzonden:.*", "", body)
-      body <- gsub("(\n)+", "\n", body)
-      body <- gsub("\nGroet(en)?,?.*", "", body)
-      body <- gsub("\nMet vriendelijke groet,.*", "", body)
-      body <- gsub("^(Hoi|Ha|Beste|Dag) .*?\n", "", body)
       updateTextAreaInput(session = session, inputId = "description1", value = body)
     })
     
@@ -1089,6 +1078,20 @@ consult_add <- function(planner = connect_planner(),
               server = server,
               viewer = viewer,
               stopOnCancel = FALSE))
+}
+
+clean_text <- function(x) {
+  x <- gsub("( ?\n ?)+", "\n", x)
+  x <- gsub("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U0001F1E6-\U0001F1FF]", "(emoji)", x, perl = TRUE)
+  x <- gsub("^U ontvangt niet vaak e-mail.*?(\n)+", "", x)
+  x <- gsub(" ?(\n|[^a-zA-Z0-9.,!?\\(\\)]){3,99} ?", "\n", x)
+  x <- gsub("\nOorspronkelijk bericht\n.*", "", x)
+  x <- gsub("\nVan:.*Verzonden:.*", "", x)
+  x <- gsub("(\n)+", "\n", x)
+  x <- gsub("\nGroet(en)?,?.*", "", x)
+  x <- gsub("\nMet vriendelijke groet,.*", "", x)
+  x <- gsub("^(Hoi|Ha|Beste|Dag) .*?\n", "", x)
+  x
 }
 
 decode_quoted_printable_encoding <- function(text) {

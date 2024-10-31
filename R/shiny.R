@@ -361,13 +361,12 @@ project_add <- function(planner = connect_planner(),
           projects_path <- tempdir()
         } else {
           # saved to local
+          incProgress(1 / progress_items, detail = "Map aanmaken")
           projects_path <- ifelse(read_secret("projects.path") == "",
                                   getwd(),
                                   read_secret("projects.path"))
         }
-        incProgress(1 / progress_items, detail = "Map aanmaken")
-        fullpath <- paste0(projects_path, "/", new_title)
-        fullpath <- gsub("//", "/", fullpath, fixed = TRUE)
+        fullpath <- file.path(projects_path, new_title)
         
         desc <- unlist(strsplit(description, "\n", fixed = TRUE))
         if (!arg_is_empty(requested_by)) {
@@ -440,7 +439,7 @@ project_add <- function(planner = connect_planner(),
                              header_text,
                              "",
                              "knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,",
-                             '                      results = "asis", comment = NA, dpi = 600)')
+                             '                      results = "asis", comment = NA, dpi = 600, fig.showtext = TRUE)')
           } else if (filetype == ".qmd") {
             # Quarto
             filecontent <- c(filecontent,

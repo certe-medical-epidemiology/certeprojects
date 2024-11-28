@@ -123,14 +123,9 @@ project_add <- function(planner = connect_planner(),
                      choices = c(".qmd (Quarto)" = ".qmd",
                                  ".R" = ".R",
                                  ".Rmd (R Markdown)" = ".Rmd"),
-                     selected = ".R",
+                     selected = ".qmd",
                      inline = TRUE,
                      width = "100%"),
-        awesomeCheckbox("rstudio_projectfile",
-                        label = "RStudio-projectbestand aanmaken en openen",
-                        status = "primary",
-                        value = FALSE,
-                        width = "100%"),
         hr(),
         
         # PLANNER
@@ -268,17 +263,6 @@ project_add <- function(planner = connect_planner(),
       )
     })
     
-    observeEvent(input$files_teams_or_local, {
-      if (input$files_teams_or_local == "teams") {
-        updateCheckboxInput(session = session, inputId = "rstudio_projectfile", value = FALSE)
-        disable("rstudio_projectfile")
-        on.exit(disable("rstudio_projectfile"))
-      } else {
-        enable("rstudio_projectfile")
-        on.exit(enable("rstudio_projectfile"))
-      }
-    })
-    
     # SAVE ----
     observeEvent(input$create, {
       
@@ -311,9 +295,9 @@ project_add <- function(planner = connect_planner(),
         }
       }
       
-      title <- trimws(input$title)
-      title <- gsub("^([a-z])", "\\U\\1", title, perl = TRUE)
-      if (empty_field("Titel", title) || invalid_title(title)) return(invisible())
+      valid_title <- trimws(input$title)
+      valid_title <- gsub("^([a-z])", "\\U\\1", valid_title, perl = TRUE)
+      if (empty_field("Titel", valid_title) || invalid_title(valid_title)) return(invisible())
       requested_by <- input$requested_by
       if (empty_field("Aanvrager(s)", requested_by)) return(invisible())
       filetype <- input$filetype
@@ -336,13 +320,13 @@ project_add <- function(planner = connect_planner(),
       }
       
       withProgress(message = "Aanmaken...", value = 0, {
-        progress_items <- isTRUE(input$rstudio_projectfile) + identical(input$files_teams_or_local, "teams") + 3 # (+ 3 for Planner and for creating folders)
+        progress_items <- identical(input$files_teams_or_local, "teams") + 3 # + 3 for Planner and for creating folders
         project_id <- NULL
-        new_title <- title
+        title_with_project_id <- valid_title
         # Planner ----
         incProgress(1 / progress_items, detail = "MS Planner: taak aanmaken")
         new_task <- planner_task_create(account = planner,
-                                        title = title,
+                                        title = valid_title,
                                         bucket_name = input$planner_bucket,
                                         assigned = input$planner_members,
                                         requested_by = requested_by,
@@ -352,12 +336,12 @@ project_add <- function(planner = connect_planner(),
                                         categories = input$planner_categories,
                                         description = description)
         project_id <- new_task$id
-        new_title <- new_task$title
+        title_with_project_id <- new_task$title
         
         # Teams ----
-        if (tryCatch(input$files_teams_or_local == "teams", error = function(e) FALSE)) {
+        if (identical(input$files_teams_or_local, "teams")) {
           incProgress(1 / progress_items, detail = "MS Teams: map aanmaken")
-          teams_new_project(task = new_title, channel = channel, planner = planner)
+          teams_new_project(task = title_with_project_id, channel = channel, planner = planner)
           projects_path <- tempdir()
         } else {
           # saved to local
@@ -366,8 +350,7 @@ project_add <- function(planner = connect_planner(),
                                   getwd(),
                                   read_secret("projects.path"))
         }
-        fullpath <- file.path(projects_path, new_title)
-        
+        fullpath <- file.path(projects_path, title_with_project_id)
         desc <- unlist(strsplit(description, "\n", fixed = TRUE))
         if (!arg_is_empty(requested_by)) {
           requested_by <- paste0("# Aangevraagd door: ", requested_by)
@@ -375,7 +358,7 @@ project_add <- function(planner = connect_planner(),
           requested_by <- NA_character_
         }
         
-        header_text <- c(paste0("# Titel:            ", title),
+        header_text <- c(paste0("# Titel:            ", valid_title),
                          if_else(!is.na(desc[1]), 
                                  paste0("# Omschrijving:     ", desc[1]),
                                  NA_character_),
@@ -396,45 +379,31 @@ project_add <- function(planner = connect_planner(),
         
         # create file(s)
         if (filetype %in% c(".Rmd", ".qmd")) {
-          filecontent <- c(
-            "---",
-            paste0('title: "', title, '" # laat leeg voor geen voorblad bij PDF'),
-            'subtitle: ""',
-            'subtitle2: ""',
-            'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
-            ifelse(filetype == ".qmd",
-                   'date: "`r Sys.Date()`" # moet in YYYY-MM-DD',
-                   'date: "`r certestyle::rmarkdown_date()`"'),
-            ifelse(filetype == ".qmd", 'date-format: "D MMMM YYYY" # zie Quarto website', NA_character_),
-            'identifier: "`r certeprojects::project_identifier()`"',
-            "toc: true",
-            "toc_depth: 2",
-            "fig_width: 6.5 # in inch",
-            "fig_height: 5  # in inch",
-            "output:",
-            "  # word_document:",
-            ifelse(filetype == ".qmd", "  #   fig-dpi: 600", NA_character_),
-            ifelse(filetype == ".qmd",
-                   paste0("  #   reference-doc: \"", rmarkdown_template("word"), "\""),
-                   '  #   reference_docx: !expr certestyle::rmarkdown_template("word")'),
-            "  pdf_document:",
-            ifelse(filetype == ".qmd", "    execute:", NA_character_),
-            ifelse(filetype == ".qmd", "      echo: false", NA_character_),
-            ifelse(filetype == ".qmd", "      warning: false", NA_character_),
-            '    latex_engine: "xelatex"',
-            "    df_print: !expr certestyle::rmarkdown_table",
-            ifelse(filetype == ".qmd",
-                   paste0("    template: \"", rmarkdown_template("latex"), "\""),
-                   '    template: !expr certestyle::rmarkdown_template("latex")'),
-            'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
-            'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
-            "editor: visual",
-            ifelse(filetype == ".qmd", 'lang: "nl"', NA_character_),
-            "---",
-            "")
           if (filetype == ".Rmd") {
             # R Markdown
-            filecontent <- c(filecontent,
+            filecontent <- c("---",
+                             paste0('title: "', valid_title, '" # laat leeg voor geen voorblad bij PDF'),
+                             'subtitle: ""',
+                             'subtitle2: ""',
+                             'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
+                             'date: "`r certestyle::rmarkdown_date()`"',
+                             'identifier: "`r certeprojects::project_identifier()`"',
+                             "toc: true",
+                             "toc_depth: 2",
+                             "fig_width: 6.5 # in inch",
+                             "fig_height: 5  # in inch",
+                             "output:",
+                             "  # word_document:",
+                             '  #   reference_docx: !expr certestyle::rmarkdown_template("word")',
+                             "  pdf_document:",
+                             '    latex_engine: "xelatex"',
+                             "    df_print: !expr certestyle::rmarkdown_table",
+                             '    template: !expr certestyle::rmarkdown_template("latex")',
+                             'logofront: "`r certestyle::rmarkdown_logo(\'front\')`"   # max 16x7 cm',
+                             'logofooter: "`r certestyle::rmarkdown_logo(\'footer\')`" # max 16x0.7 cm',
+                             "editor: source",
+                             "---",
+                             "",
                              "```{r Setup, include = FALSE, message = FALSE}",
                              header_text,
                              "",
@@ -442,7 +411,17 @@ project_add <- function(planner = connect_planner(),
                              '                      results = "asis", comment = NA, dpi = 600, fig.showtext = TRUE)')
           } else if (filetype == ".qmd") {
             # Quarto
-            filecontent <- c(filecontent,
+            # some elements are not set but inherited from _quarto_yml
+            filecontent <- c("---",
+                             paste0('title: "', valid_title, '" # laat leeg voor geen voorblad bij PDF'),
+                             'subtitle: ""',
+                             'subtitle2: ""',
+                             'author: "`r certestyle::rmarkdown_author()`" # vervang evt. door certestyle::rmarkdown_department()',
+                             'date: "`r Sys.Date()`" # moet in YYYY-MM-DD',
+                             'identifier: "`r certeprojects::project_identifier()`"',
+                             "editor: source",
+                             "---",
+                             "",
                              "```{r}",
                              "#| label: Setup",
                              "#| include: false",
@@ -450,6 +429,7 @@ project_add <- function(planner = connect_planner(),
                              "",
                              header_text)
           }
+          
           filecontent <- c(filecontent,
                            "",
                            "library(certedata)",
@@ -459,8 +439,8 @@ project_add <- function(planner = connect_planner(),
                            paste0("  data_", project_id, ' <- import_rds(project_get_file(".*rds$", ', project_id, "))"),
                            "} else {",
                            paste0("  data_", project_id, " <- certedb_getmmb(dates = c(start, stop),"),
-                           "                             where  = where(db))",
-                           paste0("  export_rds(data_", project_id, ', "data_', project_id, '", project_number = ', project_id, ')'),
+                           paste0(strrep(" ", nchar(project_id)), "                          where  = where(gl))"),
+                           paste0("  # export_rds(data_", project_id, ', "data_', project_id, '", project_number = ', project_id, ')'),
                            "}",
                            "```",
                            "",
@@ -470,16 +450,6 @@ project_add <- function(planner = connect_planner(),
                            "",
                            "```",
                            "")
-          if (filetype == ".qmd") {
-            # conversion for R Markdown -> Quarto
-            filecontent <- gsub("output:", "format:", filecontent, fixed = TRUE)
-            filecontent <- gsub("word_document", "docx", filecontent, fixed = TRUE)
-            filecontent <- gsub("_document", "", filecontent, fixed = TRUE)
-            filecontent <- gsub("(toc|fig)_", "\\1-", filecontent)
-            filecontent <- gsub("latex_engine", "pdf-engine", filecontent, fixed = TRUE)
-            filecontent[filecontent %like% "df_print: "] <- NA_character_
-            filecontent <- gsub("reference-docx", "reference-doc", filecontent, fixed = TRUE)
-          }
         }
         if (filetype == ".R") {
           filecontent <- c(header_text,
@@ -497,11 +467,11 @@ project_add <- function(planner = connect_planner(),
                                   paste0(" p", project_id),
                                   ""),
                            filetype)
-        incProgress(1 / progress_items, detail = ifelse(isTRUE(input$rstudio_projectfile), "R-bestanden schrijven", ""))
+        incProgress(1 / progress_items, detail = "R-bestanden schrijven")
         writeLines(text = paste(filecontent[!is.na(filecontent)], collapse = "\n"),
                    con = file.path(filename))
-        if (input$files_teams_or_local == "teams") {
-          teams_upload_project_file(files = file.path(filename), task = new_title, channel = channel, planner = planner)
+        if (identical(input$files_teams_or_local, "teams")) {
+          teams_upload_project_file(files = file.path(filename), task = title_with_project_id, channel = channel, planner = planner)
           # unlink(file.path(filename), force = TRUE)
           unlink(fullpath, recursive = TRUE, force = TRUE)
         }
@@ -511,17 +481,11 @@ project_add <- function(planner = connect_planner(),
       
       message("Project p", project_id, " aangemaakt.")
       
-      if (isTRUE(input$rstudio_projectfile)) {
-        # create project and open it
-        initializeProject(fullpath)
-        openProject(fullpath, newSession = TRUE)
+      if (identical(input$files_teams_or_local, "teams")) {
+        teams_browse_project(task = title_with_project_id, channel = channel, planner = planner)
       } else {
-        if (input$files_teams_or_local == "teams") {
-          teams_browse_project(task = new_title, channel = channel, planner = planner)
-        } else {
-          # open file
-          navigateToFile(filename)
-        }
+        # open file
+        navigateToFile(filename)
       }
       
       stopApp()
@@ -716,7 +680,7 @@ consult_add <- function(planner = connect_planner(),
                       "#file_upload_progress, input.form-control[placeholder=\"No file selected\"] { display: none; }",
                       "label.input-group-btn.input-group-prepend { width: 0px; }",
                       ".mails-div { display: flex; align-items: flex-start; }"
-                      )),
+    )),
     
     p("Een consult wordt na aanmaken direct in Planner opgeslagen onder 'Voorlopig voltooid' en krijgt een C-nummer, maar geen (project)map.", class = "intro"),
     
@@ -1007,7 +971,7 @@ consult_add <- function(planner = connect_planner(),
         #   }
         # } else {
         #   # is invalid?
-          FALSE
+        FALSE
         # }
       }
       

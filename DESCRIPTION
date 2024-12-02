@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.21.9
+Version: 1.21.10
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -30,6 +30,7 @@ Imports:
   dplyr (>= 1.0.0),
   httr (>= 1.4.0),
   jsonlite (>= 1.7.2),
+  knitr (>= 1.40),
   Microsoft365R (>= 2.4.0),
   miniUI (>= 0.1.1),
   pins (>= 1.1.0),

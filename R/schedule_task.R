@@ -19,12 +19,12 @@
 
 #' Schedule Task (CRON-like)
 #'
-#' This will [source][source()] a project file if time and user requirements are met, using a CRON-like syntax (<https://cron.help>).
-#' @param minute one or more values between 0-59, or `.` or `"*"` for each minute
-#' @param hour one or more values between 0-23, or `.` or `"*"` for each hour
-#' @param day one or more values between 1-31, or `.` or `"*"` for each day
-#' @param month one or more values between 1-12, or `.` or `"*"` for each mpnth
-#' @param weekday one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or `.` or `"*"` for each weekday
+#' This will [source][source()] a project R file, or [render][certeprojects::render()] any other project file, if time and user requirements are met using a CRON-like syntax (<https://cron.help>).
+#' @param minute one or more values between 0-59, or `.` or `"*"` (or `NULL` or left blank) for each minute
+#' @param hour one or more values between 0-23, or `.` or `"*"` (or `NULL` or left blank) for each hour
+#' @param day one or more values between 1-31, or `.` or `"*"` (or `NULL` or left blank) for each day
+#' @param month one or more values between 1-12, or `.` or `"*"` (or `NULL` or left blank) for each month
+#' @param weekday one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or `.` or `"*"` (or `NULL` or left blank) for each weekday
 #' @param users logged in users, must correspond with `Sys.info()["user"]`. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if `check_mail` is `TRUE`.
 #' @param file file name within the project, supports regular expression
 #' @param project_number number of the project, must be numeric and exist in [planner_tasks_list()]
@@ -38,13 +38,19 @@
 #' @param sent_delay delay in minutes. This will be multiplied by the position of the current user in `users` minus 1. For example, when `sent_delay = 15`, this will be `15` for user 2, and `30` for user 3.
 #' @param sent_account Outlook account, to search sent mails
 #' @details
-#' The Windows Task Scheduler must be set up to use this function. Most convenient is to:
+#' For Windows, the Task Scheduler must be set up to use this function. Most convenient is to:
 #' 
-#' 1. Create an \R file such as `R_cron.R` with calls to [schedule_task()]
+#' 1. Create an \R file such as `R_cron.R` containing calls to [schedule_task()]
 #' 2. Create a batch file such as `R_cron.bat` that runs `R_cron.R` with `R CMD BATCH`
-#' 3. Set up a Task Scheduler task that runs `R_cron.bat` every minute
+#' 3. Set up a Windows Task Scheduler task that runs `R_cron.bat` every minute
+#' 
+#' For macOS and Linux, use the `crontab` to run the commands with `Rscript`:
+#' 
+#' `* * * * * Rscript -e 'certeprojects::schedule_task(users = "user", file = "file every minute.R", project_number = 123)'`
+#' `0 7 * * * Rscript -e 'certeprojects::schedule_task(users = "user", file = "file at 7 AM.R", project_number = 123)'`
 #' @export
 #' @importFrom certestyle format2 colourpicker
+#' @importFrom knitr current_input
 #' @examples
 #' something_to_run <- function() {
 #'   1 + 1
@@ -119,19 +125,19 @@ schedule_task <- function(minute, hour, day, month, weekday,
   if (deparse(substitute(weekday)) == ".") weekday <- "."
   
   # translate dots
-  if (any(minute %in% c(".", "*"))) {
+  if (missing(minute) || is.null(minute) || any(minute %in% c(".", "*"))) {
     minute <- c(0:59)
   }
-  if (any(hour %in% c(".", "*"))) {
+  if (missing(hour) || is.null(hour) || any(hour %in% c(".", "*"))) {
     hour <- c(0:23)
   }
-  if (any(day %in% c(".", "*"))) {
+  if (missing(day) || is.null(day) || any(day %in% c(".", "*"))) {
     day <- c(1:31)
   }
-  if (any(month %in% c(".", "*"))) {
+  if (missing(month) || is.null(month) || any(month %in% c(".", "*"))) {
     month <- c(1:12)
   }
-  if (any(weekday %in% c(".", "*"))) {
+  if (missing(weekday) || is.null(weekday) || any(weekday %in% c(".", "*"))) {
     weekday <- c(0:6)
   }
   
@@ -249,12 +255,25 @@ schedule_task <- function(minute, hour, day, month, weekday,
     }
     
     tryCatch({
-      source(project_file)
+      Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
+      if (project_file %like% "[.]R$") {
+        source(project_file)
+      } else {
+        certeprojects::render(project_file)
+      }
+      current_file <- current_input()
+      if (is.null(current_file) || current_file == "") {
+        current_file <- basename(Sys.getenv("QUARTO_PROJECT_FILE"))
+      }
+      if (current_file == "") {
+        current_file <- basename(project_file)
+      }
       if (isTRUE(notify_redone) && "certemail" %in% rownames(utils::installed.packages())) {
         certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
                         subject = paste0("! Niet-verzonden project hersteld: p", project_number),
                         body = paste0("Project **", proj_name,
-                                      "** was eerder niet verzonden door gebruiker ", paste0(users[seq_len(which(users == get_current_user()) - 1)], collapse = " en "),
+                                      "** (bestand `", current_file, "`) was eerder niet verzonden door gebruiker ",
+                                      paste0(users[seq_len(which(users == get_current_user()) - 1)], collapse = " en "),
                                       ", was gepland om ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM"),
                                       " uur.\n\nNieuwe poging **is geslaagd** met gebruiker ", get_current_user(), " om ",
                                       format2(rounded_time, "h:MM"), " uur."),
@@ -265,24 +284,34 @@ schedule_task <- function(minute, hour, day, month, weekday,
       }
     },
     error = function(e) {
+      error_txt <- utils::capture.output(traceback())
+      error_txt <- paste0(format_error(e), "\n", error_txt)
+      error_file <- current_input()
+      if (is.null(error_file) || error_file == "") {
+        error_file <- basename(Sys.getenv("QUARTO_PROJECT_FILE"))
+      }
+      if (error_file == "") {
+        error_file <- basename(project_file)
+      }
       if ("certemail" %in% rownames(utils::installed.packages())) {
         certemail::mail(to = sent_to,
                         cc = NULL,
                         bcc = NULL,
                         subject = paste0("! Fout in project: p", project_number),
                         body = paste0("Project **", proj_name,
-                                      "** heeft een fout opgeleverd.\n\n",
+                                      "** heeft een fout opgeleverd, in bestand `", error_file, "`.\n\n",
                                       "# AVD-details\n\n",
                                       "Gebruiker: ", get_current_user(), "\n\n",
                                       "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
                                       "# Foutdetails\n\n",
-                                      format_error(e)),
+                                      error_txt,
+                                      "\n"),
                         signature = FALSE,
                         background = colourpicker("certeroze4"),
                         identifier = FALSE,
                         account = sent_account)
       }
-      message("ERROR: ", format_error(e))
+      message("ERROR: ", error_txt)
     })
   } else {
     # user not required to run project

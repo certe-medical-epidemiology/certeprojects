@@ -25,15 +25,15 @@ schedule_task(
 )
 }
 \arguments{
-\item{minute}{one or more values between 0-59, or \code{.} or \code{"*"} for each minute}
+\item{minute}{one or more values between 0-59, or \code{.} or \code{"*"} (or \code{NULL} or left blank) for each minute}
 
-\item{hour}{one or more values between 0-23, or \code{.} or \code{"*"} for each hour}
+\item{hour}{one or more values between 0-23, or \code{.} or \code{"*"} (or \code{NULL} or left blank) for each hour}
 
-\item{day}{one or more values between 1-31, or \code{.} or \code{"*"} for each day}
+\item{day}{one or more values between 1-31, or \code{.} or \code{"*"} (or \code{NULL} or left blank) for each day}
 
-\item{month}{one or more values between 1-12, or \code{.} or \code{"*"} for each mpnth}
+\item{month}{one or more values between 1-12, or \code{.} or \code{"*"} (or \code{NULL} or left blank) for each month}
 
-\item{weekday}{one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or \code{.} or \code{"*"} for each weekday}
+\item{weekday}{one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or \code{.} or \code{"*"} (or \code{NULL} or left blank) for each weekday}
 
 \item{users}{logged in users, must correspond with \code{Sys.info()["user"]}. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if \code{check_mail} is \code{TRUE}.}
 
@@ -60,15 +60,20 @@ schedule_task(
 \item{log_folder}{path that contains log files}
 }
 \description{
-This will \link[=source]{source} a project file if time and user requirements are met, using a CRON-like syntax (\url{https://cron.help}).
+This will \link[=source]{source} a project R file, or \link[=render]{render} any other project file, if time and user requirements are met using a CRON-like syntax (\url{https://cron.help}).
 }
 \details{
-The Windows Task Scheduler must be set up to use this function. Most convenient is to:
+For Windows, the Task Scheduler must be set up to use this function. Most convenient is to:
 \enumerate{
-\item Create an \R file such as \code{R_cron.R} with calls to \code{\link[=schedule_task]{schedule_task()}}
+\item Create an \R file such as \code{R_cron.R} containing calls to \code{\link[=schedule_task]{schedule_task()}}
 \item Create a batch file such as \code{R_cron.bat} that runs \code{R_cron.R} with \verb{R CMD BATCH}
-\item Set up a Task Scheduler task that runs \code{R_cron.bat} every minute
+\item Set up a Windows Task Scheduler task that runs \code{R_cron.bat} every minute
 }
+
+For macOS and Linux, use the \code{crontab} to run the commands with \code{Rscript}:
+
+\verb{* * * * * Rscript -e 'certeprojects::schedule_task(users = "user", file = "file every minute.R", project_number = 123)'}
+\verb{0 7 * * * Rscript -e 'certeprojects::schedule_task(users = "user", file = "file at 7 AM.R", project_number = 123)'}
 }
 \examples{
 something_to_run <- function() {

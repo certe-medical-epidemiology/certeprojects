@@ -17,17 +17,17 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-#' Knit R Markdown or Quarto Document
+#' Knit R Markdown or Quarto Document using Quarto
 #' 
-#' Allows Quarto to work with full paths (where Quarto itself requires relative paths) and replaces both [rmarkdown::render()] and [quarto::quarto_render()].
+#' Runs input files through Quarto, and allows Quarto to work with full paths (where Quarto itself requires relative paths). This function essentially replaces both [rmarkdown::render()] and [quarto::quarto_render()].
 #' @param input_file file to be rendered, can be R Markdown (`.Rmd`) or Quarto (`.qmd`), or a lot of other formats such as `.md`, `.ipynb` and [many other formats that Quarto supports](https://quarto.org/docs/reference/).
 #' @inheritParams quarto::quarto_render
 #' @param ... other arguments passed on to [quarto::quarto_render()].
 #' @details Functions [knit()] and [render()] are identical.
 #' @importFrom quarto quarto_path quarto_render
-#' @rdname knit
+#' @rdname render
 #' @export
-knit <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...) {
+render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...) {
   if (!file.exists(quarto_path())) {
     stop("Quarto needs to be installed.")
   }
@@ -43,8 +43,11 @@ knit <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", 
   on.exit(setwd(old_wd))
   setwd(dirname(input_file))
   
+  Sys.setenv(QUARTO_PROJECT_FILE = input_file)
+  Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
+  
   if (is.null(output_file)) {
-    # because quarto::quarto_render() checks if `output_file` is MISSING, not if it's NULL (bad coding practice, but ok)
+    # because quarto::quarto_render() checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
     quarto_render(input = basename(input_file),
                   quiet = quiet,
                   as_job = as_job,
@@ -79,6 +82,6 @@ knit <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", 
   invisible(output_file)
 }
 
-#' @rdname knit
+#' @rdname render
 #' @export
-render <- knit
+knit <- render

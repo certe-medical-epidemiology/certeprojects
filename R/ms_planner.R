@@ -223,6 +223,7 @@ planner_task_create <- function(title,
 #' @param percent_completed percentage of task completion between 0-100
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
+#' @param preview_type type of preview - the checkbox on a task card. Can be `"automatic"`, `"noPreview"`, `"checklist"`, `"description"`, `"reference"`. When set to `"automatic"` the displayed preview is chosen by the app viewing the task.
 #' @importFrom jsonlite toJSON
 #' @importFrom httr add_headers stop_for_status PATCH GET
 #' @importFrom dplyr case_when
@@ -241,6 +242,7 @@ planner_task_update <- function(task,
                                 bucket_name = NULL,
                                 percent_completed = NULL,
                                 attachment_urls = NULL,
+                                preview_type = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
                                 account = connect_planner()) {
   # does not work with Microsoft365R yet, so we do it manually
@@ -363,7 +365,7 @@ planner_task_update <- function(task,
   # checklist, description, previewType, references
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   
-  if (arg_is_empty(description) && arg_is_empty(checklist_items) && arg_is_empty(attachment_urls)) {
+  if (arg_is_empty(description) && arg_is_empty(checklist_items) && arg_is_empty(attachment_urls) && arg_is_empty(preview_type)) {
     return(invisible())
   }
   
@@ -431,6 +433,11 @@ planner_task_update <- function(task,
         body$previewType <- "noPreview"
       }
     }
+  }
+  
+  if (!arg_is_empty(preview_type)) {
+    # force preview type
+    body$previewType <- preview_type
   }
   
   # use a GET to get the correct etag, see https://stackoverflow.com/a/43380424/4575331

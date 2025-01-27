@@ -60,6 +60,7 @@ planner_task_update(
   bucket_name = NULL,
   percent_completed = NULL,
   attachment_urls = NULL,
+  preview_type = NULL,
   account = connect_planner()
 )
 
@@ -169,6 +170,8 @@ planner_highest_consult_id(
 \item{assigned_keep}{add members that are set in \code{assigned} instead of replacing them, defaults to \code{FALSE}}
 
 \item{percent_completed}{percentage of task completion between 0-100}
+
+\item{preview_type}{type of preview - the checkbox on a task card. Can be \code{"automatic"}, \code{"noPreview"}, \code{"checklist"}, \code{"description"}, \code{"reference"}. When set to \code{"automatic"} the displayed preview is chosen by the app viewing the task.}
 
 \item{include_completed}{also search completed tasks}
 

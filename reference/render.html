@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.10</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.11</span>
       </span>
     </div>
 
@@ -90,8 +90,10 @@
 
 
 <dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
-<dd><p>The name of the output file. If using <code>NULL</code> then the
-output filename will be based on filename for the input file.</p></dd>
+<dd><p>The name of the output file. If using <code>NULL</code>, the output
+filename will be based on the filename for the input file. <code>output_file</code> is
+mapped to the <code>--output</code> option flag of the <code>quarto</code> CLI. It is expected to
+be a filename only, not a path, relative or absolute.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
@@ -99,9 +101,9 @@ output filename will be based on filename for the input file.</p></dd>
 
 
 <dt id="arg-as-job">as_job<a class="anchor" aria-label="anchor" href="#arg-as-job"></a></dt>
-<dd><p>Render as an RStudio background job. Default is "auto",
+<dd><p>Render as an RStudio background job. Default is <code>"auto"</code>,
 which will render individual documents normally and projects as
-background jobs. Use the <code>quarto.render_as_job</code> R option to control
+background jobs. Use the <code>quarto.render_as_job</code> <span style="R">R</span> option to control
 the default globally.</p></dd>
 
 

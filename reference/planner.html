@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.10</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.11</span>
       </span>
     </div>
 
@@ -114,6 +114,7 @@
 <span>  bucket_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  percent_completed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachment_urls <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  preview_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -266,6 +267,10 @@
 
 <dt id="arg-percent-completed">percent_completed<a class="anchor" aria-label="anchor" href="#arg-percent-completed"></a></dt>
 <dd><p>percentage of task completion between 0-100</p></dd>
+
+
+<dt id="arg-preview-type">preview_type<a class="anchor" aria-label="anchor" href="#arg-preview-type"></a></dt>
+<dd><p>type of preview - the checkbox on a task card. Can be <code>"automatic"</code>, <code>"noPreview"</code>, <code>"checklist"</code>, <code>"description"</code>, <code>"reference"</code>. When set to <code>"automatic"</code> the displayed preview is chosen by the app viewing the task.</p></dd>
 
 
 <dt id="arg-include-completed">include_completed<a class="anchor" aria-label="anchor" href="#arg-include-completed"></a></dt>

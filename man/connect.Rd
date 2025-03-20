@@ -15,7 +15,8 @@ get_microsoft365_token(
   auth_type = read_secret("azure.auth_type"),
   ...,
   overwrite = TRUE,
-  error_on_fail = TRUE
+  error_on_fail = TRUE,
+  immediate = FALSE
 )
 
 connect_outlook(email = read_secret("department.mail"), overwrite = FALSE, ...)
@@ -43,6 +44,8 @@ connect_teams(team_name = read_secret("team.name"), overwrite = FALSE, ...)
 \item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
 
 \item{error_on_fail}{a \link{logical} to indicate whether an error must be thrown if no connection can be made}
+
+\item{immediate}{a \link{logical} to not wait 30 seconds before retrying to connect}
 
 \item{email}{email address of the user, or a shared mailbox}
 

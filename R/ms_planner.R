@@ -66,6 +66,7 @@ planner_buckets_list <- function(account = connect_planner(), plain = FALSE) {
   }
 }
 
+
 #' @rdname planner
 #' @param title title of the task
 #' @param description a description for the task. A vector of length > 1 will be added as one text separated by white lines.
@@ -218,12 +219,80 @@ planner_task_create <- function(title,
   return(invisible(list(id = if (!is.null(project_number)) project_number else consult_number, title = title)))
 }
 
+
+#' @rdname planner
+#' @param ... arguments passed on to [planner_task_update()]
+#' @export
+planner_create_projecttask <- function(project_number,
+                                       title,
+                                       bucket_name = read_secret("planner.default.bucket.projecttask"),
+                                       ...) {
+  if (is.numeric(project_number) || !substr(project_number, 1, 1) == "p") {
+    project_number <- paste0("p", project_number)
+  }
+  
+  task <- planner_task_find(paste0(" - ", project_number, "$"))
+
+  title <- paste0("[", project_number, "] ", title)
+  
+  due <- get_azure_property(task, "dueDateTime")
+  if (!is.na(due)) {
+    due <- as.Date(substr(due, 1, 10))
+    if (due < Sys.Date()) {
+      due <- Sys.Date()
+    }
+  } else {
+    due <- NULL
+  }
+  
+  planner_task_create(title = title,
+                      startdate = Sys.Date(),
+                      description = paste0("Project: ", task$properties$title),
+                      duedate = due,
+                      assigned = names(get_azure_property(task, "assignments")),
+                      bucket_name = bucket_name,
+                      categories = "Projecttaak",
+                      project_number = NULL,
+                      consult_number = NULL,
+                      ...)
+  
+}
+
+#' @rdname planner
+#' @export
+planner_checklist_to_projectasks <- function(task, 
+                                             bucket_name = read_secret("planner.default.bucket.projecttask"),
+                                             ...) {
+  task <- planner_task_find(task)
+  if (task$properties$activeChecklistItemCount == 0) {
+    return(invisible)
+  }
+
+  project_id <- planner_retrieve_project_id(task)
+  details <- task$do_operation("details")
+  checklist <- details$checklist
+  checklist <- checklist[which(vapply(FUN.VALUE = logical(1), checklist, function(x) !x$isChecked))]
+  titles <- sort(unname(vapply(FUN.VALUE = character(1), checklist, function(x) x$title)))
+  
+  for (i in seq_along(titles)) {
+    message("Adding checklist item '", titles[i], "' to p", project_id)
+    planner_create_projecttask(project_number = project_id,
+                               title = titles[i],
+                               bucket_name = bucket_name,
+                               ...)
+    
+  }
+}
+
+
 #' @rdname planner
 #' @param task any task title, task ID, or [`ms_plan_task`][Microsoft365R::ms_plan_task] object (e.g. from [planner_task_find()])
+#' @param checklist_items_to_check names/titles of checklist items that need to become checked
 #' @param percent_completed percentage of task completion between 0-100
 #' @param assigned_keep add members that are set in `assigned` instead of replacing them, defaults to `FALSE`
 #' @param categories_keep add categories that are set in `categories` instead of replacing them, defaults to `FALSE`
 #' @param preview_type type of preview - the checkbox on a task card. Can be `"automatic"`, `"noPreview"`, `"checklist"`, `"description"`, `"reference"`. When set to `"automatic"` the displayed preview is chosen by the app viewing the task.
+#' @param order_hint order of the task
 #' @importFrom jsonlite toJSON
 #' @importFrom httr add_headers stop_for_status PATCH GET
 #' @importFrom dplyr case_when
@@ -235,6 +304,7 @@ planner_task_update <- function(task,
                                 duedate = NULL,
                                 priority = NULL,
                                 checklist_items = NULL,
+                                checklist_items_to_check = NULL,
                                 categories = NULL,
                                 categories_keep = FALSE,
                                 assigned = NULL,
@@ -243,6 +313,7 @@ planner_task_update <- function(task,
                                 percent_completed = NULL,
                                 attachment_urls = NULL,
                                 preview_type = NULL,
+                                order_hint = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
                                 account = connect_planner()) {
   # does not work with Microsoft365R yet, so we do it manually
@@ -250,6 +321,7 @@ planner_task_update <- function(task,
   task <- planner_task_find(task)
   task_id <- get_azure_property(task, "id")
   task_title <- get_azure_property(task, "title")
+  task_details <- task$do_operation("details")
   
   # Update Task Itself ----
   
@@ -297,6 +369,10 @@ planner_task_update <- function(task,
   if (!arg_is_empty(bucket_name)) {
     # new bucket
     body <- c(body, bucketId = planner_bucket_object(bucket_name = bucket_name, account = account) |> get_azure_property("id"))
+  }
+  
+  if (!arg_is_empty(order_hint)) {
+    body <- c(body, orderHint = order_hint)
   }
   
   if (!arg_is_empty(categories)) {
@@ -365,7 +441,7 @@ planner_task_update <- function(task,
   # checklist, description, previewType, references
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   
-  if (arg_is_empty(description) && arg_is_empty(checklist_items) && arg_is_empty(attachment_urls) && arg_is_empty(preview_type)) {
+  if (arg_is_empty(description) && arg_is_empty(checklist_items) && arg_is_empty(checklist_items_to_check) && arg_is_empty(attachment_urls) && arg_is_empty(preview_type)) {
     return(invisible())
   }
   
@@ -376,6 +452,7 @@ planner_task_update <- function(task,
     body <- c(body, previewType = "automatic")
   }
   
+  check_items <- NULL
   if (!arg_is_empty(checklist_items)) {
     # reverse the order, since the first item in the vector will otherwise become last on the task
     checklist_items <- rev(checklist_items)
@@ -393,6 +470,23 @@ planner_task_update <- function(task,
         body$previewType <- "checklist"
       }
     }
+  }
+  
+  if (!arg_is_empty(checklist_items_to_check)) {
+    if (is.null(check_items)) {
+      check_items <- task_details$checklist
+      for (i in seq_along(check_items)) {
+        check_items[[i]] <- list(`@odata.type` = "microsoft.graph.plannerChecklistItem",
+                                 title = check_items[[i]]$title,
+                                 isChecked = check_items[[i]]$isChecked)
+      }
+    }
+    for (i in seq_along(check_items)) {
+      if (check_items[[i]]$title %in% checklist_items_to_check) {
+        check_items[[i]]$isChecked <- TRUE
+      }
+    }
+    body <- c(body, list(checklist = check_items))
   }
   
   if (!arg_is_empty(attachment_urls)) {

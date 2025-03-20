@@ -6,6 +6,8 @@
 \alias{planner_bucket_create}
 \alias{planner_buckets_list}
 \alias{planner_task_create}
+\alias{planner_create_projecttask}
+\alias{planner_checklist_to_projectasks}
 \alias{planner_task_update}
 \alias{planner_tasks_list}
 \alias{planner_task_search}
@@ -45,6 +47,19 @@ planner_task_create(
   consult_number = planner_highest_consult_id() + 1
 )
 
+planner_create_projecttask(
+  project_number,
+  title,
+  bucket_name = read_secret("planner.default.bucket.projecttask"),
+  ...
+)
+
+planner_checklist_to_projectasks(
+  task,
+  bucket_name = read_secret("planner.default.bucket.projecttask"),
+  ...
+)
+
 planner_task_update(
   task,
   title = NULL,
@@ -53,6 +68,7 @@ planner_task_update(
   duedate = NULL,
   priority = NULL,
   checklist_items = NULL,
+  checklist_items_to_check = NULL,
   categories = NULL,
   categories_keep = FALSE,
   assigned = NULL,
@@ -61,6 +77,7 @@ planner_task_update(
   percent_completed = NULL,
   attachment_urls = NULL,
   preview_type = NULL,
+  order_hint = NULL,
   account = connect_planner()
 )
 
@@ -163,7 +180,11 @@ planner_highest_consult_id(
 
 \item{consult_number}{the new consult number to assign. Use \code{NULL} or \code{FALSE} to not assign a consult number. Defaults to the currently highest consult ID + 1.}
 
+\item{...}{arguments passed on to \code{\link[=planner_task_create]{planner_task_create()}}}
+
 \item{task}{exact task ID or title, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
+
+\item{checklist_items_to_check}{names/titles of checklist items that need to become checked}
 
 \item{categories_keep}{add categories that are set in \code{categories} instead of replacing them, defaults to \code{FALSE}}
 
@@ -172,6 +193,8 @@ planner_highest_consult_id(
 \item{percent_completed}{percentage of task completion between 0-100}
 
 \item{preview_type}{type of preview - the checkbox on a task card. Can be \code{"automatic"}, \code{"noPreview"}, \code{"checklist"}, \code{"description"}, \code{"reference"}. When set to \code{"automatic"} the displayed preview is chosen by the app viewing the task.}
+
+\item{order_hint}{order of the task}
 
 \item{include_completed}{also search completed tasks}
 
@@ -186,8 +209,6 @@ planner_highest_consult_id(
 \item{path}{location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.}
 
 \item{projects_path}{location of the folder that contains all department projects}
-
-\item{...}{arguments passed on to \code{\link[=planner_task_create]{planner_task_create()}}}
 
 \item{user}{a user name, mail adress, or Certe login name}
 

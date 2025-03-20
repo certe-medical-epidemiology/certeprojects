@@ -30,6 +30,7 @@
 #' @param plan name of the team's plan if `team_name` is not empty. Otherwise, a plan ID (for individual use).
 #' @param email email address of the user, or a shared mailbox
 #' @param overwrite a [logical] to overwrite an existing connection, useful for switching accounts
+#' @param immediate a [logical] to not wait 30 seconds before retrying to connect
 #' @param ... arguments passed on to [get_microsoft365_token()]
 #' @details
 #' ### Microsoft Outlook
@@ -72,7 +73,8 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
                                    auth_type = read_secret("azure.auth_type"),
                                    ...,
                                    overwrite = TRUE,
-                                   error_on_fail = TRUE) {
+                                   error_on_fail = TRUE,
+                                   immediate = FALSE) {
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
   scopes <- get_scope_list(scope)
   scope <- paste0("token_", paste0(scope, collapse = ""))
@@ -95,12 +97,17 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
       if (inherits(conn, "try-error")) {
         # try again with new JSON file
         rewrite_graph_logins.json(NULL)
-        message("Microsoft 365 token could not be refreshed, waiting: 30...", appendLF = FALSE)
-        Sys.sleep(10)
-        message("20...", appendLF = FALSE)
-        Sys.sleep(10)
-        message("10...", appendLF = TRUE)
-        Sys.sleep(10)
+        message("Microsoft 365 token could not be refreshed...", appendLF = FALSE)
+        if (immediate == FALSE) {
+          message("30...", appendLF = FALSE)
+          Sys.sleep(10)
+          message("20...", appendLF = FALSE)
+          Sys.sleep(10)
+          message("10...", appendLF = TRUE)
+          Sys.sleep(10)
+        } else {
+          message("", appendLF = TRUE)
+        }
         conn <- try(suppressMessages(get_graph_login(tenant = tenant, app = app_id, scopes = scopes, refresh = TRUE)), silent = TRUE)
         if (inherits(conn, "try-error")) {
           if (interactive() == TRUE) {

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.21.12</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.22.1</span>
       </span>
     </div>
 
@@ -99,6 +99,19 @@
 <span>  consult_number <span class="op">=</span> <span class="fu">planner_highest_consult_id</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">planner_create_projecttask</span><span class="op">(</span></span>
+<span>  <span class="va">project_number</span>,</span>
+<span>  <span class="va">title</span>,</span>
+<span>  bucket_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.default.bucket.projecttask"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">planner_checklist_to_projectasks</span><span class="op">(</span></span>
+<span>  <span class="va">task</span>,</span>
+<span>  bucket_name <span class="op">=</span> <span class="fu">read_secret</span><span class="op">(</span><span class="st">"planner.default.bucket.projecttask"</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">planner_task_update</span><span class="op">(</span></span>
 <span>  <span class="va">task</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -107,6 +120,7 @@
 <span>  duedate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  priority <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  checklist_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checklist_items_to_check <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categories_keep <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  assigned <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -115,6 +129,7 @@
 <span>  percent_completed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  attachment_urls <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  preview_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  order_hint <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -253,8 +268,16 @@
 <dd><p>the new consult number to assign. Use <code>NULL</code> or <code>FALSE</code> to not assign a consult number. Defaults to the currently highest consult ID + 1.</p></dd>
 
 
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>arguments passed on to <code>planner_task_create()</code></p></dd>
+
+
 <dt id="arg-task">task<a class="anchor" aria-label="anchor" href="#arg-task"></a></dt>
 <dd><p>exact task ID or title, will be searched with <code><a href="https://certe-medical-epidemiology.github.io/certetoolbox/reference/like.html" class="external-link">%like%</a></code></p></dd>
+
+
+<dt id="arg-checklist-items-to-check">checklist_items_to_check<a class="anchor" aria-label="anchor" href="#arg-checklist-items-to-check"></a></dt>
+<dd><p>names/titles of checklist items that need to become checked</p></dd>
 
 
 <dt id="arg-categories-keep">categories_keep<a class="anchor" aria-label="anchor" href="#arg-categories-keep"></a></dt>
@@ -271,6 +294,10 @@
 
 <dt id="arg-preview-type">preview_type<a class="anchor" aria-label="anchor" href="#arg-preview-type"></a></dt>
 <dd><p>type of preview - the checkbox on a task card. Can be <code>"automatic"</code>, <code>"noPreview"</code>, <code>"checklist"</code>, <code>"description"</code>, <code>"reference"</code>. When set to <code>"automatic"</code> the displayed preview is chosen by the app viewing the task.</p></dd>
+
+
+<dt id="arg-order-hint">order_hint<a class="anchor" aria-label="anchor" href="#arg-order-hint"></a></dt>
+<dd><p>order of the task</p></dd>
 
 
 <dt id="arg-include-completed">include_completed<a class="anchor" aria-label="anchor" href="#arg-include-completed"></a></dt>
@@ -299,10 +326,6 @@
 
 <dt id="arg-projects-path">projects_path<a class="anchor" aria-label="anchor" href="#arg-projects-path"></a></dt>
 <dd><p>location of the folder that contains all department projects</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>arguments passed on to <code>planner_task_create()</code></p></dd>
 
 
 <dt id="arg-user">user<a class="anchor" aria-label="anchor" href="#arg-user"></a></dt>

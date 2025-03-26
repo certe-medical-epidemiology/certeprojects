@@ -75,6 +75,9 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
                                    overwrite = TRUE,
                                    error_on_fail = TRUE,
                                    immediate = FALSE) {
+  if (identical(scope, "") && identical(tenant, "") && identical(app_id, "")) {
+    stop("Secrets cannot be read; scope, tenant and app_id are all empty")
+  }
   # for the scopes, see here: https://docs.microsoft.com/en-us/graph/permissions-reference
   scopes <- get_scope_list(scope)
   scope <- paste0("token_", paste0(scope, collapse = ""))

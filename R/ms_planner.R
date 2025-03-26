@@ -275,7 +275,6 @@ planner_checklist_to_projectasks <- function(task,
   titles <- sort(unname(vapply(FUN.VALUE = character(1), checklist, function(x) x$title)))
   
   for (i in seq_along(titles)) {
-    message("Adding checklist item '", titles[i], "' to p", project_id)
     planner_create_projecttask(project_number = project_id,
                                title = titles[i],
                                bucket_name = bucket_name,

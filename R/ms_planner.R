@@ -118,7 +118,7 @@ planner_task_create <- function(title,
     consult_number <- NULL
   }
   
-  if (!arg_is_empty(categories) && isTRUE("Project" %in% categories)) {
+  if (!arg_is_empty(categories) && "Project" %in% categories) {
     # projects must contain valid file names, since they have an accompanying folder
     invalid_characters <- c("/", "\\", ":", "*", "?", "\"", "<", ">", "|")
     old_title <- title
@@ -129,7 +129,12 @@ planner_task_create <- function(title,
   }
   
   if (title %in% planner_tasks_list(plain = TRUE, account = account)) {
-    stop("Task '", title, "' already exists. Make sure to keep task titles unique.", call. = FALSE)
+    if (!arg_is_empty(categories) && "Projecttaak" %in% categories) {
+      message("Project task '", title, "' already exists.")
+      return(invisible())
+    } else {
+      stop("Task '", title, "' already exists. Make sure to keep task titles unique.", call. = FALSE)
+    }
   }
   
   # does not work with Microsoft365R yet, so we do it manually
@@ -557,7 +562,7 @@ planner_tasks_list <- function(account = connect_planner(),
                                plain = FALSE,
                                include_completed = TRUE) {
   tasks <- account$list_tasks()
-  tasks <- tasks[get_azure_property(tasks, "title") != read_secret("planner.dummy.project")]
+  tasks <- tasks[!get_azure_property(tasks, "id") %in% c(read_secret("planner.dummy.project.id"), read_secret("planner.dummy.consult.id"))]
   if (isFALSE(include_completed)) {
     tasks <- tasks[get_azure_property(tasks, "percentComplete") < 100]
   }

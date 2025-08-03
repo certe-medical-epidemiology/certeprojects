@@ -117,3 +117,7 @@ full_path_to_currently_sourced_project_file <- function() {
 get_current_user <- function() {
   unname(Sys.info()["user"])
 }
+
+in_positron <- function() {
+  Sys.getenv("POSITRON") != ""
+}

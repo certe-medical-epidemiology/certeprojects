@@ -17,6 +17,61 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
+
+# Positron addins ---------------------------------------------------------
+
+positron_moveTask <- function() {
+  file <- get_file_details(include_teams = FALSE)
+  planner <- connect_planner()
+  task <- planner_task_find(file$folder_local)
+  project_update(task, planner = planner)
+}
+#' @importFrom httr BROWSE
+positron_openFolder <- function() {
+  file <- get_file_details(include_teams = FALSE)
+  BROWSE(file$folder_local)
+}
+positron_copyFolderLink <- function() {
+  file <- get_file_details()
+  url <- file$folder_remote$create_share_link(type = "view", expiry = NULL, password = NULL, scope = NULL)
+  clipr::write_clip(url, object_type = "character")
+  message("URL copied to clipboard")
+}
+positron_validate <- function() {
+  file <- get_file_details()
+  
+}
+#' @importFrom httr BROWSE
+positron_openSharePoint <- function() {
+  file <- get_file_details()
+  BROWSE(file$folder_remote$properties$webUrl)
+}
+
+get_file_details <- function(include_teams = TRUE) {
+  current_path <- path.expand(rstudioapi::getSourceEditorContext()$path)
+  file_path <- gsub(".*/Projecten/(.*)", "\\1", current_path)
+  file_local <- basename(file_path)
+  folder_local <- dirname(current_path)
+  
+  if (include_teams == FALSE) {
+    return(list(file_local = file_local,
+                folder_local = folder_local))
+  }
+  
+  teams <- connect_teams()
+  projects <- teams$get_channel(channel_id = read_secret("teams.projects.channel_id"))$get_folder()
+  file_remote <- projects$get_item(file_local)
+  folder_remote <- file_remote$get_parent_folder()
+  
+  list(file_local = file_local,
+       folder_local = folder_local,
+       file_remote = file_remote,
+       folder_remote = folder_remote)
+}
+
+
+# RStudio addins ----------------------------------------------------------
+
 addin1_projects_new <- function() {
   project_add()
 }

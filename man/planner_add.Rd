@@ -6,7 +6,11 @@
 \alias{consult_add}
 \title{Add Project Or Consult Using Shiny}
 \usage{
-project_add(planner = connect_planner(), teams = NULL, channel = NULL)
+project_add(
+  planner = connect_planner(),
+  teams = if (in_positron()) connect_teams() else NULL,
+  channel = if (in_positron()) teams_projects_channel() else NULL
+)
 
 project_update(
   current_task_id = project_get_current_id(ask = TRUE),

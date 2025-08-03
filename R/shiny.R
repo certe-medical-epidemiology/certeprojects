@@ -35,8 +35,8 @@
 #' @rdname planner_add
 #' @export
 project_add <- function(planner = connect_planner(),
-                        teams = NULL,
-                        channel = NULL) {
+                        teams = if (in_positron()) connect_teams() else NULL,
+                        channel = if (in_positron()) teams_projects_channel() else NULL) {
   
   if (!inherits(planner, "ms_plan")) {
     stop("Maak eerst verbinding met Planner via connect_planner().")
@@ -146,7 +146,7 @@ project_add <- function(planner = connect_planner(),
                                                                                              getwd(),
                                                                                              read_secret("projects.path"))),
                                                            "' aanmaken"))),
-                       selected = "local",
+                       selected = ifelse(in_positron(), "teams", "local"),
                        inline = TRUE,
                        width = "100%")
         } else {

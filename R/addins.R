@@ -22,9 +22,8 @@
 
 positron_moveTask <- function() {
   file <- get_file_details(include_teams = FALSE)
-  planner <- connect_planner()
-  task <- planner_task_find(file$folder_local)
-  project_update(task, planner = planner)
+  task_id <- planner_retrieve_project_id(file$folder_remote$properties$name)
+  project_update(task_id)
 }
 #' @importFrom httr BROWSE
 positron_openFolder <- function() {
@@ -62,7 +61,7 @@ get_file_details <- function(include_teams = TRUE) {
   
   teams <- connect_teams()
   projects <- teams$get_channel(channel_id = read_secret("teams.projects.channel_id"))$get_folder()
-  file_remote <- projects$get_item(file_local)
+  file_remote <- projects$get_item(file_path)
   folder_remote <- file_remote$get_parent_folder()
   
   list(file_local = file_local,

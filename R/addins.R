@@ -49,7 +49,7 @@ positron_openSharePoint <- function() {
 
 get_file_details <- function(include_teams = TRUE) {
   current_path <- path.expand(rstudioapi::getSourceEditorContext()$path)
-  parts <- strsplit(current_path, "/", fixed = TRUE)[[1]]
+  parts <- strsplit(current_path, "[/\\]")[[1]]
   start <- which(parts == read_secret("onedrive.projects.folder"))[1] + 1
   file_path <- paste(parts[c(start:length(parts))], collapse = "/")
   file_local <- basename(file_path)

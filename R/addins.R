@@ -38,7 +38,11 @@ positron_copyFolderLink <- function() {
 }
 positron_validate <- function() {
   file <- get_file_details()
-  message("Tadaaaa")
+  teams_validate_file(file$file_remote)
+}
+positron_authorise <- function() {
+  file <- get_file_details()
+  teams_authorise_file(file$file_remote)
 }
 #' @importFrom httr BROWSE
 positron_openSharePoint <- function() {

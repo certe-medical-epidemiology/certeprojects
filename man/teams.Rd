@@ -12,6 +12,8 @@
 \alias{teams_render_project_file}
 \alias{teams_view_project_file}
 \alias{teams_upload_project_file}
+\alias{teams_validate_file}
+\alias{teams_authorise_file}
 \alias{teams_download_file}
 \alias{teams_download_folder}
 \alias{teams_upload_file}
@@ -90,6 +92,20 @@ teams_upload_project_file(
   files,
   task,
   channel = teams_projects_channel(),
+  planner = connect_planner()
+)
+
+teams_validate_file(
+  drive_item,
+  user = Sys.info()["user"],
+  account = connect_teams(),
+  planner = connect_planner()
+)
+
+teams_authorise_file(
+  drive_item,
+  user = Sys.info()["user"],
+  account = connect_teams(),
   planner = connect_planner()
 )
 
@@ -175,6 +191,10 @@ teams_get_link(
 \item{...}{arguments passed on to \code{fun}}
 
 \item{files}{the files to upload}
+
+\item{drive_item}{a Drive Item object of a file}
+
+\item{user}{a Certe user, who is member of the SharePoint site where \code{file} is stored}
 
 \item{full_teams_path}{a full path in Teams, \strong{including the Team name and the channel name}. Leave blank to use interactive mode, which allows file/folder picking from a list in the console.}
 

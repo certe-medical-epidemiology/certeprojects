@@ -314,6 +314,120 @@ teams_upload_project_file <- function(files,
 }
 
 
+#' @rdname teams
+#' @param drive_item a Drive Item object of a file
+#' @param user a Certe user, who is member of the SharePoint site where `file` is stored
+#' @importFrom httr PATCH add_headers stop_for_status
+#' @importFrom jsonlite toJSON
+#' @export
+teams_validate_file <- function(drive_item, user = Sys.info()["user"], account = connect_teams(), planner = connect_planner()) {
+  if (!inherits(drive_item, "ms_drive_item")) {
+    stop("`drive_item` must be a Drive Item")
+  }
+  site_id <- drive_item$properties$parentReference$siteId
+  drive_id <- drive_item$properties$parentReference$driveId
+  item_id <- drive_item$properties$id
+  user_lookup_id <- get_sharepoint_lookup_id(site_id, user, account)
+  
+  fields <- list(
+    Gevalideerd = format(as.POSIXct(Sys.time(), tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ"),
+    GevalideerddoorLookupId = user_lookup_id
+  )
+  res <- PATCH(url = paste0("https://graph.microsoft.com/v1.0/sites/", site_id,
+                            "/drives/", drive_id,
+                            "/items/", item_id,
+                            "/listItem/fields"),
+               encode = "json",
+               config = add_headers(
+                 Authorization = paste(account$token$credentials$token_type,
+                                       account$token$credentials$access_token),
+                 `Content-type` = "application/json"
+               ),
+               body = toJSON(fields, auto_unbox = TRUE)
+  )
+  stop_for_status(res, task = paste0("validate '", drive_item$properties$name, "'"))
+  message("Bestand '", drive_item$properties$name, "' gevalideerd.")
+  planner_task_request_authorisation(task = drive_item$get_parent_folder()$properties$name, account = planner)
+  message("Taak '", drive_item$get_parent_folder()$properties$name, "' gelabeld voor autorisatie.")
+}
+
+#' @rdname teams
+#' @importFrom httr PATCH add_headers stop_for_status
+#' @importFrom jsonlite toJSON
+#' @export
+teams_authorise_file <- function(drive_item, user = Sys.info()["user"], account = connect_teams(), planner = connect_planner()) {
+  if (!inherits(drive_item, "ms_drive_item")) {
+    stop("`drive_item` must be a Drive Item")
+  }
+  site_id <- drive_item$properties$parentReference$siteId
+  drive_id <- drive_item$properties$parentReference$driveId
+  item_id <- drive_item$properties$id
+  user_lookup_id <- get_sharepoint_lookup_id(site_id, user, account)
+  
+  fields <- list(
+    Autorisatie = format(as.POSIXct(Sys.time(), tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ"),
+    AutorisatiedoorLookupId = user_lookup_id
+  )
+  res <- PATCH(url = paste0("https://graph.microsoft.com/v1.0/sites/", site_id,
+                            "/drives/", drive_id,
+                            "/items/", item_id,
+                            "/listItem/fields"),
+               encode = "json",
+               config = add_headers(
+                 Authorization = paste(account$token$credentials$token_type,
+                                       account$token$credentials$access_token),
+                 `Content-type` = "application/json"
+               ),
+               body = toJSON(fields, auto_unbox = TRUE)
+  )
+  stop_for_status(res, task = paste0("authorise '", drive_item$properties$name, "'"))
+  message("Bestand '", drive_item$properties$name, "' geautoriseerd")
+  planner_task_authorise(task = drive_item$get_parent_folder()$properties$name, account = planner)
+  message("Taak '", drive_item$get_parent_folder()$properties$name, "' gelabeld als geautoriseerd.")
+}
+
+#' @importFrom httr GET add_headers stop_for_status content
+get_sharepoint_lookup_id <- function(site_id, certe_login_number, account = connect_teams()) {
+  user_principal <- paste0(certe_login_number, "@certe.nl")
+  
+  # Step 1: Get all lists, locate the 'users' list
+  res_lists <- GET(
+    url = paste0("https://graph.microsoft.com/v1.0/sites/", site_id, "/lists?select=id,name,system"),
+    config = add_headers(
+      Authorization = paste(account$token$credentials$token_type,
+                            account$token$credentials$access_token),
+      `Content-type` = "application/json"
+    )
+  )
+  stop_for_status(res_lists)
+  lists <- content(res_lists, as = "parsed")$value
+  users_list <- Filter(function(l) tolower(l$name) == "users", lists)[[1]]
+  users_list_id <- users_list$id
+  
+  # Step 2: Retrieve all user items from the users list
+  res_users <- GET(
+    url = paste0("https://graph.microsoft.com/v1.0/sites/", site_id,
+                 "/lists/", users_list_id,
+                 "/items?$select=Fields&$expand=Fields"),
+    config = add_headers(
+      Authorization = paste(account$token$credentials$token_type,
+                            account$token$credentials$access_token),
+      `Content-type` = "application/json"
+    )
+  )
+  stop_for_status(res_users)
+  users <- content(res_users, as = "parsed")$value
+  
+  # Step 3: Match UserName
+  usernames <- vapply(FUN.VALUE = character(1), users, function(x) if (is.null(x$fields$UserName)) NA_character_ else x$fields$UserName[1])
+  lookup_ids <- vapply(FUN.VALUE = character(1), users, function(x) if (is.null(x$fields$UserName)) NA_character_ else x$fields$id[1])
+  lookup_ids <- lookup_ids[!is.na(usernames)]
+  usernames <- usernames[!is.na(usernames)]
+  if (!user_principal %in% usernames) stop("User not found")
+  lookup_ids[usernames == user_principal][1]
+}
+
+
 # OTHER FUNCTIONS -------------------------------------------------------------
 
 #' @param full_teams_path a full path in Teams, **including the Team name and the channel name**. Leave blank to use interactive mode, which allows file/folder picking from a list in the console.

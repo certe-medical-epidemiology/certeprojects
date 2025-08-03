@@ -14,8 +14,8 @@
 \alias{planner_task_find}
 \alias{planner_categories_list}
 \alias{planner_retrieve_project_id}
-\alias{planner_task_request_validation}
-\alias{planner_task_validate}
+\alias{planner_task_request_authorisation}
+\alias{planner_task_authorise}
 \alias{planner_create_project_from_path}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
@@ -101,15 +101,17 @@ planner_categories_list(account = connect_planner())
 
 planner_retrieve_project_id(task, account = connect_planner())
 
-planner_task_request_validation(
+planner_task_request_authorisation(
   task,
   category_text = read_secret("planner.label.authorise"),
+  bucket_name = read_secret("planner.default.bucket"),
   account = connect_planner()
 )
 
-planner_task_validate(
+planner_task_authorise(
   task,
   category_text = read_secret("planner.label.authorised"),
+  bucket_name = read_secret("planner.default.bucket.consult"),
   account = connect_planner()
 )
 

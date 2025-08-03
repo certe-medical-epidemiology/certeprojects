@@ -394,6 +394,10 @@ planner_task_update <- function(task,
         apply_categories <- c(apply_categories, stats::setNames(list(FALSE), category))
       }
     }
+    # remove read_secret("planner.label.authorise") if read_secret("planner.label.authorised") is set
+    if (get_internal_category_name(read_secret("planner.label.authorised")) %in% names(apply_categories)) {
+      apply_categories[[get_internal_category_name(read_secret("planner.label.authorise"))]] <- FALSE
+    }
     body <- c(body, list(appliedCategories = apply_categories))
   }
   
@@ -782,18 +786,30 @@ print.certeprojects_planner_project_nr <- function(x, ...) {
 #' @rdname planner
 #' @param category_text text of the category to use
 #' @export
-planner_task_request_validation <- function(task,
-                                            category_text = read_secret("planner.label.authorise"),
-                                            account = connect_planner()) {
-  planner_task_update(task, categories = category_text, account = account)
+planner_task_request_authorisation <- function(task,
+                                               category_text = read_secret("planner.label.authorise"),
+                                               bucket_name = read_secret("planner.default.bucket"),
+                                               account = connect_planner()) {
+  planner_task_update(task,
+                      categories = category_text,
+                      percent_completed = 0,
+                      categories_keep = TRUE,
+                      bucket_name = bucket_name,
+                      account = account)
 }
 
 #' @rdname planner
 #' @export
-planner_task_validate <- function(task,
-                                  category_text = read_secret("planner.label.authorised"),
-                                  account = connect_planner()) {
-  planner_task_update(task, categories = category_text, account = account)
+planner_task_authorise <- function(task,
+                                   category_text = read_secret("planner.label.authorised"),
+                                   bucket_name = read_secret("planner.default.bucket.consult"),
+                                   account = connect_planner()) {
+  planner_task_update(task,
+                      categories = category_text,
+                      percent_completed = 50,
+                      categories_keep = TRUE,
+                      bucket_name = bucket_name,
+                      account = account)
 }
 
 #' @rdname planner

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.23.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.24.0</span>
       </span>
     </div>
 
@@ -144,6 +144,20 @@
 <span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">teams_validate_file</span><span class="op">(</span></span>
+<span>  <span class="va">drive_item</span>,</span>
+<span>  user <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.info.html" class="external-link">Sys.info</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="st">"user"</span><span class="op">]</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">teams_authorise_file</span><span class="op">(</span></span>
+<span>  <span class="va">drive_item</span>,</span>
+<span>  user <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.info.html" class="external-link">Sys.info</a></span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="st">"user"</span><span class="op">]</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">teams_download_file</span><span class="op">(</span></span>
 <span>  full_teams_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -251,6 +265,14 @@
 
 <dt id="arg-files">files<a class="anchor" aria-label="anchor" href="#arg-files"></a></dt>
 <dd><p>the files to upload</p></dd>
+
+
+<dt id="arg-drive-item">drive_item<a class="anchor" aria-label="anchor" href="#arg-drive-item"></a></dt>
+<dd><p>a Drive Item object of a file</p></dd>
+
+
+<dt id="arg-user">user<a class="anchor" aria-label="anchor" href="#arg-user"></a></dt>
+<dd><p>a Certe user, who is member of the SharePoint site where <code>file</code> is stored</p></dd>
 
 
 <dt id="arg-full-teams-path">full_teams_path<a class="anchor" aria-label="anchor" href="#arg-full-teams-path"></a></dt>

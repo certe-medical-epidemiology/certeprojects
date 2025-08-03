@@ -599,7 +599,10 @@ project_update <- function(current_task_id = project_get_current_id(ask = TRUE),
                                                            " ", current_bucket))), 
                      ifelse(is.na(get_azure_property(current_task, "startDateTime")),
                             "",
-                            paste0("<br><small>Gestart: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "startDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
+                            paste0("<br><small>Begindatum: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "startDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>")),
+                     ifelse(is.na(get_azure_property(current_task, "dueDateTime")),
+                            "",
+                            paste0("<br><small>Vervaldatum: ", format2(as.Date(as.POSIXct(gsub("[TZ]", " ", get_azure_property(current_task, "dueDateTime"))), tz = "Europe/Amsterdam"), "dddd d mmmm yyyy"), "</small>"))))),
         buttons
       )  
     })

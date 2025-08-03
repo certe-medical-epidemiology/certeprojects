@@ -22,7 +22,7 @@
 
 positron_moveTask <- function() {
   file <- get_file_details(include_teams = FALSE)
-  task_id <- planner_retrieve_project_id(file$folder_remote$properties$name)
+  task_id <- planner_retrieve_project_id(basename(file$folder_local))
   project_update(task_id)
 }
 #' @importFrom httr BROWSE

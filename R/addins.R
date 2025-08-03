@@ -35,11 +35,11 @@ positron_copyFolderLink <- function() {
   file <- get_file_details()
   url <- file$folder_remote$create_share_link(type = "view", expiry = NULL, password = NULL, scope = NULL)
   clipr::write_clip(url, object_type = "character")
-  message("URL copied to clipboard")
+  message("URL copied to clipboard (permission: view, expires: never)")
 }
 positron_validate <- function() {
   file <- get_file_details()
-  
+  message("Tadaaaa")
 }
 #' @importFrom httr BROWSE
 positron_openSharePoint <- function() {
@@ -49,7 +49,9 @@ positron_openSharePoint <- function() {
 
 get_file_details <- function(include_teams = TRUE) {
   current_path <- path.expand(rstudioapi::getSourceEditorContext()$path)
-  file_path <- gsub(".*/Projecten/(.*)", "\\1", current_path)
+  parts <- strsplit(current_path, "/", fixed = TRUE)[[1]]
+  start <- which(parts == read_secret("onedrive.projects.folder")) + 1
+  file_path <- paste(parts[seq(start, length(parts))], collapse = "/")
   file_local <- basename(file_path)
   folder_local <- dirname(current_path)
   

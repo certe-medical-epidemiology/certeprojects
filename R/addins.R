@@ -36,13 +36,17 @@ positron_copyFolderLink <- function() {
   clipr::write_clip(url, object_type = "character")
   message("URL copied to clipboard (permission: view, expires: never)")
 }
-positron_validate <- function() {
+positron_validate_request <- function() {
   file <- get_file_details()
-  teams_validate_file(file$file_remote)
+  validate_request_file(drive_item = file$file_remote, local_file = file.path(file$folder_local, file$file_local))
+}
+positron_validate <- function(authorise_request = FALSE) {
+  file <- get_file_details()
+  validate_file(file$file_remote, authorise_request = authorise_request)
 }
 positron_authorise <- function() {
   file <- get_file_details()
-  teams_authorise_file(file$file_remote)
+  authorise_file(file$file_remote)
 }
 #' @importFrom httr BROWSE
 positron_openSharePoint <- function() {
@@ -63,8 +67,7 @@ get_file_details <- function(include_teams = TRUE) {
                 folder_local = folder_local))
   }
   
-  teams <- connect_teams()
-  projects <- teams$get_channel(channel_id = read_secret("teams.projects.channel_id"))$get_folder()
+  projects <- teams_projects_channel()
   file_remote <- projects$get_item(file_path)
   folder_remote <- file_remote$get_parent_folder()
   

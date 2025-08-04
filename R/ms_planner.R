@@ -784,11 +784,25 @@ print.certeprojects_planner_project_nr <- function(x, ...) {
 }
 
 #' @rdname planner
+#' @export
+planner_task_request_validation <- function(task,
+                                            attachment_urls = NULL,
+                                            checklist_items = NULL,
+                                            bucket_name = read_secret("planner.validate.bucket"),
+                                            account = connect_planner()) {
+  planner_task_update(task,
+                      bucket_name = bucket_name,
+                      attachment_urls = attachment_urls,
+                      checklist_items = checklist_items,
+                      account = account)
+}
+
+#' @rdname planner
 #' @param category_text text of the category to use
 #' @export
 planner_task_request_authorisation <- function(task,
                                                category_text = read_secret("planner.label.authorise"),
-                                               bucket_name = read_secret("planner.default.bucket"),
+                                               bucket_name = read_secret("planner.validate.bucket"),
                                                account = connect_planner()) {
   planner_task_update(task,
                       categories = category_text,

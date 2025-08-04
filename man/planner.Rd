@@ -14,6 +14,7 @@
 \alias{planner_task_find}
 \alias{planner_categories_list}
 \alias{planner_retrieve_project_id}
+\alias{planner_task_request_validation}
 \alias{planner_task_request_authorisation}
 \alias{planner_task_authorise}
 \alias{planner_create_project_from_path}
@@ -101,10 +102,18 @@ planner_categories_list(account = connect_planner())
 
 planner_retrieve_project_id(task, account = connect_planner())
 
+planner_task_request_validation(
+  task,
+  attachment_urls = NULL,
+  checklist_items = NULL,
+  bucket_name = read_secret("planner.validate.bucket"),
+  account = connect_planner()
+)
+
 planner_task_request_authorisation(
   task,
   category_text = read_secret("planner.label.authorise"),
-  bucket_name = read_secret("planner.default.bucket"),
+  bucket_name = read_secret("planner.validate.bucket"),
   account = connect_planner()
 )
 

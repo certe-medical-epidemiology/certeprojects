@@ -1205,6 +1205,12 @@ git_compare <- function(files = NULL, file_title = NULL) {
   }
   
   ui <- fluidPage(
+    # tags$head(
+    #   tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"),
+    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"),
+    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"),
+    #   tags$script(HTML("hljs.highlightAll();"))
+    # ),
     tags$style(paste0(
       "* {
         font-family: Source Sans Pro, Helvetica Neue, Arial;
@@ -1238,18 +1244,28 @@ git_compare <- function(files = NULL, file_title = NULL) {
        width: 48%;
        padding-right: 1%;
      }
+     .file-contents pre, .file-contents code {
+       padding: 0 !important;
+       margin: 0 !important;
+       line-height: 1;
+       border: none;
+       background: white;
+       display: inline-flex;
+     }
      .file-contents * {
        font-family: Fira Code, Monospace;
        text-align: left;
        white-space: nowrap;
+       font-size: 12px;
      }")),
     h4(paste0("Vergelijk versies van ", ifelse(is.null(file_title), "bestanden", paste0("'", file_title, "'")))),
     checkboxInput("viewboth", "Inhoud aan beide kanten weergeven"),
+    # checkboxInput("syntax_r", "Opmaken als R-syntax"),
     fluidRow(
       column(width = 6,
-             selectInput("file1", label = NULL, choices = files, selected = files[1], width = "100%")),
+             selectInput("file1", label = NULL, choices = files, selected = ifelse(length(files) > 1, files[2], files[1]), width = "100%")),
       column(width = 6,
-             selectInput("file2", label = NULL, choices = files, selected = ifelse(length(files) > 1, files[2], files[1]), width = "100%")),
+             selectInput("file2", label = NULL, choices = files, selected = files[1], width = "100%")),
     ),
     uiOutput("git_diff")
   )
@@ -1309,16 +1325,26 @@ git_compare <- function(files = NULL, file_title = NULL) {
       html <- lines
       html <- substr(lines, 2, nchar(lines))
       html <- gsub(" ", "&nbsp;", html, fixed = TRUE)
-      html[lines %like% "^[+]"] <- paste0("<span class = 'added'>", html[lines %like% "^[+]"], "</span>")
-      html[lines %like% "^[-]"] <- paste0("<span class = 'deleted'>", html[lines %like% "^[-]"], "</span>")
-      html[lines %like% "^ "] <- paste0("<span>", html[lines %like% "^ "], "</span>")
+
+      if (isTRUE(input$syntax_r)) {
+        html <- paste0("<pre><code class='language-r'>", html, "</code></pre>")
+      }
+      
+      html[first_chars == "+"] <- paste0("<span class = 'added'>", html[first_chars == "+"], "</span>")
+      html[first_chars == "-"] <- paste0("<span class = 'deleted'>", html[first_chars == "-"], "</span>")
+      html[first_chars == " "] <- paste0("<span>", html[first_chars == " "], "</span>")
       html_left <- html
       html_right <- html
       if (viewboth == FALSE) {
-        html_left[lines %like% "^[+]"] <- ""
-        html_right[lines %like% "^[-]"] <- ""
+        html_left[first_chars == "+"] <- ""
+        html_right[first_chars == "-"] <- ""
       }
       
+      line_nr_left[first_chars == "+"] <- paste0("<span class = 'added'>", line_nr_left[first_chars == "+"], "</span>")
+      line_nr_left[first_chars == "-"] <- paste0("<span class = 'deleted'>", line_nr_left[first_chars == "-"], "</span>")
+      line_nr_right[first_chars == "+"] <- paste0("<span class = 'added'>", line_nr_right[first_chars == "+"], "</span>")
+      line_nr_right[first_chars == "-"] <- paste0("<span class = 'deleted'>", line_nr_right[first_chars == "-"], "</span>")
+
       fluidRow(
         if (length(files) == 1) {
           p("Dit is de enige versie.")
@@ -1335,6 +1361,10 @@ git_compare <- function(files = NULL, file_title = NULL) {
                  column(1, class = "line", HTML(paste(line_nr_right, collapse = "<br>"))),
                  column(11, class = "contents", HTML(paste(html_right, collapse = "<br>")))),
         ),
+        if (isTRUE(input$syntax_r)) {
+          tags$script(HTML("setTimeout(function() { hljs.highlightAll(); }, 0);"))
+        }
+        
       )
     })
   }

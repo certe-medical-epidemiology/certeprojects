@@ -147,7 +147,7 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   
   versions_path <- file.path(tmp_dir, paste0("v", versions_number))
   
-  message("Downloading ", length(versions), " file versions...", appendLF = FALSE)
+  message("Downloading ", length(versions), " file versions..", appendLF = FALSE)
   for (i in seq_len(length(versions))) {
     message(".", appendLF = FALSE)
     download.file(url = versions_url[i], destfile = versions_path[i], quiet = TRUE)

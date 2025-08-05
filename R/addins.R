@@ -30,11 +30,21 @@ positron_openFolder <- function() {
   file <- get_file_details(include_teams = FALSE)
   BROWSE(file$folder_local)
 }
-positron_copyFolderLink <- function() {
+positron_copyLink <- function(file_folder = "folder", type = "view") {
+  # type must be one of "view", "edit", "embed"
   file <- get_file_details()
-  url <- file$folder_remote$create_share_link(type = "view", expiry = NULL, password = NULL, scope = NULL)
+  if (file_folder == "folder") {
+    url <- file$folder_remote$create_share_link(type = type, expiry = NULL, password = NULL, scope = NULL)
+  } else  if (file_folder == "folder") {
+    url <- file$file_remote$create_share_link(type = type, expiry = NULL, password = NULL, scope = NULL)
+  }
   clipr::write_clip(url, object_type = "character")
-  message("URL copied to clipboard (permission: view, expires: never)")
+  message("URL copied to clipboard (permission: ", type, ", expires: never)")
+}
+positron_versions <- function() {
+  file <- get_file_details()
+  versions <- retrieve_versions(file$file_remote)
+  git_compare(versions, file_title = file$file_local)
 }
 positron_validate_request <- function() {
   file <- get_file_details()

@@ -41,7 +41,7 @@
 #' @name validation_authorisation
 #' @rdname validation_authorisation
 #' @export
-validate_request_file <- function(drive_item, local_file = NULL, lanner = connect_planner()) {
+validate_request_file <- function(drive_item, local_file = NULL, planner = connect_planner()) {
   if (!inherits(drive_item, "ms_drive_item")) {
     stop("`drive_item` must be a Drive Item")
   }

@@ -10,7 +10,7 @@
 validate_request_file(
   drive_item,
   local_file = NULL,
-  lanner = connect_planner()
+  planner = connect_planner()
 )
 
 validate_file(
@@ -31,13 +31,13 @@ authorise_file(
 \arguments{
 \item{drive_item}{a Drive Item object of a file}
 
+\item{planner}{a Planner account, e.g. outcome of \code{\link[=connect_planner]{connect_planner()}}}
+
 \item{user}{a Certe user, who is member of the SharePoint site where \code{file} is stored}
 
 \item{authorise_request}{option to request for authorisation after validation}
 
 \item{teams}{a Teams account, e.g. outcome of \code{\link[=connect_teams]{connect_teams()}}}
-
-\item{planner}{a Planner account, e.g. outcome of \code{\link[=connect_planner]{connect_planner()}}}
 
 \item{local_file_path}{a location of the local file. If set, this will allow a direct Positron link on the attachment of the Planner task.}
 }

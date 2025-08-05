@@ -1187,6 +1187,169 @@ shiny_item_picker <- function(values, oversized = character(0), title = "", subt
   )
 }
 
+#' Git Compare Files
+#' 
+#' This compares two text files
+#' @param files character vector, allowed to be named
+#' @param file_title character to use as file title
+#' @importFrom shiny fluidPage tags h4 HTML checkboxInput fluidRow column selectInput h4 uiOutput renderUI p
+#' @export
+git_compare <- function(files = NULL, file_title = NULL) {
+  
+  if (is.null(names(files))) {
+    names(files) <- basename(files)
+  }
+  not_real <- !file.exists(files)
+  if (any(not_real)) {
+    stop("These files do not exist: ", toString(files[not_real]), call. = FALSE)
+  }
+  
+  ui <- fluidPage(
+    tags$style(paste0(
+      "* {
+        font-family: Source Sans Pro, Helvetica Neue, Arial;
+     }
+     h4 {
+        color: ", colourpicker("certeblauw"), ";
+     }
+     p {
+       color: ", colourpicker("certeroze"), ";
+       text-align: center;
+     }
+     .deleted {
+       background-color: ", colourpicker("certeroze2"), ";
+       color: white;
+     }
+     .added {
+       background-color: ", colourpicker("certegroen2"), ";
+       color: white;
+     }
+     .line {
+       color: #aaa;
+     }
+     .contents {
+       overflow-x: scroll;
+       padding-left: 0;
+     }
+     .file-contents {
+       border: 1px solid #eee;
+       padding: 10px;
+       margin: 1%;
+       width: 48%;
+       padding-right: 1%;
+     }
+     .file-contents * {
+       font-family: Fira Code, Monospace;
+       text-align: left;
+       white-space: nowrap;
+     }")),
+    h4(paste0("Vergelijk versies van ", ifelse(is.null(file_title), "bestanden", paste0("'", file_title, "'")))),
+    checkboxInput("viewboth", "Inhoud aan beide kanten weergeven"),
+    fluidRow(
+      column(width = 6,
+             selectInput("file1", label = NULL, choices = files, selected = files[1], width = "100%")),
+      column(width = 6,
+             selectInput("file2", label = NULL, choices = files, selected = ifelse(length(files) > 1, files[2], files[1]), width = "100%")),
+    ),
+    uiOutput("git_diff")
+  )
+  
+  server <- function(input, output, session) {
+    
+    output$git_diff <- renderUI({
+      viewboth <- input$viewboth
+      
+      if (input$file1 == input$file2) {
+        # identical select input
+        lines <- suppressWarnings(paste0(" ", readLines(input$file1)))
+      } else {
+        diff_output <- suppressWarnings(
+          system2(
+            "git",
+            c("diff", "--no-index", "--unified=99999", input$file1, input$file2),
+            stdout = TRUE,
+            stderr = TRUE
+          )
+        )
+        if (length(diff_output) == 0) {
+          # identical files
+          lines <- suppressWarnings(paste0(" ", readLines(input$file1)))
+        } else {
+          lines <- diff_output[c((which(diff_output %like% "@@ ")[1] + 1):length(diff_output))]
+          lines <- lines[lines %unlike% "No newline at end of file"]
+        }
+      }
+      
+      first_chars <- substr(lines, 1, 1)
+
+      line_nr_left <- 0
+      line_nr_right <- 0
+      for (f in first_chars) {
+        if (f == " ") {
+          line_nr_left <- c(line_nr_left, max(line_nr_left, na.rm = TRUE) + 1)
+          line_nr_right <- c(line_nr_right, max(line_nr_right, na.rm = TRUE) + 1)
+        } else if (f == "-") {
+          line_nr_left <- c(line_nr_left, max(line_nr_left, na.rm = TRUE) + 1)
+          line_nr_right <- c(line_nr_right, NA_real_)
+        } else if (f == "+") {
+          line_nr_left <- c(line_nr_left, NA_real_)
+          line_nr_right <- c(line_nr_right, max(line_nr_right, na.rm = TRUE) + 1)
+        }
+      }
+      line_nr_left <- c(line_nr_left, max(line_nr_left, na.rm = TRUE) + 1)
+      line_nr_right <- c(line_nr_right, max(line_nr_right, na.rm = TRUE) + 1)
+      line_nr_left <- line_nr_left[-1]
+      line_nr_right <- line_nr_right[-1]
+      line_nr_left <- trimws(format(line_nr_left))
+      line_nr_left[line_nr_left == "NA"] <- ""
+      line_nr_right <- trimws(format(line_nr_right))
+      line_nr_right[line_nr_right == "NA"] <- ""
+      
+
+      html <- lines
+      html <- substr(lines, 2, nchar(lines))
+      html <- gsub(" ", "&nbsp;", html, fixed = TRUE)
+      html[lines %like% "^[+]"] <- paste0("<span class = 'added'>", html[lines %like% "^[+]"], "</span>")
+      html[lines %like% "^[-]"] <- paste0("<span class = 'deleted'>", html[lines %like% "^[-]"], "</span>")
+      html[lines %like% "^ "] <- paste0("<span>", html[lines %like% "^ "], "</span>")
+      html_left <- html
+      html_right <- html
+      if (viewboth == FALSE) {
+        html_left[lines %like% "^[+]"] <- ""
+        html_right[lines %like% "^[-]"] <- ""
+      }
+      
+      fluidRow(
+        if (length(files) == 1) {
+          p("Dit is de enige versie.")
+        } else if (identical(line_nr_left, line_nr_right) && identical(html_left, html_right)) {
+          p("Deze versies zijn identiek.")
+        },
+        column(width = 6, class = "file-contents",
+               fluidRow(
+                 column(1, class = "line", HTML(paste(line_nr_left, collapse = "<br>"))),
+                 column(11, class = "contents", HTML(paste(html_left, collapse = "<br>")))),
+        ),
+        column(width = 6, class = "file-contents",
+               fluidRow(
+                 column(1, class = "line", HTML(paste(line_nr_right, collapse = "<br>"))),
+                 column(11, class = "contents", HTML(paste(html_right, collapse = "<br>")))),
+        ),
+      )
+    })
+  }
+  
+  viewer <- dialogViewer(dialogName = "Versievergelijking",
+                         width = 1400,
+                         height = 860)
+  
+  suppressMessages(
+    runGadget(app = ui,
+              server = server,
+              viewer = viewer,
+              stopOnCancel = FALSE))
+}
+
 shorten_folder <- function(folder) {
   if (nchar(folder) < 40) {
     return(folder)

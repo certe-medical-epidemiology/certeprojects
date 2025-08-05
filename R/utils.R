@@ -114,6 +114,51 @@ full_path_to_currently_sourced_project_file <- function() {
   out
 }
 
+#' @importFrom httr GET add_headers stop_for_status content
+retrieve_versions <- function(drive_item, account = connect_teams()) {
+  # this get all versions of a file, downloads them all to a temp dir, then return a named chr vector with the paths
+  site_id <- drive_item$properties$parentReference$siteId
+  drive_id <- drive_item$properties$parentReference$driveId
+  item_id <- drive_item$properties$id
+  
+  res_versions <- GET(
+    url = paste0("https://graph.microsoft.com/v1.0/sites/", site_id,
+                 "/drives/", drive_id,
+                 "/items/", item_id,
+                 "/versions"),
+    config = add_headers(
+      Authorization = paste(account$token$credentials$token_type,
+                            account$token$credentials$access_token),
+      `Content-type` = "application/json"
+    )
+  )
+  stop_for_status(res_versions, task = "download versions")
+  versions <- content(res_versions, as = "parsed")$value
+  versions_number <- vapply(FUN.VALUE = character(1), versions, function(v) v$id)
+  versions_modified_by <- vapply(FUN.VALUE = character(1), versions, function(v) v$lastModifiedBy$user$displayName)
+  versions_modified_on <- as.POSIXct(gsub("T", " ", vapply(FUN.VALUE = character(1), versions, function(v) v$lastModifiedDateTime)))
+  versions_url <- vapply(FUN.VALUE = character(1), versions, function(v) v$`@microsoft.graph.downloadUrl`)
+
+  tmp_dir <- file.path(tempdir(), item_id, "versions")
+  if (dir.exists(tmp_dir)) {
+    unlink(tmp_dir, recursive = TRUE)
+  }
+  dir.create(tmp_dir, recursive = TRUE)
+  
+  versions_path <- file.path(tmp_dir, paste0("v", versions_number))
+  
+  message("Downloading ", length(versions), " file versions...", appendLF = FALSE)
+  for (i in seq_len(length(versions))) {
+    message(".", appendLF = FALSE)
+    download.file(url = versions_url[i], destfile = versions_path[i], quiet = TRUE)
+  }
+  message("OK")
+  
+  nms <- paste0("v", versions_number, " (", versions_modified_on, ", ", versions_modified_by, ")")
+  names(versions_path) <- nms
+  versions_path
+}
+
 get_current_user <- function() {
   unname(Sys.info()["user"])
 }

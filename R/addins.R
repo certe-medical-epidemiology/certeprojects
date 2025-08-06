@@ -44,7 +44,7 @@ positron_copyLink <- function(file_folder = "folder", type = "view") {
 positron_versions <- function() {
   file <- get_file_details()
   versions <- retrieve_versions(file$file_remote)
-  git_compare(versions, file_title = file$file_local)
+  git_compare(versions, original_file = file.path(file$folder_local, file$file_local))
 }
 positron_validate_request <- function() {
   file <- get_file_details()

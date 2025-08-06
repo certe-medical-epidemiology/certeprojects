@@ -4,12 +4,12 @@
 \alias{git_compare}
 \title{Git Compare Files}
 \usage{
-git_compare(files = NULL, file_title = NULL)
+git_compare(files = NULL, original_file = NULL)
 }
 \arguments{
 \item{files}{character vector, allowed to be named}
 
-\item{file_title}{character to use as file title}
+\item{original_file}{original file path to restore file to}
 }
 \description{
 This compares two text files

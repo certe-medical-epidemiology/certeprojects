@@ -145,7 +145,7 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   }
   dir.create(tmp_dir, recursive = TRUE)
   
-  versions_path <- file.path(tmp_dir, paste0("v", versions_number))
+  versions_path <- file.path(tmp_dir, versions_number)
   
   message("Downloading ", length(versions), " file versions..", appendLF = FALSE)
   for (i in seq_len(length(versions))) {
@@ -154,7 +154,7 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   }
   message("OK")
   
-  nms <- paste0("v", versions_number, " (", versions_modified_on, ", ", versions_modified_by, ")")
+  nms <- paste0(versions_number, " (", versions_modified_on, ", ", versions_modified_by, ")")
   names(versions_path) <- nms
   versions_path
 }

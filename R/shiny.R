@@ -25,7 +25,7 @@
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong
 #' @importFrom shinyjs useShinyjs enable disable
-#' @importFrom shinyWidgets searchInput awesomeRadio awesomeCheckbox
+#' @importFrom shinyWidgets searchInput awesomeRadio
 #' @importFrom dplyr select pull filter if_else
 #' @importFrom certestyle colourpicker format2
 #  certestyle for R Markdown:
@@ -1191,10 +1191,12 @@ shiny_item_picker <- function(values, oversized = character(0), title = "", subt
 #' 
 #' This compares two text files
 #' @param files character vector, allowed to be named
-#' @param file_title character to use as file title
-#' @importFrom shiny fluidPage tags h4 HTML checkboxInput fluidRow column selectInput h4 uiOutput renderUI p
+#' @param original_file original file path to restore file to
+#' @importFrom shiny fluidPage tags h4 HTML checkboxInput div fluidRow column selectInput h4 uiOutput renderUI p downloadButton actionButton icon
+#' @importFrom shinyWidgets awesomeCheckbox
+#' @importFrom rstudioapi showQuestion showDialog
 #' @export
-git_compare <- function(files = NULL, file_title = NULL) {
+git_compare <- function(files = NULL, original_file = NULL) {
   
   if (is.null(names(files))) {
     names(files) <- basename(files)
@@ -1205,28 +1207,37 @@ git_compare <- function(files = NULL, file_title = NULL) {
   }
   
   ui <- fluidPage(
-    # tags$head(
-    #   tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"),
-    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"),
-    #   tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"),
-    #   tags$script(HTML("hljs.highlightAll();"))
-    # ),
+    tags$head(
+      tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"),
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"),
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/r.min.js"),
+      tags$script(HTML("hljs.highlightAll();"))
+    ),
     tags$style(paste0(
       "* {
-        font-family: Source Sans Pro, Helvetica Neue, Arial;
+       font-family: Source Sans Pro, Helvetica Neue, Arial;
      }
+     .checkbox-primary input[type='checkbox']:checked+label::before {
+       background-color: ", colourpicker("certeblauw"), ";
+       border-color: ", colourpicker('certeblauw'), ";
+     },
+     .awesome-checkbox *,
+     .awesome-checkbox input[type=\"checkbox\"]:focus+label::before {
+       outline: none !important;
+     }                 
      h4 {
         color: ", colourpicker("certeblauw"), ";
      }
      p {
        color: ", colourpicker("certeroze"), ";
        text-align: center;
+       margin-top: 20px;
      }
-     .deleted {
+     .deleted, .deleted * {
        background-color: ", colourpicker("certeroze2"), ";
        color: white;
      }
-     .added {
+     .added, .added * {
        background-color: ", colourpicker("certegroen2"), ";
        color: white;
      }
@@ -1247,7 +1258,6 @@ git_compare <- function(files = NULL, file_title = NULL) {
      .file-contents pre, .file-contents code {
        padding: 0 !important;
        margin: 0 !important;
-       line-height: 1;
        border: none;
        background: white;
        display: inline-flex;
@@ -1258,19 +1268,80 @@ git_compare <- function(files = NULL, file_title = NULL) {
        white-space: nowrap;
        font-size: 12px;
      }")),
-    h4(paste0("Vergelijk versies van ", ifelse(is.null(file_title), "bestanden", paste0("'", file_title, "'")))),
-    checkboxInput("viewboth", "Inhoud aan beide kanten weergeven"),
-    # checkboxInput("syntax_r", "Opmaken als R-syntax"),
+    h4(paste0("Vergelijk versies van ", ifelse(is.null(original_file), "bestanden", paste0("'", basename(original_file), "'")))),
+    awesomeCheckbox("syntax_r", "Opmaken als R-syntax", value = is.null(original_file) || original_file %like% "[.]R$"),
+    awesomeCheckbox("viewboth", "Inhoud aan beide kanten weergeven"),
     fluidRow(
       column(width = 6,
-             selectInput("file1", label = NULL, choices = files, selected = ifelse(length(files) > 1, files[2], files[1]), width = "100%")),
+             selectInput("file1", label = NULL, choices = files, selected = ifelse(length(files) > 1, files[2], files[1]), width = "100%"),
+             downloadButton("download_file1", label = "Downloaden"),
+             if (!is.null(original_file) && file.exists(original_file)) {
+               actionButton("restore_file1", label = "Herstellen", icon = icon("rotate"))
+             }
+      ),
       column(width = 6,
-             selectInput("file2", label = NULL, choices = files, selected = files[1], width = "100%")),
+             selectInput("file2", label = NULL, choices = files, selected = files[1], width = "100%"),
+             downloadButton("download_file2", label = "Downloaden"),
+             if (!is.null(original_file) && file.exists(original_file)) {
+               actionButton("restore_file2", label = "Herstellen", icon = icon("rotate"))
+             }
+      )
     ),
     uiOutput("git_diff")
   )
   
   server <- function(input, output, session) {
+    
+    restore_file <- function(source, new) {
+      breaks <- ifelse(in_positron(), "<br>", "\n")
+      proceed <- showQuestion(title = paste0("Herstellen van versie ", basename(source)),
+                              message = paste0("Hiermee wordt het volgende bestand overschreven door versie ", basename(source), ":", breaks, breaks, new))
+      if (proceed == TRUE) {
+        success <- file.copy(source, new, overwrite = TRUE, copy.mode = TRUE, copy.date = TRUE)
+        if (success == TRUE) {
+          showDialog(title = paste0("Herstellen van versie ", basename(input$file2)),
+                     message = "Bestand hersteld.")
+        } else {
+          showDialog(title = paste0("Herstellen van versie ", basename(input$file2)),
+                     message = "Bestand kon niet hersteld worden.")
+        }
+      }
+    }
+    
+    output$download_file1 <- downloadHandler(
+      filename = function() {
+        if (!is.null(original_file)) {
+          basename(original_file)
+        } else {
+          basename(input$file1)
+        }
+      },
+      content = function(file) {
+        file.copy(input$file1, file)
+      },
+      contentType = "text/plain"
+    )
+    observeEvent(input$restore_file1, {
+      restore_file(input$file1, original_file)
+      
+    })
+    
+    output$download_file2 <- downloadHandler(
+      filename = function() {
+        if (!is.null(original_file)) {
+          basename(original_file)
+        } else {
+          basename(input$file2)
+        }
+      },
+      content = function(file) {
+        file.copy(input$file2, file)
+      },
+      contentType = "text/plain"
+    )
+    observeEvent(input$restore_file2, {
+      restore_file(input$file2, original_file)
+    })
     
     output$git_diff <- renderUI({
       viewboth <- input$viewboth

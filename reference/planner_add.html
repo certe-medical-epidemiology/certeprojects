@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.25.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.25.3</span>
       </span>
     </div>
 
@@ -82,11 +82,6 @@
 <span>  channel <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu">in_positron</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">project_update</span><span class="op">(</span></span>
-<span>  current_task_id <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span>ask <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu">consult_add</span><span class="op">(</span>planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>, teams <span class="op">=</span> <span class="cn">NULL</span>, channel <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -104,10 +99,6 @@
 
 <dt id="arg-channel">channel<a class="anchor" aria-label="anchor" href="#arg-channel"></a></dt>
 <dd><p>Microsoft Teams Channel folder, as returned by e.g. <code><a href="teams.html">teams_projects_channel()</a></code></p></dd>
-
-
-<dt id="arg-current-task-id">current_task_id<a class="anchor" aria-label="anchor" href="#arg-current-task-id"></a></dt>
-<dd><p>Project (p-)number of the project to update</p></dd>
 
 </dl></div>
 

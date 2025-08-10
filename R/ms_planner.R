@@ -826,6 +826,47 @@ planner_task_authorise <- function(task,
                       account = account)
 }
 
+#' @importFrom dplyr case_when mutate filter arrange
+#' @param current_task_id Project (p-)number of the project to update
+#' @rdname planner
+#' @export
+planner_move_task <- function(current_task_id = project_get_current_id(ask = TRUE), planner = connect_planner()) {
+  if (is.null(current_task_id) || isTRUE(current_task_id %in% c("", NA))) {
+    warning("Task not found: ", current_task_id)
+    return(invisible())
+  }
+  
+  buckets <- planner_buckets_list(account = planner)
+  if (!is.null(attributes(current_task_id)$task)) {
+    current_task <- attributes(current_task_id)$task
+  } else {
+    current_task <- planner_task_find(paste0("p", gsub("^p", "", current_task_id)), account = planner)
+  }
+  bucket_id <- get_azure_property(current_task, "bucketId")
+  buckets_df <- data.frame(id = get_azure_property(buckets, "id"),
+                           name = get_azure_property(buckets, "name")) |>
+    mutate(sorting = case_when(name %like% "Idee" ~ 1,
+                               name %like% "Bezig" ~ 2,
+                               name %like% "Wachten" ~ 3,
+                               name %like% "Voorlopig voltooid" ~ 4,
+                               name %like% "Voltooid" ~ 5,
+                               TRUE ~ 6)) |>
+    filter(sorting != 6) |>
+    arrange(sorting)
+  
+  current_bucket <- buckets_df$name[match(bucket_id, buckets_df$id)]
+  
+  move_to <- utils::menu(title = paste0(get_azure_property(current_task, "title"), "\n\nHuidige lijst is '", current_bucket, "'. Waarheen verplaatsen? (0 voor annuleren)"),
+                         choices = buckets_df$name[buckets_df$id != bucket_id],
+                         graphics = FALSE)
+  if (move_to == 0) {
+    return(invisible())
+  }
+  move_to <- buckets_df$name[move_to]
+  planner_task_update(current_task, bucket_name = move_to, account = planner)
+  message("Taak verplaatst naar '", move_to, "'.")
+}
+
 #' @rdname planner
 #' @param path location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.
 #' @param projects_path location of the folder that contains all department projects
@@ -833,7 +874,7 @@ planner_task_authorise <- function(task,
 #' @details Use [planner_create_project_from_path()] to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.
 #' @export
 planner_create_project_from_path <- function(path,
-                                             projects_path = read_secret("projects.path"),
+                                             projects_path = get_projects_path(),
                                              account = connect_planner(),
                                              title = basename(path),
                                              ...) {

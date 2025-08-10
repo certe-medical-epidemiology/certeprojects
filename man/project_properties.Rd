@@ -26,7 +26,7 @@ project_get_folder(
 
 project_get_folder_full(
   project_number = project_get_current_id(),
-  projects_path = read_secret("projects.path"),
+  projects_path = get_projects_path(),
   account = connect_planner()
 )
 

@@ -103,8 +103,8 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
 
 # only needed when projects are also locally available (on Z or local OneDrive)
 search_project_first_local_then_planner <- function(search_term, as_title = FALSE, account = connect_planner()) {
-  if (dir.exists(read_secret("projects.path")) && search_term %like% "p?[0-9]+") {
-    projects <- list.dirs(read_secret("projects.path"), full.names = FALSE, recursive = FALSE)
+  if (dir.exists(get_projects_path()) && search_term %like% "p?[0-9]+") {
+    projects <- list.dirs(get_projects_path(), full.names = FALSE, recursive = FALSE)
     search_parts <- unlist(strsplit(as.character(search_term), "[^a-zA-Z0-9]"))
     if (any(search_parts %like% "^p?[0-9]+$", na.rm = TRUE)) {
       # term contains project number, only keep that
@@ -166,7 +166,7 @@ project_get_folder <- function(project_number = project_get_current_id(),
 #' @inheritParams planner_create_project_from_path
 #' @export
 project_get_folder_full <- function(project_number = project_get_current_id(),
-                                    projects_path = read_secret("projects.path"),
+                                    projects_path = get_projects_path(),
                                     account = connect_planner()) {
   if (is_empty(project_number)) {
     return(NA_character_)
@@ -392,4 +392,12 @@ project_add_qmd_skeleton <- function(filename = NULL,
   filename <- file.path(project_folder, filename)
   file.copy(from = system.file("qmd_skeleton.qmd", package = "certeprojects"), to = filename, overwrite = FALSE, copy.date = FALSE)
   invisible(navigateToFile(file = filename))
+}
+
+get_projects_path <- function() {
+  out <- eval(parse(text = certetoolbox::read_secret("onedrive.projects.folder")))
+  if (!dir.exists(out)) {
+    warning("Project folder does not exist: ", out, call. = FALSE)
+  }
+  out
 }

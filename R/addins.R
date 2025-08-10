@@ -23,7 +23,7 @@
 positron_moveTask <- function() {
   file <- get_file_details(include_teams = FALSE)
   task_id <- planner_retrieve_project_id(basename(file$folder_local))
-  project_update(task_id)
+  planner_move_task(task_id)
 }
 #' @importFrom httr BROWSE
 positron_openFolder <- function() {
@@ -66,10 +66,10 @@ positron_openSharePoint <- function() {
 
 get_file_details <- function(include_teams = TRUE) {
   current_path <- path.expand(rstudioapi::getSourceEditorContext()$path)
-  parts <- strsplit(current_path, "[/\\]")[[1]]
-  start <- which(parts == read_secret("onedrive.projects.folder"))[1] + 1
-  file_path <- paste(parts[c(start:length(parts))], collapse = "/")
-  file_local <- basename(file_path)
+  if (suppressMessages(get_projects_path()) != "") {
+    current_path <- gsub(get_projects_path(), "", current_path, fixed = TRUE)
+  }
+  file_local <- basename(current_path)
   folder_local <- dirname(current_path)
   
   if (include_teams == FALSE) {
@@ -78,7 +78,7 @@ get_file_details <- function(include_teams = TRUE) {
   }
   
   projects <- teams_projects_channel()
-  file_remote <- projects$get_item(file_path)
+  file_remote <- projects$get_item(current_path)
   folder_remote <- file_remote$get_parent_folder()
   
   list(file_local = file_local,
@@ -97,7 +97,7 @@ addin1b_consult_new <- function() {
   consult_add()
 }
 addin2_projects_update <- function() {
-  project_update()
+  planner_move_task()
 }
 addin5_quarto_skeleton <- function() {
   project_add_qmd_skeleton()

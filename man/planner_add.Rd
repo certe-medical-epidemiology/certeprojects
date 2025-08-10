@@ -2,7 +2,6 @@
 % Please edit documentation in R/shiny.R
 \name{project_add}
 \alias{project_add}
-\alias{project_update}
 \alias{consult_add}
 \title{Add Project Or Consult Using Shiny}
 \usage{
@@ -10,11 +9,6 @@ project_add(
   planner = connect_planner(),
   teams = if (in_positron()) connect_teams() else NULL,
   channel = if (in_positron()) teams_projects_channel() else NULL
-)
-
-project_update(
-  current_task_id = project_get_current_id(ask = TRUE),
-  planner = connect_planner()
 )
 
 consult_add(planner = connect_planner(), teams = NULL, channel = NULL)
@@ -25,8 +19,6 @@ consult_add(planner = connect_planner(), teams = NULL, channel = NULL)
 \item{teams}{Microsoft Teams account, as returned by e.g. \code{\link[=connect_teams]{connect_teams()}}}
 
 \item{channel}{Microsoft Teams Channel folder, as returned by e.g. \code{\link[=teams_projects_channel]{teams_projects_channel()}}}
-
-\item{current_task_id}{Project (p-)number of the project to update}
 }
 \description{
 This is a Shiny app to add a new project: it creates a project folder locally \link[=connect_teams]{or in Teams}, generates the required Quarto or R Markdown or R file, and creates a \link[=connect_planner]{new task in Planner}. These functions come with RStudio addins to quickly access existing projects. For consults, it only adds a Planner task and creates the card in the background.

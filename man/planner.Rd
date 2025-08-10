@@ -17,6 +17,7 @@
 \alias{planner_task_request_validation}
 \alias{planner_task_request_authorisation}
 \alias{planner_task_authorise}
+\alias{planner_move_task}
 \alias{planner_create_project_from_path}
 \alias{planner_user_property}
 \alias{planner_highest_project_id}
@@ -124,9 +125,14 @@ planner_task_authorise(
   account = connect_planner()
 )
 
+planner_move_task(
+  current_task_id = project_get_current_id(ask = TRUE),
+  planner = connect_planner()
+)
+
 planner_create_project_from_path(
   path,
-  projects_path = read_secret("projects.path"),
+  projects_path = get_projects_path(),
   account = connect_planner(),
   title = basename(path),
   ...
@@ -216,6 +222,8 @@ planner_highest_consult_id(
 \item{include_description}{also search the description, which requires additional queries and lowers speed}
 
 \item{category_text}{text of the category to use}
+
+\item{current_task_id}{Project (p-)number of the project to update}
 
 \item{path}{location of the folder that has to be converted to a project. This folder will be renamed to contain the new project number.}
 

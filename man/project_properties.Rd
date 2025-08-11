@@ -13,6 +13,7 @@
 \alias{project_open_analysis_file}
 \alias{project_open_folder}
 \alias{project_add_qmd_skeleton}
+\alias{get_output_folder}
 \title{Project Properties}
 \usage{
 project_get_current_id(ask = NULL, account = connect_planner())
@@ -66,6 +67,11 @@ project_open_folder(
 
 project_add_qmd_skeleton(
   filename = NULL,
+  project_number = project_get_current_id(),
+  account = connect_planner()
+)
+
+get_output_folder(
   project_number = project_get_current_id(),
   account = connect_planner()
 )

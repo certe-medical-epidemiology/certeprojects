@@ -401,3 +401,24 @@ get_projects_path <- function() {
   }
   out
 }
+
+#' @rdname project_properties
+#' @export
+get_output_folder <- function(project_number = project_get_current_id(),
+                              account = connect_planner()) {
+  if (is_empty(project_number)) {
+    return(NA_character_)
+  }
+  if (!is.null(attributes(project_number)$task)) {
+    # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
+    project_title <- attributes(project_number)$task |> get_azure_property("title")
+  } else {
+    project_title <- search_project_first_local_then_planner(project_number, as_title = TRUE, account = account)
+  }
+  
+  output_path <- paste0(read_secret("projects.output_path"), "/", project_title, "/")
+  if (!dir.exists(output_path)) {
+    dir.create(output_path, recursive = TRUE)
+  }
+  return(output_path)
+}

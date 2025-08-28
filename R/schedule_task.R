@@ -328,7 +328,7 @@ user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
-  path <- paste0(log_folder, format2(Sys.Date(), "yyyy/mm"), "/", user, "/")
+  path <- file.path(log_folder, format2(Sys.Date(), "yyyy/mm"), user)
   pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
                     ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
                     ").*[.]Rout")

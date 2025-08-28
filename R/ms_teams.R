@@ -73,7 +73,7 @@ teams_projects_channel <- function(projects_channel_id = read_secret("teams.proj
       pkg_env$teams_project_folder <- conn
       pkg_env$teams_project_folder_from_callr <- TRUE
     } else {
-      message("Retrieving Teams channel...", appendLF = FALSE)
+      message("Retrieving SharePoint details...", appendLF = FALSE)
       # this manual way is by far the fastest:
       folder <- tryCatch(ms_drive_item$new(token = account$token,
                                            tenant = account$tenant,

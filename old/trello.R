@@ -371,7 +371,7 @@ trello_search_any <- function(x,
 
 #' @rdname trello
 #' @param x search string
-#' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_add()]) instead of a [double] vector
+#' @param return_all a [logical] to indicate whether a named vector of short URLs must be returned (internally used by [project_consult_add()]) instead of a [double] vector
 #' @importFrom certestyle font_green font_blue font_bold font_silver font_red
 #' @importFrom rstudioapi showPrompt
 #' @importFrom dplyr filter
@@ -436,7 +436,7 @@ trello_search_card <- function(x = NULL,
   
   # return named vector with shortUrls
   if (isTRUE(return_all)) {
-    # used by Shiny app in project_add()
+    # used by Shiny app in project_consult_add()
     if (NROW(search) == 0) {
       return(character(0))
     }

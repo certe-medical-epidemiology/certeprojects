@@ -117,7 +117,7 @@ planner_task_create <- function(title,
     project_number <- NULL
     consult_number <- NULL
   }
-  
+    
   if (!arg_is_empty(categories) && "Project" %in% categories) {
     # projects must contain valid file names, since they have an accompanying folder
     invalid_characters <- c("/", "\\", ":", "*", "?", "\"", "<", ">", "|")
@@ -176,7 +176,7 @@ planner_task_create <- function(title,
     if (!is.null(project_number)) {
       description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), "."), description)
     } else {
-      description <- c(paste0("Van ", paste0(requested_by, collapse = " en "), "."), description)
+      description <- c(paste0("Consult voor: ", paste0(requested_by, collapse = " en "), "."), description)
     }
   }
   

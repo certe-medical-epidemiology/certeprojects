@@ -416,9 +416,15 @@ get_output_folder <- function(project_number = project_get_current_id(),
     project_title <- search_project_first_local_then_planner(project_number, as_title = TRUE, account = account)
   }
   
-  output_path <- paste0(read_secret("projects.output_path"), "/", project_title, "/")
+  output_path <- file.path(read_secret("projects.output_path"), project_title)
   if (!dir.exists(output_path)) {
     dir.create(output_path, recursive = TRUE)
   }
-  return(output_path)
+  return(paste0(output_path, "/"))
+}
+
+#' @rdname project_properties
+#' @export
+get_output_folder_consult <- function() {
+  file.path(read_secret("projects.output_path"), "Consulten/")
 }

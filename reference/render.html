@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.26.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.27.1</span>
       </span>
     </div>
 
@@ -97,7 +97,11 @@ be a filename only, not a path, relative or absolute.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
-<dd><p>Suppress warning and other messages.</p></dd>
+<dd><p>Suppress warning and other messages, from R and also Quarto CLI
+(i.e <code>--quiet</code> is passed as command line).</p>
+<p><code>quarto.quiet</code> <span style="R">R</span> option or <code>R_QUARTO_QUIET</code> environment variable can be used to globally override a function call
+(This can be useful to debug tool that calls <code>quarto_*</code> functions directly).</p>
+<p>On Github Actions, it will always be <code>quiet = FALSE</code>.</p></dd>
 
 
 <dt id="arg-as-job">as_job<a class="anchor" aria-label="anchor" href="#arg-as-job"></a></dt>

@@ -87,6 +87,10 @@ get_file_details <- function(include_teams = TRUE) {
   }, error = function(e) stop("No valid SharePoint file:\n\n", conditionMessage(e), call. = FALSE))
 }
 
+positron_project_consult_add <- function() {
+  project_consult_add()
+}
+
 
 # RStudio addins ----------------------------------------------------------
 

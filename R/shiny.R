@@ -23,7 +23,7 @@
 #' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
 #' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
-#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong updateSelectInput updateTextAreaInput
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong updateSelectInput updateTextAreaInput fileInput
 #' @importFrom shinyjs useShinyjs enable disable show hide
 #' @importFrom shinyWidgets searchInput awesomeRadio updateAwesomeRadio
 #' @importFrom dplyr select pull filter if_else
@@ -91,9 +91,9 @@ project_consult_add <- function(planner = connect_planner(),
             awesomeRadio("type", NULL, choices = c("Project", "Consult"), selected = "Project", inline = TRUE, width = "100%")
         ),
         textInput("title", "Titel", placeholder = ""),
+        uiOutput("requested_by_ui"),
         textAreaInput("description", "Notities", cols = 1, rows = 2, resize = "vertical"),
         textAreaInput("checklist", "Controlelijst", cols = 1, rows = 3, resize = "vertical", placeholder = "(1 item per regel)"),
-        uiOutput("requested_by"),
         selectInput("priority",
                     label = HTML(paste("Prioriteit", ifelse(as.integer(format(Sys.Date(), "%u")) %in% c(6:7), " <i style='font-weight:normal !important;'>(standaard 'Dringend' in het weekend)</i>", ""))),
                     choices = c("Laag", "Gemiddeld", "Belangrijk", "Dringend"), 
@@ -168,13 +168,17 @@ project_consult_add <- function(planner = connect_planner(),
     
     output$custom_css <- renderUI({
       colour <- ifelse(input$type == "Consult", "certegroen", "certeblauw")
+      padding_desc <- ifelse(input$type == "Consult", "padding-bottom: 0;", "")
       
       tags$style(paste0(".well { background-color: ", colourpicker(paste0(colour, 5)), "; }
+                      #description { ", padding_desc, " }
                       .well label { color: ", colourpicker(colour), "; }
                       .h2, h2 { color: ", colourpicker(colour), "; }
                       a { color: ", colourpicker(colour), "; }
+                      .form-control:focus, .selectize-input.focus { border-color: ", colourpicker(colour), "; box-shadow: none; }
                       certeblauw, .certeblauw { color: ", colourpicker(colour), "; }
                       certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
+                      .btn-default.focus, .btn-default:focus, .btn-default.active, .btn-default:active { background-color: ", colourpicker(paste0(colour, 5)), "; border-color: ", colourpicker(colour), "; }
                       #create { background-color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), "; }
                       #create:hover { background-color: ", colourpicker(paste0(colour, 0)), "; border-color: ", colourpicker(colour), "; }
                       #cancel { background-color: white; color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), ";}
@@ -198,6 +202,7 @@ project_consult_add <- function(planner = connect_planner(),
         session$sendCustomMessage("set-textarea-rows", list(id = "description", rows = 8))
         updateTextAreaInput("description", label = "Vraag / verzoek", session = session)
         updateTextAreaInput("checklist", value = "", session = session)
+        updateSelectizeInput("requested_by", label = "Consult aan", session = session)
         hide("checklist")
         updateAwesomeRadio("filetype", selected = ".R", session = session)
         disable("filetype")
@@ -210,6 +215,7 @@ project_consult_add <- function(planner = connect_planner(),
         session$sendCustomMessage("set-textarea-rows", list(id = "description", rows = 2))
         updateTextAreaInput("description", label = "Notities", session = session)
         show("checklist")
+        updateSelectizeInput("requested_by", label = "Aangevraagd door", session = session)
         updateAwesomeRadio("filetype", selected = ".qmd", session = session)
         enable("filetype")
         output$consult_inform <- renderUI(NULL)
@@ -254,13 +260,13 @@ project_consult_add <- function(planner = connect_planner(),
       }
     })
     
-    output$requested_by <- renderUI({
+    output$requested_by_ui <- renderUI({
       # retrieve user list with names and job titles
       users <- get_user()
       if (!is.null(users) && !identical(users, "")) {
         suppressWarnings(tagList(
           selectizeInput("requested_by",
-                         label = "Aanvrager(s)",
+                         label = "Aangevraagd door",
                          choices = users,
                          multiple = TRUE,
                          options = list(

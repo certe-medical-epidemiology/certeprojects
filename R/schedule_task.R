@@ -111,7 +111,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
     stop("`users` must be length 1 if `check_mail` is not set`")
   }
   users <- as.character(users)
-  if ((isFALSE(check_mail) && !get_current_user() == users[1]) || (isTRUE(check_mail) && !get_current_user() %in% users)) {
+  if ((isFALSE(check_mail) && get_current_user() != users[1]) || (isTRUE(check_mail) && !get_current_user() %in% users)) {
     # message("User not required to run project, ignoring")
     return(invisible())
   }
@@ -148,6 +148,9 @@ schedule_task <- function(minute, hour, day, month, weekday,
   month <- as.integer(month)
   weekday <- as.integer(weekday)
   weekday[weekday == 7] <- 0
+  
+  minute_original <- minute
+  hour_original <- hour
   
   backup_user <- FALSE
   if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)]) {
@@ -209,13 +212,17 @@ schedule_task <- function(minute, hour, day, month, weekday,
         return(invisible())
       }
       # check log file if previous user had error
-      user1_has_log <- user_has_log(user = users[1], date = as.Date(ref_time),
-                                    hour = hour, minute = minute,
-                                    sent_delay = (which(users == get_current_user()) - 1) * sent_delay,
+      user1_has_log <- user_has_log(user = users[1],
+                                    date = as.Date(ref_time),
+                                    hour = hour_original,
+                                    minute = minute_original,
+                                    sent_delay = sent_delay,
                                     log_folder = log_folder)
-      log_error_user1 <- log_contains_error(user = users[1], date = as.Date(ref_time),
-                                            hour = hour, minute = minute,
-                                            sent_delay = (which(users == get_current_user()) - 1) * sent_delay,
+      log_error_user1 <- log_contains_error(user = users[1],
+                                            date = as.Date(ref_time),
+                                            hour = hour_original,
+                                            minute = minute_original,
+                                            sent_delay = sent_delay,
                                             log_folder = log_folder)
       if (!user1_has_log) {
         message("No log file of user 1 (", users[1], ") found")
@@ -226,12 +233,18 @@ schedule_task <- function(minute, hour, day, month, weekday,
       }
       if (length(users) > 2 && get_current_user() == users[3]) {
         # also check logs of user 2
-        user2_has_log <- user_has_log(user = users[2], date = as.Date(ref_time),
-                                      hour = hour, minute = minute,
-                                      sent_delay = sent_delay, log_folder = log_folder)
-        log_error_user2 <- log_contains_error(user = users[2], date = as.Date(ref_time),
-                                              hour = hour, minute = minute,
-                                              sent_delay = sent_delay, log_folder = log_folder)
+        user2_has_log <- user_has_log(user = users[2],
+                                      date = as.Date(ref_time),
+                                      hour = hour_original,
+                                      minute = minute_original,
+                                      sent_delay = sent_delay * 2,
+                                      log_folder = log_folder)
+        log_error_user2 <- log_contains_error(user = users[2],
+                                              date = as.Date(ref_time),
+                                              hour = hour_original,
+                                              minute = minute_original,
+                                              sent_delay = sent_delay * 2,
+                                              log_folder = log_folder)
         if (!user2_has_log) {
           message("No log file of user 2 (", users[2], ") found")
         } else if (user2_has_log && !log_error_user2) {
@@ -269,7 +282,9 @@ schedule_task <- function(minute, hour, day, month, weekday,
         current_file <- basename(project_file)
       }
       if (isTRUE(notify_redone) && "certemail" %in% rownames(utils::installed.packages())) {
-        certemail::mail(to = sent_account$properties$mail, cc = NULL, bcc = NULL,
+        certemail::mail(to = sent_account$properties$mail,
+                        cc = NULL,
+                        bcc = NULL,
                         subject = paste0("! Niet-verzonden project hersteld: p", project_number),
                         body = paste0("Project **", proj_name,
                                       "** (bestand `", current_file, "`) was eerder niet verzonden door gebruiker ",
@@ -284,8 +299,6 @@ schedule_task <- function(minute, hour, day, month, weekday,
       }
     },
     error = function(e) {
-      error_txt <- utils::capture.output(traceback())
-      error_txt <- paste0(format_error(e), "\n", error_txt)
       error_file <- current_input()
       if (is.null(error_file) || error_file == "") {
         error_file <- basename(Sys.getenv("QUARTO_PROJECT_FILE"))
@@ -304,14 +317,14 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                       "Gebruiker: ", get_current_user(), "\n\n",
                                       "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
                                       "# Foutdetails\n\n",
-                                      error_txt,
+                                      conditionMessage(e),
                                       "\n"),
                         signature = FALSE,
                         background = colourpicker("certeroze4"),
                         identifier = FALSE,
                         account = sent_account)
       }
-      message("ERROR: ", error_txt)
+      message("ERROR: ", conditionMessage(e))
     })
   } else {
     # user not required to run project
@@ -367,26 +380,4 @@ log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder)
     failed[i] <- any(lines %like% "Could not connect", na.rm = TRUE) | any(grepl(x = lines, pattern = "Error|ERROR", ignore.case = FALSE), na.rm = TRUE)
   }
   any(failed, na.rm = TRUE)
-}
-
-#' @importFrom certestyle font_stripstyle
-format_error <- function (e) {
-  if (inherits(e, "rlang_error") && "rlang" %in% rownames(utils::installed.packages())) {
-    txt <- rlang::cnd_message(e)
-    txt <- font_stripstyle(txt)
-    txt <- gsub(".*Caused by error[:](\n!)?", "", txt)
-  }
-  else {
-    txt <- c(e$message, e$parent$message, e$parent$parent$message, 
-             e$parent$parent$parent$message, e$call)
-  }
-  txt <- txt[txt %unlike% "^Problem while"]
-  if (length(txt) == 0) {
-    stop(e, call. = FALSE)
-  }
-  if (all(txt == "")) {
-    txt <- "Unknown error"
-  }
-  txt <- trimws(txt)
-  paste0(txt, collapse = "\n")
 }

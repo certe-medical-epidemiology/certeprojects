@@ -12,12 +12,17 @@ knit(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
 \arguments{
 \item{input_file}{file to be rendered, can be R Markdown (\code{.Rmd}) or Quarto (\code{.qmd}), or a lot of other formats such as \code{.md}, \code{.ipynb} and \href{https://quarto.org/docs/reference/}{many other formats that Quarto supports}.}
 
-\item{output_file}{The name of the output file. If using \code{NULL}, the output
-filename will be based on the filename for the input file. \code{output_file} is
-mapped to the \code{--output} option flag of the \code{quarto} CLI. It is expected to
-be a filename only, not a path, relative or absolute.}
+\item{output_file}{Base name for single-file output (e.g. PDF, ePub, MS Word).
+This sets the \code{output-file} Quarto metadata. If \code{NULL}, the output filename
+will be based on the input filename.}
 
-\item{quiet}{Suppress warning and other messages.}
+\item{quiet}{Suppress warning and other messages, from R and also Quarto CLI
+(i.e \code{--quiet} is passed as command line).
+
+\code{quarto.quiet} \R option or \code{R_QUARTO_QUIET} environment variable can be used to globally override a function call
+(This can be useful to debug tool that calls \verb{quarto_*} functions directly).
+
+On Github Actions, it will always be \code{quiet = FALSE}.}
 
 \item{as_job}{Render as an RStudio background job. Default is \code{"auto"},
 which will render individual documents normally and projects as

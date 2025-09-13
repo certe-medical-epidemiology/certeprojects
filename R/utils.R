@@ -137,6 +137,7 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   versions_number <- vapply(FUN.VALUE = character(1), versions, function(v) v$id)
   versions_modified_by <- vapply(FUN.VALUE = character(1), versions, function(v) v$lastModifiedBy$user$displayName)
   versions_modified_on <- as.POSIXct(gsub("T", " ", vapply(FUN.VALUE = character(1), versions, function(v) v$lastModifiedDateTime)))
+  versions_differences_in_days <- rev(floor(abs(c(NA, as.numeric(diff(rev(as.Date(versions_modified_on))), units = "days")))))
   versions_url <- vapply(FUN.VALUE = character(1), versions, function(v) v$`@microsoft.graph.downloadUrl`)
 
   tmp_dir <- file.path(tempdir(), item_id, "versions")
@@ -154,7 +155,8 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   }
   message("OK")
   
-  nms <- paste0(versions_number, " (", versions_modified_on, ", ", versions_modified_by, ")")
+  nms <- paste0(versions_number, " (", versions_modified_on, ", +", versions_differences_in_days, "d; ", versions_modified_by, ")")
+  nms[length(nms)] <- paste0(versions_number[length(nms)], " (", versions_modified_on[length(nms)], "; ", versions_modified_by[length(nms)], ")")
   names(versions_path) <- nms
   versions_path
 }

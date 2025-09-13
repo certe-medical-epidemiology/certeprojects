@@ -13,6 +13,8 @@
 \alias{project_open_analysis_file}
 \alias{project_open_folder}
 \alias{project_add_qmd_skeleton}
+\alias{get_output_folder}
+\alias{get_output_folder_consult}
 \title{Project Properties}
 \usage{
 project_get_current_id(ask = NULL, account = connect_planner())
@@ -69,6 +71,13 @@ project_add_qmd_skeleton(
   project_number = project_get_current_id(),
   account = connect_planner()
 )
+
+get_output_folder(
+  project_number = project_get_current_id(),
+  account = connect_planner()
+)
+
+get_output_folder_consult()
 }
 \arguments{
 \item{ask}{logical to indicate whether the project number should always be asked. The default, \code{NULL}, will show a popup in \link[=interactive]{interactive} \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current \link[=getwd]{working directory} to determine the project number.}

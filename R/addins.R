@@ -44,11 +44,11 @@ positron_copyLink <- function(file_folder = "folder", type = "view") {
 positron_versions <- function() {
   file <- get_file_details()
   versions <- retrieve_versions(file$file_remote)
-  git_compare(versions, original_file = file.path(file$folder_local, file$file_local))
+  git_compare(versions, original_file = file$fullpath_local)
 }
 positron_validate_request <- function() {
   file <- get_file_details()
-  validate_request_file(drive_item = file$file_remote, local_file = file.path(file$folder_local, file$file_local))
+  validate_request_file(drive_item = file$file_remote, local_file = file$fullpath_local)
 }
 positron_validate <- function(authorise_request = FALSE) {
   file <- get_file_details()
@@ -65,36 +65,40 @@ positron_openSharePoint <- function() {
 }
 
 get_file_details <- function(include_teams = TRUE) {
-  current_path <- path.expand(rstudioapi::getSourceEditorContext()$path)
-  if (suppressMessages(get_projects_path()) != "") {
-    current_path <- gsub(get_projects_path(), "", current_path, fixed = TRUE)
-  }
-  file_local <- basename(current_path)
-  folder_local <- dirname(current_path)
+  fullpath_local <- path.expand(rstudioapi::getSourceEditorContext()$path)
+  file_local <- basename(fullpath_local)
+  folder_local <- basename(dirname(fullpath_local))
   
   if (include_teams == FALSE) {
     return(list(file_local = file_local,
                 folder_local = folder_local))
   }
   
-  projects <- teams_projects_channel()
-  file_remote <- projects$get_item(current_path)
-  folder_remote <- file_remote$get_parent_folder()
-  
-  list(file_local = file_local,
-       folder_local = folder_local,
-       file_remote = file_remote,
-       folder_remote = folder_remote)
+  tryCatch({
+    projects <- teams_projects_channel()
+    file_remote <- projects$get_item(file.path(folder_local, file_local))
+    folder_remote <- file_remote$get_parent_folder()
+    
+    list(file_local = file_local,
+         folder_local = folder_local,
+         fullpath_local = fullpath_local,
+         file_remote = file_remote,
+         folder_remote = folder_remote)
+  }, error = function(e) stop("No valid SharePoint file:\n\n", conditionMessage(e), call. = FALSE))
+}
+
+positron_project_consult_add <- function() {
+  project_consult_add()
 }
 
 
 # RStudio addins ----------------------------------------------------------
 
 addin1_projects_new <- function() {
-  project_add()
+  project_consult_add()
 }
-addin1b_consult_new <- function() {
-  consult_add()
+addin1c_versions <- function() {
+  positron_versions()
 }
 addin2_projects_update <- function() {
   planner_move_task()

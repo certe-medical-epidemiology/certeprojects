@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.27.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.27.2</span>
       </span>
     </div>
 
@@ -390,7 +390,7 @@
 <p>Use <code>planner_create_project_from_path()</code> to convert any folder (and any location) to a project folder, by (1) assigning a project number, (2) creating a Planner task and (3) moving the old folder to the department's projects folder.</p>
 <p><code>planner_highest_project_id()</code> retrieves the currently highest project ID from the dummy project.</p>
 <p><code>planner_highest_project_id()</code> retrieves the currently highest project ID from the dummy project. <code>planner_highest_consult_id()</code> does this for consults.</p>
-<p>Using <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code>as_tibble()</code> on an <code>ms_object</code>, such as <code>ms_plan_task</code>, will return the properties and details of the object as a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>. For transforming many <code>ms_object</code>s to a data.frame, use <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code>as_tibble()</code> in <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:</p>
+<p>Using <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">tibble::as_tibble()</a></code> on an <code>ms_object</code>, such as <code>ms_plan_task</code>, will return the properties and details of the object as a <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>. For transforming many <code>ms_object</code>s to a data.frame, use <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> or <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">tibble::as_tibble()</a></code> in <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/planner.html">planner_tasks_list</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span> <span class="op">|&gt;</span></span>

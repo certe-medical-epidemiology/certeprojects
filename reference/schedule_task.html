@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.27.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.27.3</span>
       </span>
     </div>
 
@@ -84,7 +84,7 @@
 <span>  <span class="va">weekday</span>,</span>
 <span>  <span class="va">users</span>,</span>
 <span>  <span class="va">file</span>,</span>
-<span>  <span class="va">project_number</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  log <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ref_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -127,11 +127,11 @@
 
 
 <dt id="arg-file">file<a class="anchor" aria-label="anchor" href="#arg-file"></a></dt>
-<dd><p>file name within the project, supports regular expression</p></dd>
+<dd><p>file name, supports regular expression if <code>project_number</code> is set.</p></dd>
 
 
 <dt id="arg-project-number">project_number<a class="anchor" aria-label="anchor" href="#arg-project-number"></a></dt>
-<dd><p>number of the project, must be numeric and exist in <code><a href="planner.html">planner_tasks_list()</a></code></p></dd>
+<dd><p>number of the project, must be numeric and exist in <code><a href="planner.html">planner_tasks_list()</a></code>. Can be <code>NULL</code> to use any existing file set in <code>file</code>.</p></dd>
 
 
 <dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
@@ -197,6 +197,7 @@
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="va">.</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="st">"user"</span>, <span class="st">"file"</span>, <span class="fl">123</span><span class="op">)</span> <span class="co"># every Monday in February at 7h00</span></span></span>
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="st">"user"</span>, <span class="st">"file"</span>, <span class="fl">123</span><span class="op">)</span> <span class="co"># each February 1st if it's a Monday at 7h00</span></span></span>
 <span class="r-in"><span><span class="fu">schedule_task</span><span class="op">(</span><span class="fl">0</span>, <span class="fl">7</span>,<span class="fl">29</span>, <span class="fl">2</span>, <span class="va">.</span>, <span class="st">"user"</span>, <span class="st">"file"</span>, <span class="fl">123</span><span class="op">)</span> <span class="co"># once every 4 years at 7h00</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># examples of combinations</span></span></span>
 <span class="r-in"><span></span></span>

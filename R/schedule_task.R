@@ -26,8 +26,8 @@
 #' @param month one or more values between 1-12, or `.` or `"*"` (or `NULL` or left blank) for each month
 #' @param weekday one or more values between 0-7 (Sunday is both 0 and 7; Monday is 1), or `.` or `"*"` (or `NULL` or left blank) for each weekday
 #' @param users logged in users, must correspond with `Sys.info()["user"]`. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if `check_mail` is `TRUE`.
-#' @param file file name within the project, supports regular expression
-#' @param project_number number of the project, must be numeric and exist in [planner_tasks_list()]
+#' @param file file name, supports regular expression if `project_number` is set. 
+#' @param project_number number of the project, must be numeric and exist in [planner_tasks_list()]. Can be `NULL` to use any existing file set in `file`.
 #' @param log a [logical] to indicate whether this message should be printed: *Running scheduled task at...*
 #' @param account Planner account
 #' @param check_mail a [logical] to indicate whether a project was sent by a previous user, by running [certemail::mail_is_sent()]
@@ -68,6 +68,7 @@
 #' schedule_task(0, 7, 1, 2, 1, "user", "file", 123) # each February 1st if it's a Monday at 7h00
 #' schedule_task(0, 7,29, 2, ., "user", "file", 123) # once every 4 years at 7h00
 #' 
+#' 
 #' # examples of combinations
 #' 
 #' # everyday at 7h00 and 7h30
@@ -93,7 +94,7 @@
 schedule_task <- function(minute, hour, day, month, weekday,
                           users,
                           file,
-                          project_number,
+                          project_number = NULL,
                           log = TRUE,
                           ref_time = Sys.time(),
                           account = connect_planner(),
@@ -187,79 +188,110 @@ schedule_task <- function(minute, hour, day, month, weekday,
     hourminute <- paste0(hour, minute)
   }
   
+  is_project_file <- !is.null(project_number)
+  if (!is_project_file && !file.exists(file)) {
+    message("File does not exist: ", file)
+    certemail::mail(to = sent_to,
+                    cc = NULL,
+                    bcc = NULL,
+                    subject = paste0("! Fout in taakplanner: ", basename(file)),
+                    body = paste0("Bestand `", file, "` bestaat niet. Deze taak stond in de cron gepland om ", format2(rounded_time, "h:MM"), " uur.\n\n",
+                                  "# AVD-details\n\n",
+                                  "Gebruiker: ", get_current_user(), "\n\n",
+                                  "Datum/tijd: ", format2(ref_time, "dddd d mmmm yyyy HH:MM:SS"), "\n\n",
+                                  "# Foutdetails\n\n",
+                                  "cannot open file '", file, "': No such file or directory",
+                                  "\n"),
+                    signature = FALSE,
+                    background = colourpicker("certeroze4"),
+                    identifier = FALSE,
+                    account = sent_account)
+    return(invisible())
+  }
+  
   if (any(hourminute == format2(rounded_time, "HHMM")) &
       any(day == rounded_time$mday) &
       any(month == rounded_time$mon + 1) & # "mon" is month in 0-11
       any(weekday == rounded_time$wday)) {
     
-    project_number <- as.integer(gsub("p", "", project_number))
-    proj_name <- search_project_first_local_then_planner(search_term = project_number, as_title = TRUE, account = NULL)
-    if (is.null(proj_name)) {
-      proj_name <- paste0("p", project_number)
-    }
-    project_file <- project_get_file(filename = file, project_number = project_number, account = account)
-    
-    if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)] && "certemail" %in% rownames(utils::installed.packages())) {
-      mail_sent <- tryCatch(certemail::mail_is_sent(project_number = project_number,
-                                                    date = as.Date(ref_time),
-                                                    account = sent_account),
-                            error = function(e) {
-                              message("Could not determine whether mail of project ", project_number, " was sent, ignoring.\n", e)
-                              NULL
-                            })
-      if (isTRUE(mail_sent)) {
-        message("Project was already sent by mail (", names(mail_sent), "), ignoring")
-        return(invisible())
+    if (is_project_file) {
+      project_number <- as.integer(gsub("p", "", project_number))
+      proj_name <- search_project_first_local_then_planner(search_term = project_number, as_title = TRUE, account = NULL)
+      if (is.null(proj_name)) {
+        proj_name <- paste0("p", project_number)
       }
-      # check log file if previous user had error
-      user1_has_log <- user_has_log(user = users[1],
-                                    date = as.Date(ref_time),
-                                    hour = hour_original,
-                                    minute = minute_original,
-                                    sent_delay = sent_delay,
-                                    log_folder = log_folder)
-      log_error_user1 <- log_contains_error(user = users[1],
-                                            date = as.Date(ref_time),
-                                            hour = hour_original,
-                                            minute = minute_original,
-                                            sent_delay = sent_delay,
-                                            log_folder = log_folder)
-      if (!user1_has_log) {
-        message("No log file of user 1 (", users[1], ") found")
-      } else if (user1_has_log && !log_error_user1) {
-        message("Log file of user 1 (", users[1], ") found: ", names(user1_has_log), "\n",
-                "This log file contains no error, ignoring")
-        return(invisible())
-      }
-      if (length(users) > 2 && get_current_user() == users[3]) {
-        # also check logs of user 2
-        user2_has_log <- user_has_log(user = users[2],
+      project_file <- project_get_file(filename = file, project_number = project_number, account = account)
+      project_mail_txt <- paste0("p", project_number, ", '", basename(project_file), "'")
+      
+      if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)] && "certemail" %in% rownames(utils::installed.packages())) {
+        mail_sent <- tryCatch(certemail::mail_is_sent(project_number = project_number,
+                                                      date = as.Date(ref_time),
+                                                      account = sent_account),
+                              error = function(e) {
+                                message("Could not determine whether mail of project ", project_number, " was sent, ignoring.\n", e)
+                                NULL
+                              })
+        if (isTRUE(mail_sent)) {
+          message("Project was already sent by mail (", names(mail_sent), "), ignoring")
+          return(invisible())
+        }
+        # check log file if previous user had error
+        user1_has_log <- user_has_log(user = users[1],
                                       date = as.Date(ref_time),
                                       hour = hour_original,
                                       minute = minute_original,
-                                      sent_delay = sent_delay * 2,
+                                      sent_delay = sent_delay,
                                       log_folder = log_folder)
-        log_error_user2 <- log_contains_error(user = users[2],
+        log_error_user1 <- log_contains_error(user = users[1],
                                               date = as.Date(ref_time),
                                               hour = hour_original,
                                               minute = minute_original,
-                                              sent_delay = sent_delay * 2,
+                                              sent_delay = sent_delay,
                                               log_folder = log_folder)
-        if (!user2_has_log) {
-          message("No log file of user 2 (", users[2], ") found")
-        } else if (user2_has_log && !log_error_user2) {
-          message("Log file of user 2 (", users[2], ") found: ", names(user2_has_log), "\n",
+        if (!user1_has_log) {
+          message("No log file of user 1 (", users[1], ") found")
+        } else if (user1_has_log && !log_error_user1) {
+          message("Log file of user 1 (", users[1], ") found: ", names(user1_has_log), "\n",
                   "This log file contains no error, ignoring")
           return(invisible())
         }
+        if (length(users) > 2 && get_current_user() == users[3]) {
+          # also check logs of user 2
+          user2_has_log <- user_has_log(user = users[2],
+                                        date = as.Date(ref_time),
+                                        hour = hour_original,
+                                        minute = minute_original,
+                                        sent_delay = sent_delay * 2,
+                                        log_folder = log_folder)
+          log_error_user2 <- log_contains_error(user = users[2],
+                                                date = as.Date(ref_time),
+                                                hour = hour_original,
+                                                minute = minute_original,
+                                                sent_delay = sent_delay * 2,
+                                                log_folder = log_folder)
+          if (!user2_has_log) {
+            message("No log file of user 2 (", users[2], ") found")
+          } else if (user2_has_log && !log_error_user2) {
+            message("Log file of user 2 (", users[2], ") found: ", names(user2_has_log), "\n",
+                    "This log file contains no error, ignoring")
+            return(invisible())
+          }
+        }
+        
+        message("! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
+        notify_redone <- TRUE
       }
       
-      message("! Project p", project_number, " was not sent, now retrying with user ", get_current_user())
-      notify_redone <- TRUE
+    } else {
+      # no project file
+      project_file <- file
+      project_mail_txt <- paste0("'", file, "'")
+      check_mail <- FALSE
+      notify_redone <- FALSE
     }
     
     if (isTRUE(log)) {
-      message("Running scheduled task (p", project_number, ", '", basename(project_file), "') at ", format2(Sys.time(), "h:MM:ss"),
+      message("Running scheduled task (", project_mail_txt, ") at ", format2(Sys.time(), "h:MM:ss"),
               ifelse(isTRUE(check_mail) & isTRUE(backup_user),
                      paste0("\n*** Originally planned at ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))

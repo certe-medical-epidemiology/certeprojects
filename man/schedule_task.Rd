@@ -12,7 +12,7 @@ schedule_task(
   weekday,
   users,
   file,
-  project_number,
+  project_number = NULL,
   log = TRUE,
   ref_time = Sys.time(),
   account = connect_planner(),
@@ -37,9 +37,9 @@ schedule_task(
 
 \item{users}{logged in users, must correspond with \code{Sys.info()["user"]}. Currently logged in user is "\Sexpr{certeprojects:::get_current_user()}". This must be length > 1 if \code{check_mail} is \code{TRUE}.}
 
-\item{file}{file name within the project, supports regular expression}
+\item{file}{file name, supports regular expression if \code{project_number} is set.}
 
-\item{project_number}{number of the project, must be numeric and exist in \code{\link[=planner_tasks_list]{planner_tasks_list()}}}
+\item{project_number}{number of the project, must be numeric and exist in \code{\link[=planner_tasks_list]{planner_tasks_list()}}. Can be \code{NULL} to use any existing file set in \code{file}.}
 
 \item{log}{a \link{logical} to indicate whether this message should be printed: \emph{Running scheduled task at...}}
 
@@ -91,6 +91,7 @@ schedule_task(0, 7, 1, 2, ., "user", "file", 123) # every 1st of February at 7h0
 schedule_task(0, 7, ., 2, 1, "user", "file", 123) # every Monday in February at 7h00
 schedule_task(0, 7, 1, 2, 1, "user", "file", 123) # each February 1st if it's a Monday at 7h00
 schedule_task(0, 7,29, 2, ., "user", "file", 123) # once every 4 years at 7h00
+
 
 # examples of combinations
 

@@ -21,7 +21,7 @@
 #' 
 #' These functions handle validation and authorisation of files stored on a SharePoint site via the Microsoft Graph API, updating corresponding metadata fields and optionally interacting with Microsoft Planner for workflow management.
 #' @param drive_item a Drive Item object of a file
-#' @param local_file_path a location of the local file. If set, this will allow a direct Positron link on the attachment of the Planner task.
+#' @param local_file a location of the local file. If set, this will allow a direct Positron link on the attachment of the Planner task.
 #' @param user a Certe user, who is member of the SharePoint site where `file` is stored
 #' @param authorise_request option to request for authorisation after validation
 #' @param teams a Teams account, e.g. outcome of [connect_teams()]

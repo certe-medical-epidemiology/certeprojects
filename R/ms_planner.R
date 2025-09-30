@@ -830,17 +830,17 @@ planner_task_authorise <- function(task,
 #' @param current_task_id Project (p-)number of the project to update
 #' @rdname planner
 #' @export
-planner_move_task <- function(current_task_id = project_get_current_id(ask = TRUE), planner = connect_planner()) {
+planner_move_task <- function(current_task_id = project_get_current_id(ask = TRUE), account = connect_planner()) {
   if (is.null(current_task_id) || isTRUE(current_task_id %in% c("", NA))) {
     warning("Task not found: ", current_task_id)
     return(invisible())
   }
   
-  buckets <- planner_buckets_list(account = planner)
+  buckets <- planner_buckets_list(account = account)
   if (!is.null(attributes(current_task_id)$task)) {
     current_task <- attributes(current_task_id)$task
   } else {
-    current_task <- planner_task_find(paste0("p", gsub("^p", "", current_task_id)), account = planner)
+    current_task <- planner_task_find(paste0("p", gsub("^p", "", current_task_id)), account = account)
   }
   bucket_id <- get_azure_property(current_task, "bucketId")
   buckets_df <- data.frame(id = get_azure_property(buckets, "id"),
@@ -863,7 +863,7 @@ planner_move_task <- function(current_task_id = project_get_current_id(ask = TRU
     return(invisible())
   }
   move_to <- buckets_df$name[move_to]
-  planner_task_update(current_task, bucket_name = move_to, account = planner)
+  planner_task_update(current_task, bucket_name = move_to, account = account)
   message("Taak verplaatst naar '", move_to, "'.")
 }
 

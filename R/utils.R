@@ -20,6 +20,10 @@
 # this is the package environment. The Microsoft 365 connection will be saved to this env.
 pkg_env <- new.env(hash = FALSE)
 
+globalVariables(c("is_like",
+                  "levenshtein_delta",
+                  "name",
+                  "sorting"))
 
 #' Get Azure Property
 #' 
@@ -43,11 +47,6 @@ get_azure_property <- function(x, property) {
     out
   }
 }
-
-
-globalVariables(c("is_like",
-                  "levenshtein_delta",
-                  "name"))
 
 count_lines <- function(x) {
   vapply(FUN.VALUE = integer(1),
@@ -151,7 +150,7 @@ retrieve_versions <- function(drive_item, account = connect_teams()) {
   message("Downloading ", length(versions), " file versions..", appendLF = FALSE)
   for (i in seq_len(length(versions))) {
     message(".", appendLF = FALSE)
-    download.file(url = versions_url[i], destfile = versions_path[i], quiet = TRUE)
+    utils::download.file(url = versions_url[i], destfile = versions_path[i], quiet = TRUE)
   }
   message("OK")
   

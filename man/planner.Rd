@@ -127,7 +127,7 @@ planner_task_authorise(
 
 planner_move_task(
   current_task_id = project_get_current_id(ask = TRUE),
-  planner = connect_planner()
+  account = connect_planner()
 )
 
 planner_create_project_from_path(

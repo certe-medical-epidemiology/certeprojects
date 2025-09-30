@@ -31,6 +31,8 @@ authorise_file(
 \arguments{
 \item{drive_item}{a Drive Item object of a file}
 
+\item{local_file}{a location of the local file. If set, this will allow a direct Positron link on the attachment of the Planner task.}
+
 \item{planner}{a Planner account, e.g. outcome of \code{\link[=connect_planner]{connect_planner()}}}
 
 \item{user}{a Certe user, who is member of the SharePoint site where \code{file} is stored}
@@ -38,8 +40,6 @@ authorise_file(
 \item{authorise_request}{option to request for authorisation after validation}
 
 \item{teams}{a Teams account, e.g. outcome of \code{\link[=connect_teams]{connect_teams()}}}
-
-\item{local_file_path}{a location of the local file. If set, this will allow a direct Positron link on the attachment of the Planner task.}
 }
 \description{
 These functions handle validation and authorisation of files stored on a SharePoint site via the Microsoft Graph API, updating corresponding metadata fields and optionally interacting with Microsoft Planner for workflow management.

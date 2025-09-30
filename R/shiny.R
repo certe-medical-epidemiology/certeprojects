@@ -23,7 +23,7 @@
 #' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
 #' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
-#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong updateSelectInput updateTextAreaInput fileInput
+#' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong updateSelectInput updateTextAreaInput fileInput reactive updateSelectizeInput req
 #' @importFrom shinyjs useShinyjs enable disable show hide
 #' @importFrom shinyWidgets searchInput awesomeRadio updateAwesomeRadio
 #' @importFrom dplyr select pull filter if_else
@@ -908,7 +908,7 @@ shiny_item_picker <- function(values, oversized = character(0), title = "", subt
 #' This compares two text files
 #' @param files character vector, allowed to be named
 #' @param original_file original file path to restore file to
-#' @importFrom shiny fluidPage tags h4 HTML checkboxInput div fluidRow column selectInput h4 uiOutput renderUI p downloadButton actionButton icon stopApp
+#' @importFrom shiny fluidPage tags h4 HTML checkboxInput div fluidRow column selectInput h4 uiOutput renderUI p downloadButton actionButton icon stopApp downloadHandler
 #' @importFrom shinyWidgets awesomeCheckbox
 #' @importFrom rstudioapi showQuestion showDialog
 #' @export

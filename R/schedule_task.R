@@ -240,14 +240,13 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                       date = as.Date(ref_time),
                                       hour = hour_original,
                                       minute = minute_original,
-                                      sent_delay = sent_delay,
+                                      sent_delay = 0,
                                       log_folder = log_folder)
-        log_error_user1 <- log_contains_error(user = users[1],
-                                              date = as.Date(ref_time),
-                                              hour = hour_original,
-                                              minute = minute_original,
-                                              sent_delay = sent_delay,
-                                              log_folder = log_folder)
+        if (isTRUE(user1_has_log)) {
+          log_error_user1 <- log_contains_error(log = names(user1_has_log))
+        } else {
+          log_error_user1 <- TRUE
+        }
         if (!user1_has_log) {
           message("No log file of user 1 (", users[1], ") found")
         } else if (user1_has_log && !log_error_user1) {
@@ -382,28 +381,13 @@ user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
                          full.names = TRUE,
                          recursive = FALSE)
   stats::setNames(length(log_file) > 0,
-                  paste0(log_file, collapse = ", "))
+                  log_file[1])
 }
 
-log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder) {
-  minute <- as.integer(minute) - sent_delay
-  hour <- as.integer(hour)
-  
-  hour[minute < 0] <- hour[minute < 0] - 1
-  minute[minute < 0] <- minute[minute < 0] + 60
-  minute <- formatC(minute, flag = 0, width = 2)
-  hour <- formatC(hour, flag = 0, width = 2)
-  
-  path <- paste0(log_folder, format2(Sys.Date(), "yyyy/mm"), "/", user, "/")
-  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
-                    ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
-                    ").*[.]Rout")
-  log_file <- list.files(path = path,
-                         pattern = pattern,
-                         full.names = TRUE,
-                         recursive = FALSE)
-  if (length(log_file) == 0) {
+log_contains_error <- function(log_file) {
+  if (!file.exists(log_file)) {
     # no files, that's bad (if project runs, logs should be kept - or computer was even turned off)
+    message("Log file ", log_file, " not found, returning TRUE for log_contains_error()")
     return(TRUE)
   }
   failed <- logical(length(log_file))
@@ -411,5 +395,5 @@ log_contains_error <- function(user, date, hour, minute, sent_delay, log_folder)
     lines <- readLines(log_file[i])
     failed[i] <- any(lines %like% "Could not connect", na.rm = TRUE) | any(grepl(x = lines, pattern = "Error|ERROR", ignore.case = FALSE), na.rm = TRUE)
   }
-  any(failed, na.rm = TRUE)
+  stats::setNames(any(failed, na.rm = TRUE), log_file)
 }

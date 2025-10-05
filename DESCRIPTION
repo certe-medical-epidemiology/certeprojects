@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.27.5
+Version: 1.28.0
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -31,6 +31,7 @@ Imports:
   httr (>= 1.4.0),
   jsonlite (>= 1.7.2),
   knitr (>= 1.40),
+  lubridate (>= 1.9.0),
   Microsoft365R (>= 2.4.0),
   miniUI (>= 0.1.1),
   pins (>= 1.1.0),
@@ -44,7 +45,6 @@ Suggests:
   certetoolbox,
   certemail,
   clipr (>= 0.8.0),
-  lubridate (>= 1.9.0),
   msgxtractr,
   rlang (>= 1.1.0),
   rmarkdown,

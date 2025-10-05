@@ -51,6 +51,7 @@
 #' @export
 #' @importFrom certestyle format2 colourpicker
 #' @importFrom knitr current_input
+#' @importFrom lubridate round_date minutes hour minute
 #' @examples
 #' something_to_run <- function() {
 #'   1 + 1
@@ -156,27 +157,24 @@ schedule_task <- function(minute, hour, day, month, weekday,
   backup_user <- FALSE
   if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)]) {
     backup_user <- TRUE
-    minute <- minute + (which(users == get_current_user()) - 1) * sent_delay
-    # if the minute-delay went over the 59th minute, set hour to 1 later
-    if (length(minute) == 1 & length(hour) > 1) {
-      minute <- rep(minute, length(hour))
-    }
-    if (length(minute) > 1 & length(hour) == 1) {
-      hour <- rep(hour, length(minute))
-    }
-    if (length(minute) > 1 & length(hour) > 1) {
-      hour <- rep(hour, length(minute))
-    }
-    hour[minute > 59] <- hour[minute > 59] + 1
-    minute[minute > 59] <- minute[minute > 59] - 60
+    
+    # compute the total delay in minutes for this user
+    delay_minutes <- (which(users == get_current_user()) - 1) * sent_delay
+    
+    # use lubridate to handle time arithmetic properly
+    # build POSIXct times representing today's scheduled hour:minute
+    scheduled_times <- as.POSIXct(ref_time)
+    
+    # add delay using lubridate::minutes()
+    delayed_times <- scheduled_times + lubridate::minutes(delay_minutes)
+    
+    # extract new hour and minute components
+    hour <- lubridate::hour(delayed_times)
+    minute <- lubridate::minute(delayed_times)
   }
   
-  if ("lubridate" %in% rownames(utils::installed.packages())) {
-    # round time, since Windows Task Scheduler is sometimes 1-10 seconds off
-    rounded_time <- lubridate::round_date(ref_time, unit = "1 minute")
-  } else {
-    rounded_time <- ref_time
-  }
+  # round time, since Windows Task Scheduler is sometimes 1-10 seconds off
+  rounded_time <- round_date(ref_time, unit = "1 minute")
   rounded_time <- as.POSIXlt(rounded_time)
   
   minute <- formatC(minute, flag = 0, width = 2)
@@ -243,7 +241,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                       sent_delay = 0,
                                       log_folder = log_folder)
         if (isTRUE(user1_has_log)) {
-          log_error_user1 <- log_contains_error(log = names(user1_has_log))
+          log_error_user1 <- log_contains_error(log_file = names(user1_has_log))
         } else {
           log_error_user1 <- TRUE
         }
@@ -262,12 +260,11 @@ schedule_task <- function(minute, hour, day, month, weekday,
                                         minute = minute_original,
                                         sent_delay = sent_delay * 2,
                                         log_folder = log_folder)
-          log_error_user2 <- log_contains_error(user = users[2],
-                                                date = as.Date(ref_time),
-                                                hour = hour_original,
-                                                minute = minute_original,
-                                                sent_delay = sent_delay * 2,
-                                                log_folder = log_folder)
+          if (isTRUE(user2_has_log)) {
+            log_error_user2 <- log_contains_error(log_file = names(user2_has_log))
+          } else {
+            log_error_user2 <- TRUE
+          }
           if (!user2_has_log) {
             message("No log file of user 2 (", users[2], ") found")
           } else if (user2_has_log && !log_error_user2) {
@@ -363,30 +360,42 @@ schedule_task <- function(minute, hour, day, month, weekday,
   }
 }
 
+#' @importFrom lubridate minutes hour minute
 user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
-  minute <- as.integer(minute) - sent_delay
-  hour <- as.integer(hour)
+  # Convert to full POSIXct times for the given date
+  scheduled_times <- as.POSIXct(paste0(format(date), " ",
+                                       formatC(hour, flag = 0, width = 2), ":", formatC(minute, flag = 0, width = 2)))
   
-  hour[minute < 0] <- hour[minute < 0] - 1
-  minute[minute < 0] <- minute[minute < 0] + 60
+  # Subtract delay (in minutes) using lubridate
+  adjusted_times <- scheduled_times - minutes(sent_delay)
+  
+  # Extract adjusted hours and minutes
+  hour <- hour(adjusted_times)
+  minute <- minute(adjusted_times)
+  
+  # Format with leading zeros
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
+  # Construct path and pattern as before
   path <- file.path(log_folder, format2(Sys.Date(), "yyyy/mm"), user)
   pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
                     ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
                     ").*[.]Rout")
+  
   log_file <- list.files(path = path,
                          pattern = pattern,
                          full.names = TRUE,
                          recursive = FALSE)
+  
   stats::setNames(length(log_file) > 0,
                   log_file[1])
 }
 
+
 log_contains_error <- function(log_file) {
   if (!file.exists(log_file)) {
-    # no files, that's bad (if project runs, logs should be kept - or computer was even turned off)
+    # no files, that's bad (if project runs, logs should be kept - or perhaps computer was turned off?)
     message("Log file ", log_file, " not found, returning TRUE for log_contains_error()")
     return(TRUE)
   }

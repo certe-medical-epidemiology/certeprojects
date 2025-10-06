@@ -163,14 +163,15 @@ schedule_task <- function(minute, hour, day, month, weekday,
     
     # use lubridate to handle time arithmetic properly
     # build POSIXct times representing today's scheduled hour:minute
-    scheduled_times <- as.POSIXct(ref_time)
+    scheduled_datetime <- as.POSIXct(paste0(format(as.Date(ref_time)), " ",
+                                         formatC(hour, flag = 0, width = 2), ":", formatC(minute, flag = 0, width = 2)))
     
-    # add delay using lubridate::minutes()
-    delayed_times <- scheduled_times + lubridate::minutes(delay_minutes)
+    # add delay using minutes()
+    delayed_times <- scheduled_datetime + minutes(delay_minutes)
     
     # extract new hour and minute components
-    hour <- lubridate::hour(delayed_times)
-    minute <- lubridate::minute(delayed_times)
+    hour <- hour(delayed_times)
+    minute <- minute(delayed_times)
   }
   
   # round time, since Windows Task Scheduler is sometimes 1-10 seconds off
@@ -235,9 +236,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
         }
         # check log file if previous user had error
         user1_has_log <- user_has_log(user = users[1],
-                                      date = as.Date(ref_time),
-                                      hour = hour_original,
-                                      minute = minute_original,
+                                      originally_scheduled = scheduled_datetime,
                                       sent_delay = 0,
                                       log_folder = log_folder)
         if (isTRUE(user1_has_log)) {
@@ -255,10 +254,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
         if (length(users) > 2 && get_current_user() == users[3]) {
           # also check logs of user 2
           user2_has_log <- user_has_log(user = users[2],
-                                        date = as.Date(ref_time),
-                                        hour = hour_original,
-                                        minute = minute_original,
-                                        sent_delay = sent_delay * 2,
+                                        originally_scheduled = scheduled_datetime,
+                                        sent_delay = sent_delay,
                                         log_folder = log_folder)
           if (isTRUE(user2_has_log)) {
             log_error_user2 <- log_contains_error(log_file = names(user2_has_log))
@@ -287,7 +284,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
     }
     
     if (isTRUE(log)) {
-      message("Running scheduled task (", project_mail_txt, ") at ", format2(Sys.time(), "h:MM:ss"),
+      message("Running scheduled task (", project_mail_txt, ") at ", format2(ref_time, "h:MM:ss"),
               ifelse(isTRUE(check_mail) & isTRUE(backup_user),
                      paste0("\n*** Originally planned at ", format2(rounded_time - (which(users == get_current_user()) - 1) * sent_delay * 60, "h:MM:ss"), " ***"),
                      ""))
@@ -361,25 +358,17 @@ schedule_task <- function(minute, hour, day, month, weekday,
 }
 
 #' @importFrom lubridate minutes hour minute
-user_has_log <- function(user, date, hour, minute, sent_delay, log_folder) {
-  # Convert to full POSIXct times for the given date
-  scheduled_times <- as.POSIXct(paste0(format(date), " ",
-                                       formatC(hour, flag = 0, width = 2), ":", formatC(minute, flag = 0, width = 2)))
+user_has_log <- function(user, originally_scheduled, sent_delay, log_folder) {
+  originally_scheduled <- originally_scheduled + minutes(sent_delay)
   
-  # Subtract delay (in minutes) using lubridate
-  adjusted_times <- scheduled_times - minutes(sent_delay)
+  hour <- hour(originally_scheduled)
+  minute <- minute(originally_scheduled)
   
-  # Extract adjusted hours and minutes
-  hour <- hour(adjusted_times)
-  minute <- minute(adjusted_times)
-  
-  # Format with leading zeros
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
-  # Construct path and pattern as before
-  path <- file.path(log_folder, format2(Sys.Date(), "yyyy/mm"), user)
-  pattern <- paste0(user, ".*", format2(date, "yyyy[-]mm[-]dd"),
+  path <- file.path(log_folder, format2(as.Date(originally_scheduled), "yyyy/mm"), user)
+  pattern <- paste0(user, ".*", format2(as.Date(originally_scheduled), "yyyy[-]mm[-]dd"),
                     ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
                     ").*[.]Rout")
   

@@ -85,3 +85,28 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
 #' @rdname render
 #' @export
 knit <- render
+
+#' @rdname render
+#' @inheritParams project_get_file
+#' @param ... arguments passed on to [certeprojects::render()]
+#' @details
+#' [render_sharepoint()] downloads a SharePoint project file to a local temporary folder, then renders it.
+#' @export
+render_sharepoint <- function(input_file,
+                              output_file = NULL,
+                              quiet = TRUE,
+                              as_job = "auto",
+                              account = connect_teams(),
+                              ...) {
+  file_local <- sharepoint_to_local_temp(full_path = input_file, account = account)
+  out <- render(file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
+  
+  # upload the result
+  tryCatch({
+    cli::cli_process_start(paste0("Uploading to SharePoint: '", basename(out), "'"))
+    teams_projects_channel(account = account)$upload(
+      src = tools::file_path_as_absolute(out),
+      dest = file.path(dirname(file_local), basename(out)))
+    cli::cli_process_done(msg_done = paste0("Uploading to SharePoint: '", basename(out), "'"))
+  }, error = function(e) cli::cli_process_failed(msg = paste0("Uploading to SharePoint: ", conditionMessage(e))))
+}

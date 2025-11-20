@@ -13,6 +13,7 @@ get_microsoft365_token(
   tenant = read_secret("azure.tenant"),
   app_id = read_secret("azure.app_id"),
   auth_type = read_secret("azure.auth_type"),
+  R_AZURE_DATA_DIR = NULL,
   ...,
   overwrite = TRUE,
   error_on_fail = TRUE,
@@ -38,6 +39,8 @@ connect_teams(team_name = read_secret("team.name"), overwrite = FALSE, ...)
 \item{app_id}{the Azure app id to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
 
 \item{auth_type}{the authentication method to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
+
+\item{R_AZURE_DATA_DIR}{the (environment value of the) path to the token file(s), as explained in \code{\link[AzureAuth:AzureR_dir]{AzureAuth::AzureR_dir()}}}
 
 \item{...}{arguments passed on to \code{\link[=get_microsoft365_token]{get_microsoft365_token()}}}
 

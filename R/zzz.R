@@ -36,8 +36,8 @@
            sort(nms[!is.na(vis)])
          }, error = function(e) NULL),
          
-         teams_project_folder = tryCatch(certeprojects::teams_projects_channel(),
-                                         error = function(e) NULL))),
+         projects_channel = tryCatch(certeprojects::teams_projects_channel(),
+                                     error = function(e) NULL))),
     silent = TRUE)
   
   # save handler for Teams files

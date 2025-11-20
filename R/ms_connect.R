@@ -24,6 +24,7 @@
 #' @param tenant the tenant to use, passed on to [AzureGraph::create_graph_login()]
 #' @param app_id the Azure app id to use, passed on to [AzureGraph::create_graph_login()]
 #' @param auth_type the authentication method to use, passed on to [AzureGraph::create_graph_login()]
+#' @param R_AZURE_DATA_DIR the (environment value of the) path to the token file(s), as explained in [AzureAuth::AzureR_dir()]
 #' @param ... other arguments passed on to [AzureGraph::create_graph_login()]
 #' @param error_on_fail a [logical] to indicate whether an error must be thrown if no connection can be made
 #' @param team_name name of the team, can be left blank to connect to an individual planner
@@ -71,6 +72,7 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
                                    tenant = read_secret("azure.tenant"),
                                    app_id = read_secret("azure.app_id"),
                                    auth_type = read_secret("azure.auth_type"),
+                                   R_AZURE_DATA_DIR = NULL,
                                    ...,
                                    overwrite = TRUE,
                                    error_on_fail = TRUE,
@@ -90,6 +92,11 @@ get_microsoft365_token <- function(scope = read_secret("azure.scope_list"),
   }
   if (is.null(auth_type) || auth_type == "") {
     auth_type <- NULL
+  }
+  
+  if (!is.null(R_AZURE_DATA_DIR)) {
+    # this will set the enviromental value, so that AzureAuth::AzureR_dir() will search there for token files
+    Sys.setenv(R_AZURE_DATA_DIR = R_AZURE_DATA_DIR)
   }
   
   if (isTRUE(overwrite) || is.null(pkg_env$azure_token) || (!is.null(pkg_env$azure_token) && !pkg_env$azure_token$validate())) {

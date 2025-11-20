@@ -1,6 +1,6 @@
 Package: certeprojects
 Title: A Certe R Package for Department Projects
-Version: 1.28.1
+Version: 1.29.0
 Authors@R: c(
   person(given = c("Matthijs", "S."), 
          family = "Berends",
@@ -44,6 +44,7 @@ Imports:
 Suggests: 
   certetoolbox,
   certemail,
+  cli,
   clipr (>= 0.8.0),
   msgxtractr,
   rlang (>= 1.1.0),

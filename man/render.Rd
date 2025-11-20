@@ -3,11 +3,21 @@
 \name{render}
 \alias{render}
 \alias{knit}
+\alias{render_sharepoint}
 \title{Knit R Markdown or Quarto Document using Quarto}
 \usage{
 render(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
 
 knit(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
+
+render_sharepoint(
+  input_file,
+  output_file = NULL,
+  quiet = TRUE,
+  as_job = "auto",
+  account = connect_teams(),
+  ...
+)
 }
 \arguments{
 \item{input_file}{file to be rendered, can be R Markdown (\code{.Rmd}) or Quarto (\code{.qmd}), or a lot of other formats such as \code{.md}, \code{.ipynb} and \href{https://quarto.org/docs/reference/}{many other formats that Quarto supports}.}
@@ -30,11 +40,15 @@ which will render individual documents normally and projects as
 background jobs. Use the \code{quarto.render_as_job} \R option to control
 the default globally.}
 
-\item{...}{other arguments passed on to \code{\link[quarto:quarto_render]{quarto::quarto_render()}}.}
+\item{...}{arguments passed on to \code{\link[=render]{render()}}}
+
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 }
 \description{
 Runs input files through Quarto, and allows Quarto to work with full paths (where Quarto itself requires relative paths). This function essentially replaces both \code{\link[rmarkdown:render]{rmarkdown::render()}} and \code{\link[quarto:quarto_render]{quarto::quarto_render()}}.
 }
 \details{
 Functions \code{\link[=knit]{knit()}} and \code{\link[=render]{render()}} are identical.
+
+\code{\link[=render_sharepoint]{render_sharepoint()}} downloads a SharePoint project file to a local temporary folder, then renders it.
 }

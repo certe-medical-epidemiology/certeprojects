@@ -29,7 +29,7 @@
 #' @param file file name, supports regular expression if `project_number` is set. 
 #' @param project_number number of the project, must be numeric and exist in [planner_tasks_list()]. Can be `NULL` to use any existing file set in `file`.
 #' @param log a [logical] to indicate whether this message should be printed: *Running scheduled task at...*
-#' @param account Planner account
+#' @param account Teams account
 #' @param check_mail a [logical] to indicate whether a project was sent by a previous user, by running [certemail::mail_is_sent()]
 #' @param check_log a [logical] to indicate whether a log file exist for the project from a previous user
 #' @param sent_to users to send error mail to
@@ -98,7 +98,7 @@ schedule_task <- function(minute, hour, day, month, weekday,
                           project_number = NULL,
                           log = TRUE,
                           ref_time = Sys.time(),
-                          account = connect_planner(),
+                          account = connect_teams(),
                           check_mail = length(users) > 1,
                           check_log = length(users) > 1,
                           sent_delay = 15,
@@ -215,11 +215,8 @@ schedule_task <- function(minute, hour, day, month, weekday,
     
     if (is_project_file) {
       project_number <- as.integer(gsub("p", "", project_number))
-      proj_name <- search_project_first_local_then_planner(search_term = project_number, as_title = TRUE, account = NULL)
-      if (is.null(proj_name)) {
-        proj_name <- paste0("p", project_number)
-      }
       project_file <- project_get_file(filename = file, project_number = project_number, account = account)
+      proj_name <- dirname(project_file)
       project_mail_txt <- paste0("p", project_number, ", '", basename(project_file), "'")
       
       if (isTRUE(check_mail) && get_current_user() %in% users[2:length(users)] && "certemail" %in% rownames(utils::installed.packages())) {
@@ -295,9 +292,17 @@ schedule_task <- function(minute, hour, day, month, weekday,
     tryCatch({
       Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
       if (project_file %like% "[.]R$") {
-        source(project_file)
+        if (is_project_file) {
+          source_sharepoint(project_file, account = account) # certeprojects function
+        } else {
+          source(project_file)
+        }
       } else {
-        certeprojects::render(project_file)
+        if (is_project_file) {
+          render_sharepoint(project_file, account = account) # certeprojects function
+        } else {
+          render(project_file) # certeprojects function
+        }
       }
       current_file <- current_input()
       if (is.null(current_file) || current_file == "") {
@@ -353,6 +358,11 @@ schedule_task <- function(minute, hour, day, month, weekday,
     })
   } else {
     # user not required to run project
+    message("No time for this user to run: required ",
+            "at ", paste(hourminute, collapse = "/"), " (now ", format2(rounded_time, "HHMM"), ") ",
+            "and day ", paste(day, collapse = "/"), " (now ", rounded_time$mday, ") ",
+            "and month ", paste(month, collapse = "/"), " (now ", rounded_time$mon + 1, ") ",
+            "and weekday ", paste(weekday, collapse = "/"), " (now ", rounded_time$wday, ")")
     return(invisible())
   }
 }

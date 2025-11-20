@@ -15,7 +15,7 @@ schedule_task(
   project_number = NULL,
   log = TRUE,
   ref_time = Sys.time(),
-  account = connect_planner(),
+  account = connect_teams(),
   check_mail = length(users) > 1,
   check_log = length(users) > 1,
   sent_delay = 15,
@@ -45,7 +45,7 @@ schedule_task(
 
 \item{ref_time}{time to use for reference, defaults to \code{\link[=Sys.time]{Sys.time()}}}
 
-\item{account}{Planner account}
+\item{account}{Teams account}
 
 \item{check_mail}{a \link{logical} to indicate whether a project was sent by a previous user, by running \code{\link[certemail:mail]{certemail::mail_is_sent()}}}
 

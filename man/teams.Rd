@@ -3,6 +3,7 @@
 \name{teams}
 \alias{teams}
 \alias{teams_projects_channel}
+\alias{teams_get_project_folders}
 \alias{teams_new_project}
 \alias{teams_browse_project}
 \alias{teams_list_project_files}
@@ -28,6 +29,11 @@
 teams_projects_channel(
   projects_channel_id = read_secret("teams.projects.channel_id"),
   overwrite = FALSE,
+  account = connect_teams()
+)
+
+teams_get_project_folders(
+  projects_channel_id = read_secret("teams.projects.channel_id"),
   account = connect_teams()
 )
 

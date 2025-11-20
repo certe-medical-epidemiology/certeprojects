@@ -30,7 +30,7 @@
 #' @rdname project_properties
 #' @importFrom rstudioapi getSourceEditorContext showPrompt isAvailable
 #' @export
-project_get_current_id <- function(ask = NULL, account = connect_planner()) {
+project_get_current_id <- function(ask = NULL, account = connect_teams()) {
   # first try project number from full file location:
   # /folder/p123 Name.Rmd
   # /p123 folder/Name.Rmd
@@ -55,7 +55,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
       # still NULL
       search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
       if (is_empty(search_term)) return(invisible(FALSE))
-      id <- search_project_first_local_then_planner(search_term = search_term, account = account)
+      id <- search_project_folder(search_term = search_term, account = account)
       if (is_empty(id)) {
         return(NULL)
       }
@@ -73,7 +73,7 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   if (all(length(id) == 0 | is.na(id)) && interactive() && is.null(ask)) {
     search_term <- showPrompt("Zoekterm taak", "Zoekterm om naar een taak te zoeken:", "")
     if (is_empty(search_term)) return(invisible(FALSE))
-    id <- search_project_first_local_then_planner(search_term = search_term, account = account)
+    id <- search_project_folder(search_term = search_term, account = account)
     if (is_empty(id)) {
       return(NULL)
     }
@@ -92,8 +92,8 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
                             paste0("p", fix_id(id)),
                             search_term)
     }
-    id <- search_project_first_local_then_planner(search_term = search_term,
-                                                  account = account)
+    id <- search_project_folder(search_term = search_term,
+                                account = account)
     if (is_empty(id)) {
       return(NULL)
     }
@@ -101,41 +101,20 @@ project_get_current_id <- function(ask = NULL, account = connect_planner()) {
   fix_id(id)
 }
 
-# only needed when projects are also locally available (on Z or local OneDrive)
-search_project_first_local_then_planner <- function(search_term, as_title = FALSE, account = connect_planner()) {
-  if (dir.exists(get_projects_path()) && search_term %like% "p?[0-9]+") {
-    projects <- list.dirs(get_projects_path(), full.names = FALSE, recursive = FALSE)
-    search_parts <- unlist(strsplit(as.character(search_term), "[^a-zA-Z0-9]"))
-    if (any(search_parts %like% "^p?[0-9]+$", na.rm = TRUE)) {
-      # term contains project number, only keep that
-      search_term2 <- search_parts[search_parts %like% "^p?[0-9]+$"][1]
-      id <- projects[projects %like% paste0(search_term2, "$")]
-      if (length(id) > 0) {
-        if (as_title == TRUE) {
-          return(id[1])
-        } else {
-          return(as.integer(gsub(".*p([0-9]+).*", "\\1", id[1])))
-        }
-      }
-    }
+search_project_folder <- function(search_term, as_title = FALSE, account = connect_teams()) {
+  if (search_term %like% "^p?[0-9]+") {
+    search_term <- paste0("p", gsub("p", "", search_term), "$")
   }
-  if (is.null(account)) {
-    return(NULL)
-  }
-  # didn't find it locally, now try via MS Planner
-  task <- planner_task_search(search_term = search_term,
-                              limit = 25,
-                              include_completed = TRUE,
-                              include_description = FALSE,
-                              account = account)
-  if (is_empty(task)) {
-    return(NULL)
-  } else {
+  folders <- teams_get_project_folders(account = account)
+  hit <- folders[folders %like% search_term]
+  if (length(hit) > 0) {
     if (as_title == TRUE) {
-      return(task |> get_azure_property("title"))
+      return(hit[1])
     } else {
-      return(planner_retrieve_project_id(task))
+      return(as.integer(gsub(".*p([0-9]+).*", "\\1", hit[1])))
     }
+  } else {
+    return(NULL)
   }
 }
 
@@ -155,45 +134,25 @@ project_identifier <- function(project_number = project_get_current_id()) {
 }
 
 #' @rdname project_properties
+#' @inheritParams teams_get_project_folders
 #' @export
 project_get_folder <- function(project_number = project_get_current_id(),
-                               account = connect_planner()) {
-  project_number <- gsub("[^0-9]", "", project_number)
-  basename(project_get_folder_full(project_number = project_number, account = account))
-}
-
-#' @rdname project_properties
-#' @inheritParams planner_create_project_from_path
-#' @export
-project_get_folder_full <- function(project_number = project_get_current_id(),
-                                    projects_path = get_projects_path(),
-                                    account = connect_planner()) {
+                               account = connect_teams()) {
   if (is_empty(project_number)) {
     return(NA_character_)
   }
   if (!is.null(attributes(project_number)$task)) {
     # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
-    project_title <- attributes(project_number)$task |> get_azure_property("title")
+    attributes(project_number)$task |> get_azure_property("title")
   } else {
-    project_title <- search_project_first_local_then_planner(project_number, as_title = TRUE, account = account)
-  }
-  
-  folders <- list.dirs(projects_path,
-                       full.names = FALSE,
-                       recursive = FALSE)
-  folder <- folders[folders == project_title][1]
-  if (!is.na(folder)) {
-    paste0(file.path(projects_path, folder), .Platform$file.sep)
-  } else {
-    warning("Project folder not found: \"", file.path(projects_path, project_title), "\"", call. = FALSE)
-    NA_character_
+    search_project_folder(project_number, as_title = TRUE, account = account)
   }
 }
 
 #' @rdname project_properties
 #' @export
 project_get_title <- function(project_number = project_get_current_id(),
-                              account = connect_planner()) {
+                              account = connect_teams()) {
   if (is_empty(project_number)) {
     return(NA_character_)
   }
@@ -207,27 +166,23 @@ project_get_title <- function(project_number = project_get_current_id(),
 project_get_file <- function(filename = ".*",
                              project_number = project_get_current_id(),
                              fixed = FALSE,
-                             account = connect_planner()) {
+                             account = connect_teams()) {
+  channel <- teams_projects_channel(account = account)
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number, account = account)
+  folder <- project_get_folder(project_number = project_number, account = account)
   filename <- filename[1L]
   if (isTRUE(fixed)) {
     filename <- paste0("^", filename, "$")
   }
-  if (!is.na(folder)) {
+  if (!is.null(folder)) {
     # regex, try to find file
-    files_found <- sort(list.files(path = folder,
-                                   pattern = filename,
-                                   full.names = TRUE,
-                                   recursive = FALSE,
-                                   all.files = FALSE,
-                                   include.dirs = FALSE,
-                                   ignore.case = TRUE))
-    files_found <- files_found[!basename(files_found) %like% "^~[$]"]
-    files_found_base <- basename(files_found)
+    files <- channel$get_item(folder)$list_items(info = "all")
     # sort on last changed (desc):
-    files_found_base <- files_found_base[order(file.mtime(files_found), files_found, decreasing = TRUE)]
-    files_found <- files_found[order(file.mtime(files_found), files_found, decreasing = TRUE)]
+    files$lastModifiedDateTime <- as.POSIXct(gsub("T", " ", files$lastModifiedDateTime))
+    files <- files[order(files$lastModifiedDateTime, decreasing = TRUE), ]
+    
+    files_found <- files$name[files$name %like% filename]
+    files_found <- files_found[!basename(files_found) %like% "^~[$]"]
     
     if (length(files_found) == 0) {
       warning("No files found")
@@ -236,11 +191,9 @@ project_get_file <- function(filename = ".*",
     if (length(files_found) > 0) {
       if (length(files_found) > 1) {
         if (interactive()) {
-          choice <- utils::menu(choices = paste0(font_bold(files_found_base, collapse = NULL),
-                                                 " (",
-                                                 count_lines(files_found), 
-                                                 " lines, last changed: ",
-                                                 font_blue(format2(file.mtime(files_found), "yyyy-mm-dd HH:MM"), collapse = NULL),
+          choice <- utils::menu(choices = paste0(font_bold(files_found, collapse = NULL),
+                                                 " (last changed: ",
+                                                 font_blue(format2(files$lastModifiedDateTime, "yyyy-mm-dd HH:MM"), collapse = NULL),
                                                  ")"),
                                 title = paste0("Files found in ", folder, " (0 to cancel):\n(sorted on last changed)"))
           if (choice == 0) {
@@ -248,7 +201,7 @@ project_get_file <- function(filename = ".*",
           }
           filename <- files_found[choice]
         } else {
-          message("Files found:\n  - ", paste(files_found_base, collapse = "\n  - "),
+          message("Files found:\n  - ", paste(files_found, collapse = "\n  - "),
                   "\nSelecting first match.")
           filename <- files_found[1L]
         }
@@ -259,18 +212,18 @@ project_get_file <- function(filename = ".*",
   } else {
     return(NA_character_)
   }
-  tools::file_path_as_absolute(filename)
+  file.path(folder, filename)
 }
 
 #' @rdname project_properties
 #' @export
 project_set_file <- function(filename,
                              project_number = project_get_current_id(),
-                             account = connect_planner()) {
+                             account = connect_teams()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number, account = account)
+  folder <- project_get_folder(project_number = project_number, account = account)
   filename <- filename[1L]
-  if (!is.na(folder)) {
+  if (!is.null(folder)) {
     file.path(folder, filename)
   } else {
     file.path(dirname(filename), filename)
@@ -282,9 +235,9 @@ project_set_file <- function(filename,
 #' @export
 project_set_folder <- function(foldername,
                                project_number = project_get_current_id(),
-                               account = connect_planner()) {
+                               account = connect_teams()) {
   project_number <- gsub("[^0-9]", "", project_number)
-  folder <- project_get_folder_full(project_number = project_number, account = account)
+  folder <- project_get_folder(project_number = project_number, account = account)
   foldername <- foldername[1L]
   if (!is.na(folder)) {
     foldername <- file.path(folder, foldername)
@@ -299,7 +252,7 @@ project_set_folder <- function(foldername,
 #' @importFrom rstudioapi navigateToFile
 #' @export
 project_open_analysis_file <- function(project_number = project_get_current_id(ask = TRUE),
-                                       account = connect_planner()) {
+                                       account = connect_teams()) {
   if (is_empty(project_number)) {
     return(invisible())
   }
@@ -308,22 +261,22 @@ project_open_analysis_file <- function(project_number = project_get_current_id(a
   path <- project_get_file(".*[.](R|qmd|Rmd|sql|txt|csv|tsv|css|ya?ml|js)$",
                            project_number = project_number,
                            account = account)
-  if (is.na(path)) {
+  if (is.null(path)) {
     stop(paste0("No syntax files found for p", project_number))
   } else {
-    invisible(navigateToFile(path))
+    invisible(navigateToFile(file.path(get_projects_path(), path)))
   }
 }
 
 #' @rdname project_properties
 #' @export
 project_open_folder <- function(project_number = project_get_current_id(ask = TRUE),
-                                account = connect_planner()) {
+                                account = connect_teams()) {
   if (is_empty(project_number)) {
     return(invisible())
   }
-  path <- project_get_folder_full(project_number = project_number, account = account)
-  utils::browseURL(path)
+  path <- project_get_folder(project_number = project_number, account = account)
+  utils::browseURL(file.path(get_projects_path(), path))
 }
 
 #' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile
@@ -338,7 +291,7 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
   if (is_empty(project_number)) {
     path <- getwd()
   } else {
-    path <- project_get_folder_full(project_number = project_number, account = account)
+    path <- project_get_folder(project_number = project_number, account = account)
   }
   
   new_file <- showPrompt(title = "Save File",
@@ -373,7 +326,7 @@ project_save_file <- function(project_number = project_get_current_id(ask = TRUE
 project_add_qmd_skeleton <- function(filename = NULL,
                                      project_number = project_get_current_id(),
                                      account = connect_planner()) {
-  project_folder <- project_get_folder_full(project_number = project_number, account = account)
+  project_folder <- project_get_folder(project_number = project_number, account = account)
   if (is.na(project_folder)) {
     return(invisible())
   }
@@ -405,17 +358,8 @@ get_projects_path <- function() {
 #' @rdname project_properties
 #' @export
 get_output_folder <- function(project_number = project_get_current_id(),
-                              account = connect_planner()) {
-  if (is_empty(project_number)) {
-    return(NA_character_)
-  }
-  if (!is.null(attributes(project_number)$task)) {
-    # when using project_get_current_id(), the result comes from planner_retrieve_project_id() which contains the task as attribute
-    project_title <- attributes(project_number)$task |> get_azure_property("title")
-  } else {
-    project_title <- search_project_first_local_then_planner(project_number, as_title = TRUE, account = account)
-  }
-  
+                              account = connect_teams()) {
+  project_title <- project_get_folder(project_number = project_number, account = account)
   output_path <- file.path(read_secret("projects.output_path"), project_title)
   if (!dir.exists(output_path)) {
     dir.create(output_path, recursive = TRUE)
@@ -427,4 +371,37 @@ get_output_folder <- function(project_number = project_get_current_id(),
 #' @export
 get_output_folder_consult <- function() {
   file.path(read_secret("projects.output_path"), "Consulten/")
+}
+
+#' @rdname project_properties
+#' @param file_name Name of the file to search, will be used with `project_number`.
+#' @param full_path Full path, including project folder, will be used without `project_number`.
+#' @details
+#' [sharepoint_to_local_temp()] finds a SharePoint file and downloads it to a local temporary folder. That local filename is returned and can be used in other functions, such as [source()].
+#' @export
+sharepoint_to_local_temp <- function(file_name = NULL,
+                                     project_number = project_get_current_id(),
+                                     full_path = NULL,
+                                     account = connect_teams(),
+                                     ...) {
+  if (!is.null(file_name)) {
+    full_path <- project_get_file(file, project_number = project_number, account = account)
+  }
+  sharepoint_file <- teams_projects_channel(account = account)$get_item(full_path)
+  
+  # download to temporary file
+  file_local <- file.path(tempdir(), basename(full_path))
+  try(unlink(file_local, force = TRUE), silent = TRUE)
+  
+  tryCatch({
+    cli::cli_process_start(paste0("Downloading from SharePoint: '", full_path, "'"))
+    sharepoint_file$download(dest = file_local, overwrite = TRUE)
+    cli::cli_process_done(msg_done = paste0("Downloading from SharePoint: '", full_path, "'"))
+  }, error = function(e) cli::cli_process_failed(msg = paste0("Downloading from SharePoint: ", conditionMessage(e))))
+  
+  if (file.exists(file_local)) {
+    file_local
+  } else {
+    NULL
+  }
 }

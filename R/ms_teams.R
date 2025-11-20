@@ -66,14 +66,16 @@
 teams_projects_channel <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
                                    overwrite = FALSE,
                                    account = connect_teams()) {
-  if (isTRUE(overwrite) || is.null(pkg_env$teams_project_folder)) {
+  if (isTRUE(overwrite) || is.null(pkg_env$projects_channel)) {
     # try to get the project channel from callr
-    conn <- tryCatch(pkg_env$callr$get_result()$teams_project_folder, error = function(e) NULL)
+    conn <- tryCatch(pkg_env$callr$get_result()$projects_channel, error = function(e) NULL)
     if (!isTRUE(overwrite) && !is.null(conn) && inherits(conn, "ms_drive_item")) {
-      pkg_env$teams_project_folder <- conn
-      pkg_env$teams_project_folder_from_callr <- TRUE
+      pkg_env$projects_channel <- conn
+      pkg_env$projects_channel_from_callr <- TRUE
     } else {
-      message("Retrieving SharePoint details...", appendLF = FALSE)
+      if (interactive()) {
+        cli::cli_process_start(msg = "Retrieving SharePoint data...", msg_done = "Retrieved SharePoint data")
+      }
       # this manual way is by far the fastest:
       folder <- tryCatch(ms_drive_item$new(token = account$token,
                                            tenant = account$tenant,
@@ -82,12 +84,26 @@ teams_projects_channel <- function(projects_channel_id = read_secret("teams.proj
                                                                        properties = account$do_operation(file.path("channels/", projects_channel_id)),
                                                                        team_id = get_azure_property(account, "id"))$do_operation("filesFolder")),
                          error = function(e) stop("Could not retrieve Channel list: ", e$message))
-      pkg_env$teams_project_folder <- folder
-      pkg_env$teams_project_folder_from_callr <- FALSE
-      message("OK")
+      pkg_env$projects_channel <- folder
+      pkg_env$projects_channel_from_callr <- FALSE
+      if (interactive()) {
+        cli::cli_process_done()
+      }
     }
   }
-  return(pkg_env$teams_project_folder)
+  return(pkg_env$projects_channel)
+}
+
+
+#' @rdname teams
+#' @export
+teams_get_project_folders <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
+                                      account = connect_teams()) {
+  channel <- teams_projects_channel(projects_channel_id = projects_channel_id,
+                                    overwrite = FALSE, # this overwrite can remain FALSE, since the list_items() below will run anyway
+                                    account = account)
+  out <- channel$list_items(info = "name")
+  out[out %like% "p?[0-9]+"]
 }
 
 #' @rdname teams

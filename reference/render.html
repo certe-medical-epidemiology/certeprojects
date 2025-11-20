@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.28.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.0</span>
       </span>
     </div>
 
@@ -78,7 +78,16 @@
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">render</span><span class="op">(</span><span class="va">input_file</span>, output_file <span class="op">=</span> <span class="cn">NULL</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, as_job <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">knit</span><span class="op">(</span><span class="va">input_file</span>, output_file <span class="op">=</span> <span class="cn">NULL</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, as_job <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">knit</span><span class="op">(</span><span class="va">input_file</span>, output_file <span class="op">=</span> <span class="cn">NULL</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, as_job <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">render_sharepoint</span><span class="op">(</span></span>
+<span>  <span class="va">input_file</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  as_job <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -112,12 +121,17 @@ the default globally.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>other arguments passed on to <code><a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render()</a></code>.</p></dd>
+<dd><p>arguments passed on to <code>render()</code></p></dd>
+
+
+<dt id="arg-account">account<a class="anchor" aria-label="anchor" href="#arg-account"></a></dt>
+<dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="connect.html">connect_teams()</a></code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
 
 </dl></div>
     <div id="details">
     <h2>Details</h2>
     <p>Functions <code>knit()</code> and <code>render()</code> are identical.</p>
+<p><code>render_sharepoint()</code> downloads a SharePoint project file to a local temporary folder, then renders it.</p>
     </div>
 
   </div>
@@ -132,7 +146,7 @@ the default globally.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer></div>

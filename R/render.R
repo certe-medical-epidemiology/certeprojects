@@ -98,7 +98,7 @@ render_sharepoint <- function(input_file,
                               as_job = "auto",
                               account = connect_teams(),
                               ...) {
-  file_local <- sharepoint_to_local_temp(full_path = input_file, account = account)
+  file_local <- download_from_sharepoint(full_sharepoint_path = input_file, account = account)
   out <- render(file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
   
   # upload the result

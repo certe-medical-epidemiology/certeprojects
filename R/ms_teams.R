@@ -74,7 +74,7 @@ teams_projects_channel <- function(projects_channel_id = read_secret("teams.proj
       pkg_env$projects_channel_from_callr <- TRUE
     } else {
       if (interactive()) {
-        cli::cli_process_start(msg = "Retrieving SharePoint data...", msg_done = "Retrieved SharePoint data")
+        cli::cli_process_start(msg = "Retrieving SharePoint data...", msg_done = "Retrieved SharePoint data.")
       }
       # this manual way is by far the fastest:
       folder <- tryCatch(ms_drive_item$new(token = account$token,

@@ -106,9 +106,6 @@ addin2_projects_update <- function() {
 addin5_quarto_skeleton <- function() {
   project_add_qmd_skeleton()
 }
-addin6_projects_save <- function() {
-  project_save_file()
-}
 addin3_projects_open_file <- function() {
   project_open_analysis_file()
 }

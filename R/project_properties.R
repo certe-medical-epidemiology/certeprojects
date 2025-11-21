@@ -19,7 +19,7 @@
 
 #' Project Properties
 #' 
-#' Retrieve project properties, such as the title, folder location and project number.
+#' Retrieve project properties, such as the title, folder location and project number. It retrieves folder and file info from SharePoint, by using [teams_get_project_folders()]
 #' @param ask logical to indicate whether the project number should always be asked. The default, `NULL`, will show a popup in [interactive][interactive()] \R sessions, allowing to search for projects. In non-interactive sessions, such as in Quarto and R Markdown, it will use the current [working directory][getwd()] to determine the project number.
 #' @param project_number Planner project number
 #' @param filename filename to set or get, case-insensitive, and can also be a [regular expression][base::regex]
@@ -178,35 +178,36 @@ project_get_file <- function(filename = ".*",
     # regex, try to find file
     files <- channel$get_item(folder)$list_items(info = "all")
     # sort on last changed (desc):
-    files$lastModifiedDateTime <- as.POSIXct(gsub("T", " ", files$lastModifiedDateTime))
+    files$lastModifiedDateTime <- as.POSIXct(as.POSIXct(gsub("T", " ", files$lastModifiedDateTime), tz = "UTC"), tz = "Europe/Amsterdam")
     files <- files[order(files$lastModifiedDateTime, decreasing = TRUE), ]
     
-    files_found <- files$name[files$name %like% filename]
-    files_found <- files_found[!basename(files_found) %like% "^~[$]"]
+    files <- files[files$name %like% filename & files$name %unlike% "^~[$]", ]
+    files_names <- files$name
     
-    if (length(files_found) == 0) {
+    if (length(files_names) == 0) {
       warning("No files found")
       return(NA_character_)
     }
-    if (length(files_found) > 0) {
-      if (length(files_found) > 1) {
+    if (length(files_names) > 0) {
+      if (length(files_names) > 1) {
         if (interactive()) {
-          choice <- utils::menu(choices = paste0(font_bold(files_found, collapse = NULL),
+          choice <- utils::menu(choices = paste0(font_bold(files_names, collapse = NULL),
                                                  " (last changed: ",
                                                  font_blue(format2(files$lastModifiedDateTime, "yyyy-mm-dd HH:MM"), collapse = NULL),
+                                                 ", ", font_blue(files$lastModifiedBy$user$displayName, collapse = NULL),
                                                  ")"),
-                                title = paste0("Files found in ", folder, " (0 to cancel):\n(sorted on last changed)"))
+                                title = paste0("Sharepoint files found in '", folder, "', sorted on last changed (0 to cancel):"))
           if (choice == 0) {
             return(NA_character_)
           }
-          filename <- files_found[choice]
+          filename <- files_names[choice]
         } else {
-          message("Files found:\n  - ", paste(files_found, collapse = "\n  - "),
+          message("Files found:\n  - ", paste(files_names, collapse = "\n  - "),
                   "\nSelecting first match.")
-          filename <- files_found[1L]
+          filename <- files_names[1L]
         }
       } else {
-        filename <- files_found
+        filename <- files_names
       }
     }
   } else {
@@ -279,45 +280,6 @@ project_open_folder <- function(project_number = project_get_current_id(ask = TR
   utils::browseURL(file.path(get_projects_path(), path))
 }
 
-#' @importFrom rstudioapi showPrompt getSourceEditorContext showQuestion navigateToFile
-project_save_file <- function(project_number = project_get_current_id(ask = TRUE),
-                              account = connect_planner()) {
-  current <- getSourceEditorContext()
-  if (is.null(current)) {
-    showDialog(title = "No file to be saved", message = "Open a (text) file first to save.")
-    return(invisible(FALSE))
-  }
-  
-  if (is_empty(project_number)) {
-    path <- getwd()
-  } else {
-    path <- project_get_folder(project_number = project_number, account = account)
-  }
-  
-  new_file <- showPrompt(title = "Save File",
-                         message = ifelse(is_empty(project_number),
-                                          paste0("In ", path, ":"),
-                                          paste0("Project p", project_number, " in ", path, ":")),
-                         default = ifelse(current$path != "",
-                                          basename(current$path),
-                                          "Analyse.R"))
-  if (is.null(new_file)) {
-    return(invisible(FALSE))
-  }
-  new_file <- paste0(path, "/", new_file)
-  if (!file.exists(new_file) || isTRUE(showQuestion(title = "File exists", message = paste0("Overwrite ", new_file, "?")))) {
-    # write to file
-    fileConn <- file(new_file)
-    writeLines(current$contents, fileConn)
-    close(fileConn)
-    invisible(navigateToFile(new_file,
-                             line = current$selection[[1]]$range$start[[1]],
-                             column = current$selection[[1]]$range$start[[2]]))
-  } else {
-    message("File save cancelled.")
-  }
-}
-
 #' @rdname project_properties
 #' @param filename name for the new Quarto file
 #' @details [project_add_qmd_skeleton()] initializes a new Quarto skeleton for a project.
@@ -371,37 +333,4 @@ get_output_folder <- function(project_number = project_get_current_id(),
 #' @export
 get_output_folder_consult <- function() {
   file.path(read_secret("projects.output_path"), "Consulten/")
-}
-
-#' @rdname project_properties
-#' @param file_name Name of the file to search, will be used with `project_number`.
-#' @param full_path Full path, including project folder, will be used without `project_number`.
-#' @details
-#' [sharepoint_to_local_temp()] finds a SharePoint file and downloads it to a local temporary folder. That local filename is returned and can be used in other functions, such as [source()].
-#' @export
-sharepoint_to_local_temp <- function(file_name = NULL,
-                                     project_number = project_get_current_id(),
-                                     full_path = NULL,
-                                     account = connect_teams(),
-                                     ...) {
-  if (!is.null(file_name)) {
-    full_path <- project_get_file(file, project_number = project_number, account = account)
-  }
-  sharepoint_file <- teams_projects_channel(account = account)$get_item(full_path)
-  
-  # download to temporary file
-  file_local <- file.path(tempdir(), basename(full_path))
-  try(unlink(file_local, force = TRUE), silent = TRUE)
-  
-  tryCatch({
-    cli::cli_process_start(paste0("Downloading from SharePoint: '", full_path, "'"))
-    sharepoint_file$download(dest = file_local, overwrite = TRUE)
-    cli::cli_process_done(msg_done = paste0("Downloading from SharePoint: '", full_path, "'"))
-  }, error = function(e) cli::cli_process_failed(msg = paste0("Downloading from SharePoint: ", conditionMessage(e))))
-  
-  if (file.exists(file_local)) {
-    file_local
-  } else {
-    NULL
-  }
 }

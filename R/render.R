@@ -79,6 +79,9 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
     }
   }
   
+  print("---")
+  print(output_file)
+  print("----")
   invisible(output_file)
 }
 
@@ -87,26 +90,46 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
 knit <- render
 
 #' @rdname render
-#' @inheritParams project_get_file
+#' @inheritParams sharepoint
 #' @param ... arguments passed on to [certeprojects::render()]
 #' @details
-#' [render_sharepoint()] downloads a SharePoint project file to a local temporary folder, then renders it.
+#' [render_sharepoint()] downloads a SharePoint project file to a local temporary folder, then renders it. Either `input_file` + `project_number` or `full_sharepoint_path` must be given.
 #' @export
-render_sharepoint <- function(input_file,
+render_sharepoint <- function(input_file = NULL,
                               output_file = NULL,
+                              project_number = project_get_current_id(),
+                              full_sharepoint_path = NULL,
                               quiet = TRUE,
                               as_job = "auto",
                               account = connect_teams(),
                               ...) {
-  file_local <- download_from_sharepoint(full_sharepoint_path = input_file, account = account)
+  
+  if (!is.null(input_file)) {
+    if (!is.null(full_sharepoint_path)) {
+      stop("Either `input_file` or `full_sharepoint_path` must be set, not both")
+    }
+    full_sharepoint_path <- project_get_file(input_file, project_number = project_number, account = account)
+  }
+  
+  file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
   out <- render(file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
+  
+  print(full_sharepoint_path)
+  print(file_local)
+  print(out)
+  
+  print("komt van / gaat naar")
+  print(tools::file_path_as_absolute(out))
+  print(file.path(dirname(full_sharepoint_path), basename(out)))
   
   # upload the result
   tryCatch({
     cli::cli_process_start(paste0("Uploading to SharePoint: '", basename(out), "'"))
     teams_projects_channel(account = account)$upload(
       src = tools::file_path_as_absolute(out),
-      dest = file.path(dirname(file_local), basename(out)))
+      dest = file.path(dirname(full_sharepoint_path), basename(out)))
     cli::cli_process_done(msg_done = paste0("Uploading to SharePoint: '", basename(out), "'"))
   }, error = function(e) cli::cli_process_failed(msg = paste0("Uploading to SharePoint: ", conditionMessage(e))))
+  
+  invisible(file.path(dirname(full_sharepoint_path), basename(out)))
 }

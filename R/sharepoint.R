@@ -23,7 +23,8 @@
 #' @param local_file_name File name of the local file.
 #' @param remote_file_name Name of the file to search, will be used together with `project_number` and can be a regular expression. Will be passed on to [project_get_file()].
 #' @inheritParams project_get_file
-#' @param full_sharepoint_path Full path of file, including the project folder, such as `"Project - p123/my_file.R"`.
+#' @param full_sharepoint_path Full path of the remote file, consisting of the project folder and the file name, such as `"Project - p123/my_file.R"`.
+#' @param overwrite Whether to overwrite an existing file.
 #' @details
 #' You must either provide `remote_file_name` + `project_number`, or provide `full_sharepoint_path`.
 #' 
@@ -46,13 +47,22 @@
 download_from_sharepoint <- function(remote_file_name = NULL,
                                      project_number = project_get_current_id(),
                                      full_sharepoint_path = NULL,
-                                     account = connect_teams()) {
+                                     account = connect_teams(),
+                                     overwrite = TRUE) {
+  quarto_local <- file.path(tempdir(), "_quarto.yml")
+
   if (!is.null(remote_file_name)) {
     if (!is.null(full_sharepoint_path)) {
       stop("Either `remote_file_name` or `full_sharepoint_path` must be set, not both")
     }
     full_sharepoint_path <- project_get_file(remote_file_name, project_number = project_number, account = account)
   }
+  
+  if (isTRUE(full_sharepoint_path %like% "[.]Rmd|qmd$") && !file.exists(quarto_local)) {
+    # download quarto settings file too
+    try(download_from_sharepoint(full_sharepoint_path = "_quarto.yml"), silent = TRUE)
+  }
+  
   sharepoint_file <- teams_projects_channel(account = account)$get_item(full_sharepoint_path)
   
   # download to temporary file
@@ -60,11 +70,11 @@ download_from_sharepoint <- function(remote_file_name = NULL,
   try(unlink(file_local, force = TRUE), silent = TRUE)
   
   tryCatch({
-    cli::cli_process_start("Download from SharePoint...")
-    sharepoint_file$download(dest = file_local, overwrite = TRUE)
+    cli::cli_process_start("Downloading from SharePoint...")
+    sharepoint_file$download(dest = file_local, overwrite = overwrite)
     cli::cli_process_done(msg_done = "Downloaded from SharePoint.")
   }, error = function(e) {
-    cli::cli_process_failed(msg = "Download from SharePoint...")
+    cli::cli_process_failed(msg = "Downloading from SharePoint...")
     stop(e)
   })
   
@@ -104,9 +114,18 @@ upload_to_sharepoint <- function(local_file_name = NULL,
 #' @param ... arguments passed on to [source()]
 #' @rdname sharepoint
 #' @export
-source_sharepoint <- function(full_sharepoint_path,
+source_sharepoint <- function(remote_file_name = NULL,
+                              project_number = project_get_current_id(),
+                              full_sharepoint_path = NULL,
                               account = connect_teams(),
                               ...) {
+  
+  if (!is.null(remote_file_name)) {
+    if (!is.null(full_sharepoint_path)) {
+      stop("Either `remote_file_name` or `full_sharepoint_path` must be set, not both")
+    }
+    full_sharepoint_path <- project_get_file(remote_file_name, project_number = project_number, account = account)
+  }
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
   source(file_local, ...)
 }

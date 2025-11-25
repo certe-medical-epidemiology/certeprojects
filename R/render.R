@@ -24,6 +24,7 @@
 #' @inheritParams quarto::quarto_render
 #' @param ... other arguments passed on to [quarto::quarto_render()].
 #' @details Functions [knit()] and [render()] are identical.
+#' @return As opposed to [quarto::quarto_render()], which always returns `NULL`, this `render()` function always returns the output file name (invisibly).
 #' @importFrom quarto quarto_path quarto_render
 #' @rdname render
 #' @export
@@ -47,11 +48,12 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
   Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
   
   if (is.null(output_file)) {
-    # because quarto::quarto_render() checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
+    # quarto::quarto_render() checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
     quarto_render(input = basename(input_file),
                   quiet = quiet,
                   as_job = as_job,
                   ...)
+    output_file <- detect_output_file(tools::file_path_as_absolute(input_file))
   } else {
     quarto_render(input = basename(input_file),
                   output_file = basename(output_file),
@@ -79,9 +81,6 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
     }
   }
   
-  print("---")
-  print(output_file)
-  print("----")
   invisible(output_file)
 }
 
@@ -112,15 +111,8 @@ render_sharepoint <- function(input_file = NULL,
   }
   
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
-  out <- render(file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
   
-  print(full_sharepoint_path)
-  print(file_local)
-  print(out)
-  
-  print("komt van / gaat naar")
-  print(tools::file_path_as_absolute(out))
-  print(file.path(dirname(full_sharepoint_path), basename(out)))
+  out <- render(input_file = file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
   
   # upload the result
   tryCatch({
@@ -132,4 +124,51 @@ render_sharepoint <- function(input_file = NULL,
   }, error = function(e) cli::cli_process_failed(msg = paste0("Uploading to SharePoint: ", conditionMessage(e))))
   
   invisible(file.path(dirname(full_sharepoint_path), basename(out)))
+}
+
+detect_output_file <- function(input_file) {
+  yml <- rmarkdown::yaml_front_matter(input_file)
+  ext <- NULL
+  
+  if (!is.null(yml$format)) {
+    fmt <- yml$format
+    if (is.character(fmt)) {
+      ext <- fmt
+    } else if (is.list(fmt) && length(fmt) > 0) {
+      ext <- names(fmt)[1]
+    }
+  } else if (!is.null(yml$output)) {
+    fmt <- yml$output
+    if (is.character(fmt)) {
+      ext <- fmt
+    } else if (is.list(fmt) && length(fmt) > 0) {
+      ext <- names(fmt)[1]
+    }
+  }
+  
+  # Normalize namespaced formats
+  ext <- sub("^.*::", "", ext)
+  
+  # Map known output formats to file extensions
+  ext_map <- list(
+    html_document = "html",
+    html_vignette = "html",
+    pdf_document  = "pdf",
+    word_document = "docx",
+    beamer_presentation = "pdf",
+    slidy_presentation = "html",
+    ioslides_presentation = "html",
+    `revealjs::revealjs_presentation` = "html",
+    pdf = "pdf",
+    html = "html",
+    docx = "docx"
+  )
+  
+  if (!is.null(ext) && length(ext) > 1) {
+    ext <- ext_map[[ext]]
+  } else {
+    ext <- "pdf"
+  }
+  
+  paste0(tools::file_path_sans_ext(input_file), ".", ext)
 }

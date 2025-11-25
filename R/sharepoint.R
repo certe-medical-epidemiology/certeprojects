@@ -58,7 +58,7 @@ download_from_sharepoint <- function(remote_file_name = NULL,
     full_sharepoint_path <- project_get_file(remote_file_name, project_number = project_number, account = account)
   }
   
-  if (isTRUE(full_sharepoint_path %like% "[.]Rmd|qmd$") && !file.exists(quarto_local)) {
+  if (isTRUE(full_sharepoint_path %like% "[.]Rmd|qmd$")) {
     # download quarto settings file too
     try(download_from_sharepoint(full_sharepoint_path = "_quarto.yml"), silent = TRUE)
   }

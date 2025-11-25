@@ -11,8 +11,10 @@ render(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
 knit(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...)
 
 render_sharepoint(
-  input_file,
+  input_file = NULL,
   output_file = NULL,
+  project_number = project_get_current_id(),
+  full_sharepoint_path = NULL,
   quiet = TRUE,
   as_job = "auto",
   account = connect_teams(),
@@ -22,10 +24,9 @@ render_sharepoint(
 \arguments{
 \item{input_file}{file to be rendered, can be R Markdown (\code{.Rmd}) or Quarto (\code{.qmd}), or a lot of other formats such as \code{.md}, \code{.ipynb} and \href{https://quarto.org/docs/reference/}{many other formats that Quarto supports}.}
 
-\item{output_file}{The name of the output file. If using \code{NULL}, the output
-filename will be based on the filename for the input file. \code{output_file} is
-mapped to the \code{--output} option flag of the \code{quarto} CLI. It is expected to
-be a filename only, not a path, relative or absolute.}
+\item{output_file}{Base name for single-file output (e.g. PDF, ePub, MS Word).
+This sets the \code{output-file} Quarto metadata. If \code{NULL}, the output filename
+will be based on the input filename.}
 
 \item{quiet}{Suppress warning and other messages, from R and also Quarto CLI
 (i.e \code{--quiet} is passed as command line).
@@ -42,7 +43,14 @@ the default globally.}
 
 \item{...}{arguments passed on to \code{\link[=render]{render()}}}
 
+\item{project_number}{Planner project number}
+
+\item{full_sharepoint_path}{Full path of the remote file, consisting of the project folder and the file name, such as \code{"Project - p123/my_file.R"}.}
+
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+}
+\value{
+As opposed to \code{\link[quarto:quarto_render]{quarto::quarto_render()}}, which always returns \code{NULL}, this \code{render()} function always returns the output file name (invisibly).
 }
 \description{
 Runs input files through Quarto, and allows Quarto to work with full paths (where Quarto itself requires relative paths). This function essentially replaces both \code{\link[rmarkdown:render]{rmarkdown::render()}} and \code{\link[quarto:quarto_render]{quarto::quarto_render()}}.
@@ -50,5 +58,5 @@ Runs input files through Quarto, and allows Quarto to work with full paths (wher
 \details{
 Functions \code{\link[=knit]{knit()}} and \code{\link[=render]{render()}} are identical.
 
-\code{\link[=render_sharepoint]{render_sharepoint()}} downloads a SharePoint project file to a local temporary folder, then renders it.
+\code{\link[=render_sharepoint]{render_sharepoint()}} downloads a SharePoint project file to a local temporary folder, then renders it. Either \code{input_file} + \code{project_number} or \code{full_sharepoint_path} must be given.
 }

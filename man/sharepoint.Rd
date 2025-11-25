@@ -11,7 +11,8 @@ download_from_sharepoint(
   remote_file_name = NULL,
   project_number = project_get_current_id(),
   full_sharepoint_path = NULL,
-  account = connect_teams()
+  account = connect_teams(),
+  overwrite = TRUE
 )
 
 upload_to_sharepoint(
@@ -22,16 +23,24 @@ upload_to_sharepoint(
   account = connect_teams()
 )
 
-source_sharepoint(full_sharepoint_path, account = connect_teams(), ...)
+source_sharepoint(
+  remote_file_name = NULL,
+  project_number = project_get_current_id(),
+  full_sharepoint_path = NULL,
+  account = connect_teams(),
+  ...
+)
 }
 \arguments{
 \item{remote_file_name}{Name of the file to search, will be used together with \code{project_number} and can be a regular expression. Will be passed on to \code{\link[=project_get_file]{project_get_file()}}.}
 
 \item{project_number}{Planner project number}
 
-\item{full_sharepoint_path}{Full path of file, including the project folder, such as \code{"Project - p123/my_file.R"}.}
+\item{full_sharepoint_path}{Full path of the remote file, consisting of the project folder and the file name, such as \code{"Project - p123/my_file.R"}.}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+
+\item{overwrite}{Whether to overwrite an existing file.}
 
 \item{local_file_name}{File name of the local file.}
 

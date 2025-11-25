@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.2</span>
       </span>
     </div>
 
@@ -81,8 +81,10 @@
 <span><span class="fu">knit</span><span class="op">(</span><span class="va">input_file</span>, output_file <span class="op">=</span> <span class="cn">NULL</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span>, as_job <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">render_sharepoint</span><span class="op">(</span></span>
-<span>  <span class="va">input_file</span>,</span>
+<span>  input_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  full_sharepoint_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  as_job <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -99,10 +101,9 @@
 
 
 <dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
-<dd><p>The name of the output file. If using <code>NULL</code>, the output
-filename will be based on the filename for the input file. <code>output_file</code> is
-mapped to the <code>--output</code> option flag of the <code>quarto</code> CLI. It is expected to
-be a filename only, not a path, relative or absolute.</p></dd>
+<dd><p>Base name for single-file output (e.g. PDF, ePub, MS Word).
+This sets the <code>output-file</code> Quarto metadata. If <code>NULL</code>, the output filename
+will be based on the input filename.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
@@ -124,14 +125,26 @@ the default globally.</p></dd>
 <dd><p>arguments passed on to <code>render()</code></p></dd>
 
 
+<dt id="arg-project-number">project_number<a class="anchor" aria-label="anchor" href="#arg-project-number"></a></dt>
+<dd><p>Planner project number</p></dd>
+
+
+<dt id="arg-full-sharepoint-path">full_sharepoint_path<a class="anchor" aria-label="anchor" href="#arg-full-sharepoint-path"></a></dt>
+<dd><p>Full path of the remote file, consisting of the project folder and the file name, such as <code>"Project - p123/my_file.R"</code>.</p></dd>
+
+
 <dt id="arg-account">account<a class="anchor" aria-label="anchor" href="#arg-account"></a></dt>
 <dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="connect.html">connect_teams()</a></code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
 
 </dl></div>
+    <div id="value">
+    <h2>Value</h2>
+    <p>As opposed to <code><a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render()</a></code>, which always returns <code>NULL</code>, this <code>render()</code> function always returns the output file name (invisibly).</p>
+    </div>
     <div id="details">
     <h2>Details</h2>
     <p>Functions <code>knit()</code> and <code>render()</code> are identical.</p>
-<p><code>render_sharepoint()</code> downloads a SharePoint project file to a local temporary folder, then renders it.</p>
+<p><code>render_sharepoint()</code> downloads a SharePoint project file to a local temporary folder, then renders it. Either <code>input_file</code> + <code>project_number</code> or <code>full_sharepoint_path</code> must be given.</p>
     </div>
 
   </div>

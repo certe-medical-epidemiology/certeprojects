@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.2</span>
       </span>
     </div>
 
@@ -80,7 +80,8 @@
 <span>  remote_file_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  project_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  full_sharepoint_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">upload_to_sharepoint</span><span class="op">(</span></span>
@@ -91,7 +92,13 @@
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">source_sharepoint</span><span class="op">(</span><span class="va">full_sharepoint_path</span>, account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">source_sharepoint</span><span class="op">(</span></span>
+<span>  remote_file_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  full_sharepoint_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -107,11 +114,15 @@
 
 
 <dt id="arg-full-sharepoint-path">full_sharepoint_path<a class="anchor" aria-label="anchor" href="#arg-full-sharepoint-path"></a></dt>
-<dd><p>Full path of file, including the project folder, such as <code>"Project - p123/my_file.R"</code>.</p></dd>
+<dd><p>Full path of the remote file, consisting of the project folder and the file name, such as <code>"Project - p123/my_file.R"</code>.</p></dd>
 
 
 <dt id="arg-account">account<a class="anchor" aria-label="anchor" href="#arg-account"></a></dt>
 <dd><p>a Microsoft 365 account to use for looking up properties. This has to be an object as returned by <code><a href="connect.html">connect_teams()</a></code> or <code><a href="https://rdrr.io/pkg/Microsoft365R/man/client.html" class="external-link">Microsoft365R::get_team()</a></code>.</p></dd>
+
+
+<dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
+<dd><p>Whether to overwrite an existing file.</p></dd>
 
 
 <dt id="arg-local-file-name">local_file_name<a class="anchor" aria-label="anchor" href="#arg-local-file-name"></a></dt>

@@ -107,21 +107,31 @@ render_sharepoint <- function(input_file = NULL,
     if (!is.null(full_sharepoint_path)) {
       stop("Either `input_file` or `full_sharepoint_path` must be set, not both")
     }
+    if (input_file %unlike% "[.](R|Rmd|qmd)$") {
+      input_file <- paste0(input_file, ".*(R|Rmd|qmd)$")
+    }
     full_sharepoint_path <- project_get_file(input_file, project_number = project_number, account = account)
   }
   
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
   
+  cli::cli_process_start(paste0("Rendering file: {.val {basename(full_sharepoint_path)}}"))
   out <- render(input_file = file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
+  cli::cli_process_done(msg_done = paste0("Rendered file: {.val {basename(full_sharepoint_path)}} -> {.val {basename(out)}}"))
+  
+  # Quarto sometimes keeps hyphens instead of spaces
+  files <- list.files(dirname(out),
+                      pattern = gsub(" ", ".*", basename(out), fixed = TRUE),
+                      full.names = TRUE,
+                      recursive = FALSE)
+  if (length(files) == 1) {
+    try(unlink(out, force = TRUE), silent = TRUE)
+    file.rename(files, out)
+  }
   
   # upload the result
-  tryCatch({
-    cli::cli_process_start(paste0("Uploading to SharePoint: '", basename(out), "'"))
-    teams_projects_channel(account = account)$upload(
-      src = tools::file_path_as_absolute(out),
-      dest = file.path(dirname(full_sharepoint_path), basename(out)))
-    cli::cli_process_done(msg_done = paste0("Uploading to SharePoint: '", basename(out), "'"))
-  }, error = function(e) cli::cli_process_failed(msg = paste0("Uploading to SharePoint: ", conditionMessage(e))))
+  upload_to_sharepoint(local_file_name = out,
+                       full_sharepoint_path = file.path(dirname(full_sharepoint_path), basename(out)))
   
   invisible(file.path(dirname(full_sharepoint_path), basename(out)))
 }

@@ -70,11 +70,11 @@ download_from_sharepoint <- function(remote_file_name = NULL,
   try(unlink(file_local, force = TRUE), silent = TRUE)
   
   tryCatch({
-    cli::cli_process_start("Downloading from SharePoint...")
+    cli::cli_process_start("Downloading {.val {full_sharepoint_path}} from SharePoint...")
     sharepoint_file$download(dest = file_local, overwrite = overwrite)
-    cli::cli_process_done(msg_done = "Downloaded from SharePoint.")
+    cli::cli_process_done(msg_done = "Downloaded {.val {full_sharepoint_path}} from SharePoint.")
   }, error = function(e) {
-    cli::cli_process_failed(msg = "Downloading from SharePoint...")
+    cli::cli_process_failed(msg = "Downloading {.val {full_sharepoint_path}} from SharePoint...")
     stop(e)
   })
   
@@ -100,11 +100,11 @@ upload_to_sharepoint <- function(local_file_name = NULL,
   channel <- teams_projects_channel(account = account)
   
   tryCatch({
-    cli::cli_process_start("Uploading to SharePoint...")
+    cli::cli_process_start("Uploading {.val {full_sharepoint_path}} to SharePoint...")
     channel$upload(src = local_file_name, dest = full_sharepoint_path)
-    cli::cli_process_done(msg_done = "Uploaded to SharePoint.")
+    cli::cli_process_done(msg_done = "Uploaded {.val {full_sharepoint_path}} to SharePoint.")
   }, error = function(e) {
-    cli::cli_process_failed(msg = "Uploading to SharePoint...")
+    cli::cli_process_failed(msg = "Uploading {.val {full_sharepoint_path}} to SharePoint...")
     stop(e)
   })
   

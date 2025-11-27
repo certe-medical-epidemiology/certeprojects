@@ -293,13 +293,13 @@ schedule_task <- function(minute, hour, day, month, weekday,
       Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
       if (project_file %like% "[.]R$") {
         if (is_project_file) {
-          source_sharepoint(project_file, account = account) # certeprojects function
+          source_sharepoint(full_sharepoint_path = project_file, account = account) # certeprojects function
         } else {
           source(project_file)
         }
       } else {
         if (is_project_file) {
-          render_sharepoint(project_file, account = account) # certeprojects function
+          render_sharepoint(full_sharepoint_path = project_file, account = account) # certeprojects function
         } else {
           render(project_file) # certeprojects function
         }
@@ -377,11 +377,14 @@ user_has_log <- function(user, originally_scheduled, sent_delay, log_folder) {
   minute <- formatC(minute, flag = 0, width = 2)
   hour <- formatC(hour, flag = 0, width = 2)
   
-  path <- file.path(log_folder, format2(as.Date(originally_scheduled), "yyyy/mm"), user)
-  pattern <- paste0(user, ".*", format2(as.Date(originally_scheduled), "yyyy[-]mm[-]dd"),
+  scheduled_date <- as.Date(gsub("^(.*) .* .*", "\\1", originally_scheduled))
+  check_datetimes <- originally_scheduled[as.Date(originally_scheduled) == scheduled_date]
+  
+  path <- file.path(log_folder, format2(as.Date(check_datetimes), "yyyy/mm"), user)
+  pattern <- paste0(user, ".*", format2(as.Date(check_datetimes), "yyyy[-]mm[-]dd"),
                     ".*(", paste0(hour, collapse = "|"), ")u(", paste0(minute, collapse = "|"),
                     ").*[.]Rout")
-  
+
   log_file <- list.files(path = path,
                          pattern = pattern,
                          full.names = TRUE,

@@ -66,7 +66,11 @@ download_from_sharepoint <- function(remote_file_name = NULL,
   sharepoint_file <- teams_projects_channel(account = account)$get_item(full_sharepoint_path)
   
   # download to temporary file
-  file_local <- file.path(tempdir(), basename(full_sharepoint_path))
+  download_folder <- file.path(tempdir(), "certeprojects-sharepoint-downloads", dirname(full_sharepoint_path))
+  if (!dir.exists(download_folder)) {
+    dir.create(download_folder, showWarnings = FALSE, recursive = TRUE)
+  }
+  file_local <- file.path(download_folder, basename(full_sharepoint_path))
   try(unlink(file_local, force = TRUE), silent = TRUE)
   
   tryCatch({

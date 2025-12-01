@@ -115,19 +115,17 @@ render_sharepoint <- function(input_file = NULL,
   
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
   
-  cli::cli_process_start(paste0("Rendering file: {.val {basename(full_sharepoint_path)}}"))
+  if (is.null(output_file)) {
+    output_file <- detect_output_file(tools::file_path_as_absolute(file_local))
+  }
+
+  cli::cli_process_start(paste0("Rendering file: {.val {basename(full_sharepoint_path)}} -> {.val {basename(output_file)}}"))
+  if (file.exists(output_file)) {
+    # remove output file before rendering
+    try(unlink(output_file, force = TRUE), silent = TRUE)
+  }
   out <- render(input_file = file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
   cli::cli_process_done(msg_done = paste0("Rendered file: {.val {basename(full_sharepoint_path)}} -> {.val {basename(out)}}"))
-  
-  # Quarto sometimes keeps hyphens instead of spaces
-  files <- list.files(dirname(out),
-                      pattern = gsub(" ", ".*", basename(out), fixed = TRUE),
-                      full.names = TRUE,
-                      recursive = FALSE)
-  if (length(files) == 1) {
-    try(unlink(out, force = TRUE), silent = TRUE)
-    file.rename(files, out)
-  }
   
   # upload the result
   upload_to_sharepoint(local_file_name = out,

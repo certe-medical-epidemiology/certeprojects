@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.29.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.0</span>
       </span>
     </div>
 
@@ -98,6 +98,15 @@
 <span>  full_sharepoint_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">download_file_to_sharepoint</span><span class="op">(</span></span>
+<span>  <span class="va">url</span>,</span>
+<span>  local_file_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  project_number <span class="op">=</span> <span class="fu"><a href="project_properties.html">project_get_current_id</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  full_sharepoint_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  account <span class="op">=</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -130,7 +139,11 @@
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>arguments passed on to <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code></p></dd>
+<dd><p>arguments passed on to <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> or <code><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file()</a></code></p></dd>
+
+
+<dt id="arg-url">url<a class="anchor" aria-label="anchor" href="#arg-url"></a></dt>
+<dd><p>URL to download and afterwards upload to SharePoint</p></dd>
 
 </dl></div>
     <div id="details">
@@ -138,18 +151,27 @@
     <p>You must either provide <code>remote_file_name</code> + <code>project_number</code>, or provide <code>full_sharepoint_path</code>.</p><ul><li><p><code>download_from_sharepoint()</code> finds a SharePoint file in the <a href="teams.html">Projects channel</a> using <code><a href="project_properties.html">project_get_file()</a></code>, and downloads it to a local temporary folder. The local filename is returned and can be used in other functions.</p></li>
 <li><p><code>upload_to_sharepoint()</code> uploads any local file to SharePoint in the <a href="teams.html">Projects channel</a>. The remote path is returned and can be used in other functions.</p></li>
 <li><p><code>source_sharepoint()</code> runs <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> on a SharePoint project file, by downloading it to a temporary folder first using <code>download_from_sharepoint()</code>.</p></li>
+<li><p><code>download_file_to_sharepoint()</code> downloads a remote URL and then uploads the downloaded file to SharePoint using <code>upload_to_sharepoint()</code></p></li>
 </ul></div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">source_sharepoint</span><span class="op">(</span><span class="fu">download_from_sharepoint</span><span class="op">(</span><span class="st">"my_file.R"</span>, <span class="fl">123</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">source_sharepoint</span><span class="op">(</span><span class="st">"my_file.R"</span>, <span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="st">"my_file.R"</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">download_from_sharepoint</span><span class="op">(</span>project_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">source_sharepoint</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  </span></span>
+<span class="r-in"><span><span class="va">url</span> <span class="op">&lt;-</span> <span class="st">"https://examplefile.com/file-download/26"</span></span></span>
+<span class="r-in"><span><span class="va">from_internet</span> <span class="op">&lt;-</span> <span class="fu">download_file_to_sharepoint</span><span class="op">(</span><span class="va">url</span>,</span></span>
+<span class="r-in"><span>                                             <span class="st">"test-download.pdf"</span>,</span></span>
+<span class="r-in"><span>                                             project_number <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">from_internet</span></span></span>
+<span class="r-in"><span><span class="co">#&gt; [1] "Testproject - p123/test-download.pdf"</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">local_file</span> <span class="op">&lt;-</span> <span class="fu">download_from_sharepoint</span><span class="op">(</span>full_sharepoint_path <span class="op">=</span> <span class="va">from_internet</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

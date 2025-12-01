@@ -31,18 +31,27 @@
 #' * `download_from_sharepoint()` finds a SharePoint file in the [Projects channel][teams_projects_channel()] using [project_get_file()], and downloads it to a local temporary folder. The local filename is returned and can be used in other functions.
 #' * `upload_to_sharepoint()` uploads any local file to SharePoint in the [Projects channel][teams_projects_channel()]. The remote path is returned and can be used in other functions.
 #' * `source_sharepoint()` runs [source()] on a SharePoint project file, by downloading it to a temporary folder first using `download_from_sharepoint()`.
+#' * `download_file_to_sharepoint()` downloads a remote URL and then uploads the downloaded file to SharePoint using `upload_to_sharepoint()`
 #' @rdname sharepoint
 #' @name sharepoint
 #' @export
 #' @examples
 #' \dontrun{
 #' 
-#' source_sharepoint(download_from_sharepoint("my_file.R", 123))
+#' source_sharepoint("my_file.R", 123)
 #' 
 #' "my_file.R" |>
 #'   download_from_sharepoint(project_number = 123) |>
 #'   source_sharepoint()
+#'   
+#' url <- "https://examplefile.com/file-download/26"
+#' from_internet <- download_file_to_sharepoint(url,
+#'                                              "test-download.pdf",
+#'                                              project_number = 123)
+#' from_internet
+#' #> [1] "Testproject - p123/test-download.pdf"
 #' 
+#' local_file <- download_from_sharepoint(full_sharepoint_path = from_internet)
 #' }
 download_from_sharepoint <- function(remote_file_name = NULL,
                                      project_number = project_get_current_id(),
@@ -112,10 +121,10 @@ upload_to_sharepoint <- function(local_file_name = NULL,
     stop(e)
   })
   
-  full_sharepoint_path
+  invisible(full_sharepoint_path)
 }
 
-#' @param ... arguments passed on to [source()]
+#' @param ... arguments passed on to [source()] or [download.file()]
 #' @rdname sharepoint
 #' @export
 source_sharepoint <- function(remote_file_name = NULL,
@@ -132,4 +141,44 @@ source_sharepoint <- function(remote_file_name = NULL,
   }
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
   source(file_local, ...)
+}
+
+#' @rdname sharepoint
+#' @param url URL to download and afterwards upload to SharePoint
+#' @export
+download_file_to_sharepoint <- function(url,
+                                        local_file_name = NULL,
+                                        project_number = project_get_current_id(),
+                                        full_sharepoint_path = NULL,
+                                        account = connect_teams(),
+                                        ...) {
+  if (!is.null(local_file_name)) {
+    if (!is.null(full_sharepoint_path)) {
+      stop("Either `local_file_name` or `full_sharepoint_path` must be set, not both")
+    }
+    full_sharepoint_path <- project_set_file(local_file_name, project_number = project_number, account = account)
+  }
+  
+  # download to temporary file
+  download_folder <- file.path(tempdir(), "certeprojects-sharepoint-downloads", dirname(full_sharepoint_path))
+  if (!dir.exists(download_folder)) {
+    dir.create(download_folder, showWarnings = FALSE, recursive = TRUE)
+  }
+  file_local <- file.path(download_folder, basename(full_sharepoint_path))
+  try(unlink(file_local, force = TRUE), silent = TRUE)
+  
+  tryCatch({
+    cli::cli_process_start("Downloading {.url {url}} as {.val {basename(file_local)}}...")
+    utils::download.file(url = url, destfile = file_local, ..., quiet = TRUE)
+    cli::cli_process_done(msg_done = "Downloaded {.url {url}} as {.val {basename(file_local)}}.")
+  }, error = function(e) {
+    cli::cli_process_failed(msg = "Downloading {.url {url}} as {.val {basename(file_local)}}...")
+    stop(e)
+  })
+  
+  if (file.exists(file_local)) {
+    upload_to_sharepoint(local_file_name = file_local,
+                         full_sharepoint_path = full_sharepoint_path,
+                         account = account)
+  }
 }

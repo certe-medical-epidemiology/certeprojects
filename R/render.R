@@ -91,6 +91,8 @@ knit <- render
 #' @rdname render
 #' @inheritParams sharepoint
 #' @param ... arguments passed on to [certeprojects::render()]
+#' @param output_folder any output folder of the resulting output file, defaults to [get_output_folder()]. Can also be `"sharepoint"`, which sets `upload = TRUE`.
+#' @param upload whether to upload the resulting output file back to SharePoint, default is `FALSE`.
 #' @details
 #' [render_sharepoint()] downloads a SharePoint project file to a local temporary folder, then renders it. Either `input_file` + `project_number` or `full_sharepoint_path` must be given.
 #' @export
@@ -101,6 +103,8 @@ render_sharepoint <- function(input_file = NULL,
                               quiet = TRUE,
                               as_job = "auto",
                               account = connect_teams(),
+                              output_folder = get_output_folder(project_number = project_number, account = account),
+                              upload = FALSE,
                               ...) {
   
   if (!is.null(input_file)) {
@@ -127,11 +131,21 @@ render_sharepoint <- function(input_file = NULL,
   out <- render(input_file = file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
   cli::cli_process_done(msg_done = paste0("Rendered file: {.val {basename(full_sharepoint_path)}} -> {.val {basename(out)}}"))
   
-  # upload the result
-  upload_to_sharepoint(local_file_name = out,
-                       full_sharepoint_path = file.path(dirname(full_sharepoint_path), basename(out)))
+  if (identical(tolower(output_folder), "sharepoint") || (!isTRUE(upload) && is.null(output_folder))) {
+    upload <- TRUE
+    output_folder <- NULL
+  }
   
-  invisible(file.path(dirname(full_sharepoint_path), basename(out)))
+  if (isTRUE(upload)) {
+    # upload the result
+    upload_to_sharepoint(local_file_name = out,
+                         full_sharepoint_path = file.path(dirname(full_sharepoint_path), basename(out)))
+    return(invisible(file.path(dirname(full_sharepoint_path), basename(out))))
+  } else {
+    file.copy(out, file.path(output_folder, out), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE)
+    return(file.path(output_folder, out))
+  }
+  
 }
 
 detect_output_file <- function(input_file) {

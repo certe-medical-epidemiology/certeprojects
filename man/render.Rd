@@ -18,16 +18,17 @@ render_sharepoint(
   quiet = TRUE,
   as_job = "auto",
   account = connect_teams(),
+  output_folder = get_output_folder(project_number = project_number, account = account),
+  upload = FALSE,
   ...
 )
 }
 \arguments{
 \item{input_file}{file to be rendered, can be R Markdown (\code{.Rmd}) or Quarto (\code{.qmd}), or a lot of other formats such as \code{.md}, \code{.ipynb} and \href{https://quarto.org/docs/reference/}{many other formats that Quarto supports}.}
 
-\item{output_file}{The name of the output file. If using \code{NULL}, the output
-filename will be based on the filename for the input file. \code{output_file} is
-mapped to the \code{--output} option flag of the \code{quarto} CLI. It is expected to
-be a filename only, not a path, relative or absolute.}
+\item{output_file}{Base name for single-file output (e.g. PDF, ePub, MS Word).
+This sets the \code{output-file} Quarto metadata. If \code{NULL}, the output filename
+will be based on the input filename.}
 
 \item{quiet}{Suppress warning and other messages, from R and also Quarto CLI
 (i.e \code{--quiet} is passed as command line).
@@ -49,6 +50,10 @@ the default globally.}
 \item{full_sharepoint_path}{Full path of the remote file, consisting of the project folder and the file name, such as \code{"Project - p123/my_file.R"}.}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+
+\item{output_folder}{any output folder of the resulting output file, defaults to \code{\link[=get_output_folder]{get_output_folder()}}. Can also be \code{"sharepoint"}, which sets \code{upload = TRUE}.}
+
+\item{upload}{whether to upload the resulting output file back to SharePoint, default is \code{FALSE}.}
 }
 \value{
 As opposed to \code{\link[quarto:quarto_render]{quarto::quarto_render()}}, which always returns \code{NULL}, this \code{render()} function always returns the output file name (invisibly).

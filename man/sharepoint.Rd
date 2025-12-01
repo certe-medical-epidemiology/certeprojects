@@ -5,6 +5,7 @@
 \alias{download_from_sharepoint}
 \alias{upload_to_sharepoint}
 \alias{source_sharepoint}
+\alias{download_file_to_sharepoint}
 \title{Upload to / Download from SharePoint Project Channel}
 \usage{
 download_from_sharepoint(
@@ -30,6 +31,15 @@ source_sharepoint(
   account = connect_teams(),
   ...
 )
+
+download_file_to_sharepoint(
+  url,
+  local_file_name = NULL,
+  project_number = project_get_current_id(),
+  full_sharepoint_path = NULL,
+  account = connect_teams(),
+  ...
+)
 }
 \arguments{
 \item{remote_file_name}{Name of the file to search, will be used together with \code{project_number} and can be a regular expression. Will be passed on to \code{\link[=project_get_file]{project_get_file()}}.}
@@ -44,7 +54,9 @@ source_sharepoint(
 
 \item{local_file_name}{File name of the local file.}
 
-\item{...}{arguments passed on to \code{\link[=source]{source()}}}
+\item{...}{arguments passed on to \code{\link[=source]{source()}} or \code{\link[=download.file]{download.file()}}}
+
+\item{url}{URL to download and afterwards upload to SharePoint}
 }
 \description{
 These functions allow for fast and easy transfer between local files and SharePoint, using \code{\link[=teams_projects_channel]{teams_projects_channel()}} to retrieve the Projects channel.
@@ -55,16 +67,25 @@ You must either provide \code{remote_file_name} + \code{project_number}, or prov
 \item \code{download_from_sharepoint()} finds a SharePoint file in the \link[=teams_projects_channel]{Projects channel} using \code{\link[=project_get_file]{project_get_file()}}, and downloads it to a local temporary folder. The local filename is returned and can be used in other functions.
 \item \code{upload_to_sharepoint()} uploads any local file to SharePoint in the \link[=teams_projects_channel]{Projects channel}. The remote path is returned and can be used in other functions.
 \item \code{source_sharepoint()} runs \code{\link[=source]{source()}} on a SharePoint project file, by downloading it to a temporary folder first using \code{download_from_sharepoint()}.
+\item \code{download_file_to_sharepoint()} downloads a remote URL and then uploads the downloaded file to SharePoint using \code{upload_to_sharepoint()}
 }
 }
 \examples{
 \dontrun{
 
-source_sharepoint(download_from_sharepoint("my_file.R", 123))
+source_sharepoint("my_file.R", 123)
 
 "my_file.R" |>
   download_from_sharepoint(project_number = 123) |>
   source_sharepoint()
+  
+url <- "https://examplefile.com/file-download/26"
+from_internet <- download_file_to_sharepoint(url,
+                                             "test-download.pdf",
+                                             project_number = 123)
+from_internet
+#> [1] "Testproject - p123/test-download.pdf"
 
+local_file <- download_from_sharepoint(full_sharepoint_path = from_internet)
 }
 }

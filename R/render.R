@@ -142,8 +142,8 @@ render_sharepoint <- function(input_file = NULL,
                          full_sharepoint_path = file.path(dirname(full_sharepoint_path), basename(out)))
     return(invisible(file.path(dirname(full_sharepoint_path), basename(out))))
   } else {
-    file.copy(out, file.path(output_folder, out), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE)
-    return(file.path(output_folder, out))
+    file.copy(out, file.path(output_folder, output_file), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE)
+    return(file.path(output_folder, output_file))
   }
   
 }

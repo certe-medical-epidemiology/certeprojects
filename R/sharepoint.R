@@ -58,18 +58,11 @@ download_from_sharepoint <- function(remote_file_name = NULL,
                                      full_sharepoint_path = NULL,
                                      account = connect_teams(),
                                      overwrite = TRUE) {
-  quarto_local <- file.path(tempdir(), "_quarto.yml")
-
   if (!is.null(remote_file_name)) {
     if (!is.null(full_sharepoint_path)) {
       stop("Either `remote_file_name` or `full_sharepoint_path` must be set, not both")
     }
     full_sharepoint_path <- project_get_file(remote_file_name, project_number = project_number, account = account)
-  }
-  
-  if (isTRUE(full_sharepoint_path %like% "[.]Rmd|qmd$")) {
-    # download quarto settings file too
-    try(download_from_sharepoint(full_sharepoint_path = "_quarto.yml"), silent = TRUE)
   }
   
   sharepoint_file <- teams_projects_channel(account = account)$get_item(full_sharepoint_path)

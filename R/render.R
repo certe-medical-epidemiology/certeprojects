@@ -17,22 +17,36 @@
 #  useful, but it comes WITHOUT ANY WARRANTY OR LIABILITY.              #
 # ===================================================================== #
 
-#' Knit R Markdown or Quarto Document using Quarto
+#' Knit R Markdown or Quarto Document
 #' 
-#' Runs input files through Quarto, and allows Quarto to work with full paths (where Quarto itself requires relative paths). This function essentially replaces both [rmarkdown::render()] and [quarto::quarto_render()].
+#' Runs input files through Quarto or RMarkdown, and allows Quarto to work with full paths (where Quarto itself requires relative paths). This function essentially replaces both [rmarkdown::render()] and [quarto::quarto_render()].
 #' @param input_file file to be rendered, can be R Markdown (`.Rmd`) or Quarto (`.qmd`), or a lot of other formats such as `.md`, `.ipynb` and [many other formats that Quarto supports](https://quarto.org/docs/reference/).
 #' @inheritParams quarto::quarto_render
 #' @param ... other arguments passed on to [quarto::quarto_render()].
 #' @details Functions [knit()] and [render()] are identical.
+#' 
+#' Any Quarto file (`.qmd`) will be rendered using [quarto::quarto_render()]. Any RMarkdown file (`.Rmd`) will be rendered using [rmarkdown::render()].
 #' @return As opposed to [quarto::quarto_render()], which always returns `NULL`, this `render()` function always returns the output file name (invisibly).
 #' @importFrom quarto quarto_path quarto_render
+#' @importFrom rmarkdown render
 #' @rdname render
 #' @export
-render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto", ...) {
-  if (!file.exists(quarto_path())) {
-    stop("Quarto needs to be installed.")
-  }
+render <- function(input_file, output_file = NULL, quiet = FALSE, ...) {
   input_file <- tools::file_path_as_absolute(input_file)
+  
+  if (input_file %like% "Rmd$") {
+    # RMarkdown
+    render_fn <- rmarkdown::render
+  } else {
+    # Quarto
+    if (!file.exists(quarto_path())) {
+      stop("Quarto needs to be installed.")
+    }
+    render_fn <- quarto::quarto_render
+    Sys.setenv(QUARTO_PROJECT_FILE = input_file)
+    Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
+  }
+  
   if (!is.null(output_file)) {
     output_file <- file.path(tools::file_path_as_absolute(dirname(output_file)), basename(output_file))
     output_dir  <- dirname(output_file)
@@ -44,22 +58,17 @@ render <- function(input_file, output_file = NULL, quiet = TRUE, as_job = "auto"
   on.exit(setwd(old_wd))
   setwd(dirname(input_file))
   
-  Sys.setenv(QUARTO_PROJECT_FILE = input_file)
-  Sys.setenv(QUARTO_PRINT_STACK = "true") # will cause Quarto to print a stack trace when an error occurs
-  
   if (is.null(output_file)) {
-    # quarto::quarto_render() checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
-    quarto_render(input = basename(input_file),
-                  quiet = quiet,
-                  as_job = as_job,
-                  ...)
+    # in case of quarto::quarto_render(): checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
+    render_fn(input = basename(input_file),
+              quiet = quiet,
+              ...)
     output_file <- detect_output_file(tools::file_path_as_absolute(input_file))
   } else {
-    quarto_render(input = basename(input_file),
-                  output_file = basename(output_file),
-                  quiet = quiet,
-                  as_job = as_job,
-                  ...)
+    render_fn(input = basename(input_file),
+              output_file = basename(output_file),
+              quiet = quiet,
+              ...)
   }
   
   if (!is.null(output_file) && dirname(input_file) != output_dir) {
@@ -100,7 +109,7 @@ render_sharepoint <- function(input_file = NULL,
                               output_file = NULL,
                               project_number = project_get_current_id(),
                               full_sharepoint_path = NULL,
-                              quiet = TRUE,
+                              quiet = FALSE,
                               as_job = "auto",
                               account = connect_teams(),
                               output_folder = get_output_folder(project_number = project_number, account = account),
@@ -115,6 +124,11 @@ render_sharepoint <- function(input_file = NULL,
       input_file <- paste0(input_file, ".*(R|Rmd|qmd)$")
     }
     full_sharepoint_path <- project_get_file(input_file, project_number = project_number, account = account)
+  }
+  
+  if (full_sharepoint_path %unlike% "Rmd$") {
+    # download quarto settings file first if file is not RMarkdown (could be `.qmd`, `.md`, `.ipynb`, etc.)
+    try(download_from_sharepoint(full_sharepoint_path = "_quarto.yml"), silent = TRUE)
   }
   
   file_local <- download_from_sharepoint(full_sharepoint_path = full_sharepoint_path, account = account)
@@ -143,6 +157,7 @@ render_sharepoint <- function(input_file = NULL,
     return(invisible(file.path(dirname(full_sharepoint_path), basename(out))))
   } else {
     file.copy(out, file.path(output_folder, output_file), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE)
+    cli::cli_process_done(msg_done = paste0("Rendered file saved to {.val {output_folder}} folder"))
     return(file.path(output_folder, output_file))
   }
   

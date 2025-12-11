@@ -110,7 +110,6 @@ render_sharepoint <- function(input_file = NULL,
                               project_number = project_get_current_id(),
                               full_sharepoint_path = NULL,
                               quiet = FALSE,
-                              as_job = "auto",
                               account = connect_teams(),
                               output_folder = get_output_folder(project_number = project_number, account = account),
                               upload = FALSE,
@@ -142,7 +141,7 @@ render_sharepoint <- function(input_file = NULL,
     # remove output file before rendering
     try(unlink(output_file, force = TRUE), silent = TRUE)
   }
-  out <- render(input_file = file_local, output_file = output_file, quiet = quiet, as_job = as_job, ...)
+  out <- render(input_file = file_local, output_file = output_file, quiet = quiet, ...)
   cli::cli_process_done(msg_done = paste0("Rendered file: {.val {basename(full_sharepoint_path)}} -> {.val {basename(out)}}"))
   
   if (identical(tolower(output_folder), "sharepoint") || (!isTRUE(upload) && is.null(output_folder))) {

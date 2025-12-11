@@ -16,7 +16,6 @@ render_sharepoint(
   project_number = project_get_current_id(),
   full_sharepoint_path = NULL,
   quiet = FALSE,
-  as_job = "auto",
   account = connect_teams(),
   output_folder = get_output_folder(project_number = project_number, account = account),
   upload = FALSE,
@@ -43,11 +42,6 @@ On Github Actions, it will always be \code{quiet = FALSE}.}
 \item{project_number}{Planner project number}
 
 \item{full_sharepoint_path}{Full path of the remote file, consisting of the project folder and the file name, such as \code{"Project - p123/my_file.R"}.}
-
-\item{as_job}{Render as an RStudio background job. Default is \code{"auto"},
-which will render individual documents normally and projects as
-background jobs. Use the \code{quarto.render_as_job} \R option to control
-the default globally.}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
 

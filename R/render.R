@@ -34,9 +34,13 @@
 render <- function(input_file, output_file = NULL, quiet = FALSE, ...) {
   input_file <- tools::file_path_as_absolute(input_file)
   
+  args <- list(...)
+  args$input <- basename(input_file)
+  
   if (input_file %like% "Rmd$") {
     # RMarkdown
     render_fn <- rmarkdown::render
+    args$envir <- globalenv()
   } else {
     # Quarto
     if (!file.exists(quarto_path())) {
@@ -58,18 +62,16 @@ render <- function(input_file, output_file = NULL, quiet = FALSE, ...) {
   on.exit(setwd(old_wd))
   setwd(dirname(input_file))
   
-  if (is.null(output_file)) {
-    # in case of quarto::quarto_render(): checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
-    render_fn(input = basename(input_file),
-              quiet = quiet,
-              ...)
-    output_file <- detect_output_file(tools::file_path_as_absolute(input_file))
+  if (!is.null(output_file)) {
+    args <- c(args,
+              list(output_file = basename(output_file)))
   } else {
-    render_fn(input = basename(input_file),
-              output_file = basename(output_file),
-              quiet = quiet,
-              ...)
+    # in case of quarto::quarto_render(): checks if `output_file` is MISSING, not if it's NULL because its default is NULL already
+    output_file <- detect_output_file(tools::file_path_as_absolute(input_file))
   }
+  
+  # actual render
+  do.call(render_fn, args)
   
   if (!is.null(output_file) && dirname(input_file) != output_dir) {
     file.rename(from = file.path(getwd(), basename(output_file)),
@@ -155,9 +157,10 @@ render_sharepoint <- function(input_file = NULL,
                          full_sharepoint_path = file.path(dirname(full_sharepoint_path), basename(out)))
     return(invisible(file.path(dirname(full_sharepoint_path), basename(out))))
   } else {
-    file.copy(out, file.path(output_folder, output_file), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE)
+    # suppress warning to prevent warning: 'recursive' will be ignored as 'to' is not a single existing directory
+    suppressWarnings(file.copy(out, file.path(output_folder, basename(output_file)), overwrite = TRUE, recursive = TRUE, copy.mode = TRUE, copy.date = TRUE))
     cli::cli_process_done(msg_done = paste0("Rendered file saved to {.val {output_folder}} folder"))
-    return(file.path(output_folder, output_file))
+    return(file.path(output_folder, basename(output_file)))
   }
   
 }

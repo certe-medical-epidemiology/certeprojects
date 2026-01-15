@@ -23,6 +23,7 @@
 #' @param planner Microsoft Planner account, as returned by e.g. [connect_planner()]
 #' @param teams Microsoft Teams account, as returned by e.g. [connect_teams()]
 #' @param channel Microsoft Teams Channel folder, as returned by e.g. [teams_projects_channel()]
+#' @param outlook MIcrosoft Outlook account, as returned by e.g. [connect_outlook()]
 #' @importFrom shiny fluidPage sidebarLayout sidebarPanel textInput textAreaInput uiOutput selectInput checkboxInput br p hr actionButton radioButtons renderUI tagList selectizeInput dateInput observeEvent updateTextInput runGadget stopApp dialogViewer incProgress withProgress tags icon mainPanel img a updateCheckboxInput updateRadioButtons HTML h5 strong updateSelectInput updateTextAreaInput fileInput reactive updateSelectizeInput req
 #' @importFrom shinyjs useShinyjs enable disable show hide
 #' @importFrom shinyWidgets searchInput awesomeRadio updateAwesomeRadio
@@ -36,7 +37,8 @@
 #' @export
 project_consult_add <- function(planner = connect_planner(),
                                 teams = if (in_positron()) connect_teams() else NULL,
-                                channel = if (in_positron()) teams_projects_channel() else NULL) {
+                                channel = if (in_positron()) teams_projects_channel() else NULL,
+                                outlook = connect_outlook()) {
   
   if (!inherits(planner, "ms_plan")) {
     stop("Maak eerst verbinding met Planner via connect_planner().")
@@ -402,6 +404,7 @@ project_consult_add <- function(planner = connect_planner(),
     observeEvent(input$file_upload, {
       ## Read EML file (created when using drag/drop) ----
       req(input$file_upload)
+      pkg_env$internetMessageId <- NULL
       
       if (input$file_upload$datapath %like% "[.](msg|eml)$") {
         
@@ -413,29 +416,30 @@ project_consult_add <- function(planner = connect_planner(),
                        url = "https://github.com/certe-medical-epidemiology/msgxtractr")
             return(invisible())
           }
-          txt <- msgxtractr::read_msg(input$file_upload$datapath)
+          msg <- msgxtractr::read_msg(input$file_upload$datapath)
           
-          subject <- txt$subject
-          from <- txt$sender$sender_name
-          body <- txt$body$text
+          subject <- msg$subject
+          from <- msg$sender$sender_name
+          body <- msg$body$text
           body <- paste0(body[nchar(body) != 2], collapse = " ")
           body <- gsub("\r\n", "\n", body)
           sent_by_us <- from == read_secret("department.name") || certemail::get_certe_name() %like% from
+          pkg_env$internetMessageId <- msg$headers$`Message-ID`
           
         } else if (input$file_upload$datapath %like% "[.]eml$") {
           # EML file
-          txt <- readLines(input$file_upload$datapath)
-          txt_body <- which(txt %like% "^--_000")
-          subject <- trimws(gsub("^Subject: ", "", txt[txt %like% "^Subject: "]))
-          from <- trimws(gsub('"', "", gsub("^From: ", "", txt[txt %like% "^From: "])))
+          msg <- readLines(input$file_upload$datapath)
+          txt_body <- which(msg %like% "^--_000")
+          subject <- trimws(gsub("^Subject: ", "", msg[msg %like% "^Subject: "]))
+          from <- trimws(gsub('"', "", gsub("^From: ", "", msg[msg %like% "^From: "])))
           from <- gsub(" <.*>", "", from)
           sent_by_us <- from == read_secret("department.name")
           if (sent_by_us) {
             # sent by us, so get To field, and take upper part as our response, lower part as their question/request
-            from <- trimws(gsub('"', "", gsub("^To: ", "", txt[txt %like% "^To: "])))
+            from <- trimws(gsub('"', "", gsub("^To: ", "", msg[msg %like% "^To: "])))
             from <- gsub(" <.*>", "", from)
           }
-          body <- tryCatch(txt[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
+          body <- tryCatch(msg[seq(txt_body[1] + 1, txt_body[2] - 1)], error = function(e) "")
           body <- body[body %unlike% "^Content-" & body != ""]
           body[nchar(body) == 76 & substr(body, 76, 76) == "="] <- gsub("=$", "####", body[nchar(body) == 76 & substr(body, 76, 76) == "="])
           body <- paste(body, collapse = "\n")
@@ -730,10 +734,15 @@ project_consult_add <- function(planner = connect_planner(),
       
       if (is_consult()) {
         message("Consult c", output_task_id, " aangemaakt.")
+        if (!is.null(pkg_env$internetMessageId)) {
+          # label mail as consult
+          flag_mail <- outlook$list_emails(filter = paste0("internetMessageId eq '", pkg_env$internetMessageId, "'"))[[1]]
+          flag_mail$update(categories = c("Consult aangemaakt", "MedEpi"))
+        }
       } else {
         message("Project p", output_task_id, " aangemaakt.")  
       }
-      
+
       if (identical(input$files_teams_or_local, "teams")) {
         teams_browse_project(task = title_with_output_task_id, channel = channel, planner = planner)
       } else {

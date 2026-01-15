@@ -7,7 +7,8 @@
 project_consult_add(
   planner = connect_planner(),
   teams = if (in_positron()) connect_teams() else NULL,
-  channel = if (in_positron()) teams_projects_channel() else NULL
+  channel = if (in_positron()) teams_projects_channel() else NULL,
+  outlook = connect_outlook()
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ project_consult_add(
 \item{teams}{Microsoft Teams account, as returned by e.g. \code{\link[=connect_teams]{connect_teams()}}}
 
 \item{channel}{Microsoft Teams Channel folder, as returned by e.g. \code{\link[=teams_projects_channel]{teams_projects_channel()}}}
+
+\item{outlook}{MIcrosoft Outlook account, as returned by e.g. \code{\link[=connect_outlook]{connect_outlook()}}}
 }
 \description{
 This is a Shiny app to add a new project: it creates a project folder locally \link[=connect_teams]{or in Teams}, generates the required Quarto or R Markdown or R file, and creates a \link[=connect_planner]{new task in Planner}. These functions come with RStudio addins to quickly access existing projects. For consults, it only adds a Planner task and creates the card in the background.

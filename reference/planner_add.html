@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.4</span>
       </span>
     </div>
 
@@ -79,7 +79,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">project_consult_add</span><span class="op">(</span></span>
 <span>  planner <span class="op">=</span> <span class="fu"><a href="connect.html">connect_planner</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  teams <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu">in_positron</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="connect.html">connect_teams</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NULL</span>,</span>
-<span>  channel <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu">in_positron</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NULL</span></span>
+<span>  channel <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu">in_positron</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="teams.html">teams_projects_channel</a></span><span class="op">(</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NULL</span>,</span>
+<span>  outlook <span class="op">=</span> <span class="fu"><a href="connect.html">connect_outlook</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -97,6 +98,10 @@
 
 <dt id="arg-channel">channel<a class="anchor" aria-label="anchor" href="#arg-channel"></a></dt>
 <dd><p>Microsoft Teams Channel folder, as returned by e.g. <code><a href="teams.html">teams_projects_channel()</a></code></p></dd>
+
+
+<dt id="arg-outlook">outlook<a class="anchor" aria-label="anchor" href="#arg-outlook"></a></dt>
+<dd><p>MIcrosoft Outlook account, as returned by e.g. <code><a href="connect.html">connect_outlook()</a></code></p></dd>
 
 </dl></div>
 

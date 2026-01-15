@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.4</span>
       </span>
     </div>
 
@@ -102,9 +102,10 @@
 
 
 <dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
-<dd><p>Base name for single-file output (e.g. PDF, ePub, MS Word).
-This sets the <code>output-file</code> Quarto metadata. If <code>NULL</code>, the output filename
-will be based on the input filename.</p></dd>
+<dd><p>The name of the output file. If using <code>NULL</code>, the output
+filename will be based on the filename for the input file. <code>output_file</code> is
+mapped to the <code>--output</code> option flag of the <code>quarto</code> CLI. It is expected to
+be a filename only, not a path, relative or absolute.</p></dd>
 
 
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>

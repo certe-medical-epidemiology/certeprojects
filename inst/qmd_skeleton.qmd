@@ -12,7 +12,7 @@ identifier: "`r certeprojects::project_identifier()`"
 #| label: Downloaden
 
 library(certedata)
-df <- certedb::get_diver_data()
+df <- get_diver_data()
 
 ```
 

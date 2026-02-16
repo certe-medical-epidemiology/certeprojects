@@ -65,7 +65,7 @@ arg_is_empty <- function(x) {
 #' @importFrom dplyr arrange filter
 get_user <- function(..., property = "shiny") {
   user_file <- read_secret("users.csv.file")
-  if (user_file == "") {
+  if (user_file == "" || !file.exists(user_file)) {
     return("")
   }
   users <- utils::read.csv(user_file, fileEncoding = "UTF-8")

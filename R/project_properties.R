@@ -161,6 +161,7 @@ project_get_title <- function(project_number = project_get_current_id(),
 }
 
 #' @rdname project_properties
+#' @details [project_get_file()] searches the SharePoint project folders. If `filename` is matched, it will return that file. Otherwise, it will use [regex] to find matching files.
 #' @importFrom certestyle format2 font_bold font_blue
 #' @export
 project_get_file <- function(filename = ".*",
@@ -183,6 +184,10 @@ project_get_file <- function(filename = ".*",
     
     files <- files[files$name %like% filename & files$name %unlike% "^~[$]", ]
     files_names <- files$name
+    if (any(files_names == filename, na.rm = TRUE)) {
+      # found direct hit
+      return(file.path(folder, filename))
+    }
     
     if (length(files_names) == 0) {
       warning("No files found")

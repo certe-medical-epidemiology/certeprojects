@@ -333,7 +333,7 @@ project_consult_add <- function(planner = connect_planner(),
                          closeAfterSelect = FALSE)),
         actionButton("add_doelmatig", "Label Doelmatigheid toevoegen", width = "100%"),
         actionButton("add_validatie", "Vereist validatie", icon = icon("check"), width = "49.5%"),
-        actionButton("add_autorisatie", "Vereist autorisatie", icon = icon("circle-check"), width = "49.5%", disabled = TRUE)
+        actionButton("add_autorisatie", "Vereist autorisatie", icon = icon("circle-check"), width = "49.5%")
       )
     })
     
@@ -342,13 +342,11 @@ project_consult_add <- function(planner = connect_planner(),
     })
     observeEvent(input$add_validatie, {
       updateSelectizeInput("planner_categories", selected = unique(c(input$planner_categories, "Valideren")), session = session)
-      updateSelectInput("planner_bucket", selected = read_secret("planner.validate.bucket"), session = session)
-      updateActionButton(session = session, "add_autorisatie", disabled = FALSE)
     })
     observeEvent(input$add_autorisatie, {
       updateSelectizeInput("planner_categories", selected = unique(c(input$planner_categories, "Autoriseren")), session = session)
-      updateSelectInput("planner_bucket", selected = read_secret("planner.validate.bucket"), session = session)
     })
+    
     
     # Mail import ----
     

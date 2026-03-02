@@ -6,7 +6,7 @@ Name: 🗄️ Versievergelijking...
 Binding: addin1c_versions
 Interactive: true
 
-Name: ✅ Taak verplaatsen...
+Name: 🔀 Taak verplaatsen...
 Binding: addin2_projects_update
 Interactive: true
 
@@ -18,13 +18,21 @@ Name: 📂 Projectmap openen...
 Binding: addin4_projects_open_folder
 Interactive: true
 
-Name: 🗋 Nieuw Quarto-document voor project...
+Name: 📄 Nieuw Quarto-document voor project...
 Binding: addin5_quarto_skeleton
 Interactive: true
 
 Name: 💾 Opslaan in projectmap...
 Binding: addin6_projects_save
 Interactive: true
+
+Name: ☑️ Valideren
+Binding: positron_validate
+Interactive: false
+
+Name: ✅ Autoriseren
+Binding: positron_authorise
+Interactive: false
 
 Name: 📁 Huidige map instellen...
 Binding: set_wd

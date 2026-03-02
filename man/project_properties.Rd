@@ -93,6 +93,8 @@ Retrieve project properties, such as the title, folder location and project numb
 
 \code{\link[=project_identifier]{project_identifier()}} generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: '\Sexpr{Sys.info()["user"]}'), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).
 
+\code{\link[=project_get_file]{project_get_file()}} searches the SharePoint project folders. If \code{filename} is matched, it will return that file. Otherwise, it will use \link{regex} to find matching files.
+
 \code{\link[=project_set_folder]{project_set_folder()}} will create the folder if it does not exist.
 
 \code{\link[=project_add_qmd_skeleton]{project_add_qmd_skeleton()}} initializes a new Quarto skeleton for a project.

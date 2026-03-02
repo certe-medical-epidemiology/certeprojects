@@ -173,24 +173,27 @@ project_consult_add <- function(planner = connect_planner(),
       padding_desc <- ifelse(input$type == "Consult", "padding-bottom: 0;", "")
       
       tags$style(paste0(".well { background-color: ", colourpicker(paste0(colour, 5)), "; }
-                      #description { ", padding_desc, " }
-                      .well label { color: ", colourpicker(colour), "; }
-                      .h2, h2 { color: ", colourpicker(colour), "; }
-                      a { color: ", colourpicker(colour), "; }
-                      .form-control:focus, .selectize-input.focus { border-color: ", colourpicker(colour), "; box-shadow: none; }
-                      certeblauw, .certeblauw { color: ", colourpicker(colour), "; }
-                      certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
-                      .btn-default.focus, .btn-default:focus, .btn-default.active, .btn-default:active { background-color: ", colourpicker(paste0(colour, 5)), "; border-color: ", colourpicker(colour), "; }
-                      #create { background-color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), "; }
-                      #create:hover { background-color: ", colourpicker(paste0(colour, 0)), "; border-color: ", colourpicker(colour), "; }
-                      #cancel { background-color: white; color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), ";}
-                      #cancel:hover { color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
-                      .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker(paste0(colour, 5)), " !important; }
-                      .selectize-input .item.active { color: white; background-color: ", colourpicker(colour), " !important; }",
-                        '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker(colour), "; border-color: ", colourpicker(colour), " ;}",
-                        ".datepicker .active { color: white !important; background-color: ", colourpicker(colour), " !important; }",
-                        '.radio-primary input[type="radio"]:checked+label::before { border-color: ', colourpicker(colour), ";}",
-                        '.radio-primary input[type="radio"]:checked+label::after { background-color: ', colourpicker(colour), ";}"))
+                        #description { ", padding_desc, " }
+                        .well label { color: ", colourpicker(colour), "; }
+                        .h2, h2 { color: ", colourpicker(colour), "; }
+                        a { color: ", colourpicker(colour), "; }
+                        .form-control:focus, .selectize-input.focus { border-color: ", colourpicker(colour), "; box-shadow: none; }
+                        certeblauw, .certeblauw { color: ", colourpicker(colour), "; }
+                        certeroze, .certeroze { color: ", colourpicker("certeroze"), "; }
+                        .btn-default.focus, .btn-default:focus, .btn-default.active, .btn-default:active { background-color: ", colourpicker(paste0(colour, 5)), "; border-color: ", colourpicker(colour), "; }
+                        #create { background-color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), "; }
+                        #create:hover { background-color: ", colourpicker(paste0(colour, 0)), "; border-color: ", colourpicker(colour), "; }
+                        #cancel { background-color: white; color: ", colourpicker(colour), "; border-color: ", colourpicker(colour), ";}
+                        #cancel:hover { color: ", colourpicker("certeroze"), "; border-color: ", colourpicker("certeroze"), ";}
+                        #add_validatie, #add_autorisatie { margin-top: 10px; }
+                        .multi .selectize-input .item[data-value=\"Valideren\"] { background-color: ", colourpicker("certeroze"), " !important; color: white !important; }
+                        .multi .selectize-input .item[data-value=\"Autoriseren\"] { background-color: ", colourpicker("certeroze"), " !important; color: white !important; }
+                        .multi .selectize-input .item, .selectize-dropdown .active { background-color: ", colourpicker(paste0(colour, 5)), " !important; }
+                        .selectize-input .item.active { color: white; background-color: ", colourpicker(colour), " !important; }",
+                          '.checkbox-primary input[type="checkbox"]:checked+label::before, .checkbox-primary input[type="radio"]:checked+label::before { background-color: ', colourpicker(colour), "; border-color: ", colourpicker(colour), " ;}",
+                          ".datepicker .active { color: white !important; background-color: ", colourpicker(colour), " !important; }",
+                          '.radio-primary input[type="radio"]:checked+label::before { border-color: ', colourpicker(colour), ";}",
+                          '.radio-primary input[type="radio"]:checked+label::after { background-color: ', colourpicker(colour), ";}"))
       
     })
     
@@ -198,7 +201,9 @@ project_consult_add <- function(planner = connect_planner(),
     
     observe({
       if (is_consult()) {
-        updateSelectInput("planner_bucket", selected = read_secret("planner.default.bucket.consult"), session = session)
+        if (is.null(input$planner_bucket) || input$planner_bucket == read_secret("planner.default.bucket")) {
+          updateSelectInput("planner_bucket", selected = read_secret("planner.default.bucket.consult"), session = session)
+        }
         current_labels <- input$planner_categories[input$planner_categories != "Project"]
         updateSelectizeInput("planner_categories", selected = unique(c("Consult", current_labels)), session = session)
         session$sendCustomMessage("set-textarea-rows", list(id = "description", rows = 8))
@@ -211,7 +216,9 @@ project_consult_add <- function(planner = connect_planner(),
         output$consult_inform <- renderUI(p("Voor een consult wordt het R-bestand opgeslagen in projectenmap/Consulten/."))
       } else {
         # project
-        updateSelectInput("planner_bucket", selected = read_secret("planner.default.bucket"), session = session)
+        if (is.null(input$planner_bucket) || input$planner_bucket == read_secret("planner.default.bucket.consult")) {
+          updateSelectInput("planner_bucket", selected = read_secret("planner.default.bucket"), session = session)
+        }
         current_labels <- input$planner_categories[input$planner_categories != "Consult"]
         updateSelectizeInput("planner_categories", selected = unique(c("Project", current_labels)), session = session)
         session$sendCustomMessage("set-textarea-rows", list(id = "description", rows = 2))
@@ -324,13 +331,22 @@ project_consult_add <- function(planner = connect_planner(),
                          create = FALSE,
                          createOnBlur = FALSE,
                          closeAfterSelect = FALSE)),
-        actionButton("add_doelmatig", "Label Doelmatigheid toevoegen", width = "100%")
+        actionButton("add_doelmatig", "Label Doelmatigheid toevoegen", width = "100%"),
+        actionButton("add_validatie", "Vereist validatie", icon = icon("check"), width = "49.5%"),
+        actionButton("add_autorisatie", "Vereist autorisatie", icon = icon("circle-check"), width = "49.5%")
       )
     })
     
     observeEvent(input$add_doelmatig, {
       updateSelectizeInput("planner_categories", selected = unique(c(input$planner_categories, "Doelmatigheid")), session = session)
     })
+    observeEvent(input$add_validatie, {
+      updateSelectizeInput("planner_categories", selected = unique(c(input$planner_categories, "Valideren")), session = session)
+    })
+    observeEvent(input$add_autorisatie, {
+      updateSelectizeInput("planner_categories", selected = unique(c(input$planner_categories, "Autoriseren")), session = session)
+    })
+    
     
     # Mail import ----
     

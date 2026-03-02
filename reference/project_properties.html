@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">certeprojects</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.30.6</span>
       </span>
     </div>
 
@@ -166,6 +166,7 @@
     <p><code>project_get_current_id()</code> uses <code><a href="planner.html">planner_task_search()</a></code> to find a specific project based on any search string.</p>
 <p><code>project_identifier()</code> generates the project identifier for print on reports and in mails: a combination of the currently logged in user (in your case: 'runner
 '), the current date/time (format: YYMMDDHHMM), and the project number. If the project number is not available, it will only return the current user and date/time (format: YYMMDDHHMM).</p>
+<p><code>project_get_file()</code> searches the SharePoint project folders. If <code>filename</code> is matched, it will return that file. Otherwise, it will use <a href="https://rdrr.io/r/base/regex.html" class="external-link">regex</a> to find matching files.</p>
 <p><code>project_set_folder()</code> will create the folder if it does not exist.</p>
 <p><code>project_add_qmd_skeleton()</code> initializes a new Quarto skeleton for a project.</p>
     </div>
@@ -173,7 +174,7 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">project_identifier</span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2601151529-123"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "runner-2603021229-123"</span>
 </code></pre></div>
     </div>
   </div>

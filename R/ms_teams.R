@@ -27,6 +27,7 @@
 #' @rdname teams
 #' @name teams
 #' @importFrom Microsoft365R get_team ms_team ms_drive_item ms_channel
+#' @importFrom AzureGraph call_graph_endpoint
 #' @export
 #' @examples 
 #' \dontrun{
@@ -64,6 +65,7 @@
 #'   teams_upload_file("MyTeamName/MyChannelName/MySubFolder/")
 #' }
 teams_projects_channel <- function(projects_channel_id = read_secret("teams.projects.channel_id"),
+                                   projects_folder_id = read_secret("teams.projects.folder_id"),
                                    overwrite = FALSE,
                                    account = connect_teams()) {
   if (isTRUE(overwrite) || is.null(pkg_env$projects_channel)) {
@@ -84,6 +86,17 @@ teams_projects_channel <- function(projects_channel_id = read_secret("teams.proj
                                                                        properties = account$do_operation(file.path("channels/", projects_channel_id)),
                                                                        team_id = get_azure_property(account, "id"))$do_operation("filesFolder")),
                          error = function(e) stop("Could not retrieve Channel list: ", e$message))
+      if (folder$properties$name == "root") {
+        drive_id <- folder$properties$parentReference$driveId
+        folder <- ms_drive_item$new(
+          token = account$token,
+          tenant = account$tenant,
+          properties = call_graph_endpoint(
+            account$token,
+            file.path("drives", drive_id, "items", projects_folder_id)
+          )
+        )
+      }
       pkg_env$projects_channel <- folder
       pkg_env$projects_channel_from_callr <- FALSE
       if (interactive()) {

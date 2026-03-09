@@ -28,6 +28,7 @@
 \usage{
 teams_projects_channel(
   projects_channel_id = read_secret("teams.projects.channel_id"),
+  projects_folder_id = read_secret("teams.projects.folder_id"),
   overwrite = FALSE,
   account = connect_teams()
 )

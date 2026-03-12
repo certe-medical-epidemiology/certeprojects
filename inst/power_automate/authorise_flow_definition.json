@@ -34,7 +34,7 @@
             "Accept": "application/json;odata=nometadata",
             "Content-Type": "application/json;odata=nometadata"
           },
-          "parameters/body": "{\"formValues\":[{\"FieldName\":\"Gevalideerd\",\"FieldValue\":\"@{utcNow()}\"},{\"FieldName\":\"Gevalideerddoor\",\"FieldValue\":\"@{coalesce(triggerBody()?['user_lookup_id'], triggerOutputs()?['queries']?['user_lookup_id'])}\"}],\"bNewDocumentUpdate\":false}"
+          "parameters/body": "{\"formValues\":[{\"FieldName\":\"Autorisatie\",\"FieldValue\":\"@{utcNow()}\"},{\"FieldName\":\"Autorisatiedoor\",\"FieldValue\":\"@{coalesce(triggerBody()?['user_lookup_id'], triggerOutputs()?['queries']?['user_lookup_id'])}\"}],\"bNewDocumentUpdate\":false}"
         },
         "authentication": "@parameters('$authentication')"
       }
@@ -53,9 +53,9 @@
         "body": {
           "@type": "MessageCard",
           "@context": "http://schema.org/extensions",
-          "themeColor": "107C10",
-          "title": "\u2713 Gevalideerd",
-          "text": "Het bestand **@{coalesce(triggerBody()?['file_name'], triggerOutputs()?['queries']?['file_name'])}** is succesvol gevalideerd."
+          "themeColor": "0078D4",
+          "title": "\u2605 Geautoriseerd",
+          "text": "Het bestand **@{coalesce(triggerBody()?['file_name'], triggerOutputs()?['queries']?['file_name'])}** is succesvol geautoriseerd."
         }
       }
     },
@@ -74,7 +74,7 @@
           "@type": "MessageCard",
           "@context": "http://schema.org/extensions",
           "themeColor": "C50F1F",
-          "title": "\u26a0 Fout bij validatie",
+          "title": "\u26a0 Fout bij autorisatie",
           "text": "Er is een fout opgetreden bij het bijwerken van SharePoint. Neem contact op met de beheerder."
         }
       }

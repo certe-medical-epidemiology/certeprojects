@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": { "defaultValue": {}, "type": "Object" },
+    "$authentication": { "defaultValue": {}, "type": "SecureObject" }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "method": "GET",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "queries": {
+              "type": "object",
+              "properties": {
+                "site_url":      { "type": "string", "description": "SharePoint site web URL" },
+                "list_id":       { "type": "string", "description": "Document library list GUID" },
+                "list_item_id":  { "type": "string", "description": "Numeric SharePoint list item ID" },
+                "user":          { "type": "string", "description": "Email address of the recipient who clicked" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "Patch_list_item": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+          "connectionName": "shared_sharepointonline",
+          "operationId": "HttpRequest"
+        },
+        "parameters": {
+          "dataset": "@{triggerOutputs()?['queries']?['site_url']}",
+          "parameters/method": "POST",
+          "parameters/uri": "_api/Web/Lists(guid'@{triggerOutputs()?[''queries'']?[''list_id'']}')/Items(@{triggerOutputs()?['queries']?['list_item_id']})/ValidateUpdateListItem()",
+          "parameters/headers": {
+            "Accept": "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata"
+          },
+          "parameters/body": "{\"formValues\":[{\"FieldName\":\"ValidationStatus\",\"FieldValue\":\"Afgewezen\"}],\"bNewDocumentUpdate\":false}"
+        },
+        "authentication": "@parameters('$authentication')"
+      }
+    },
+    "Response_success": {
+      "runAfter": { "Patch_list_item": ["Succeeded"] },
+      "type": "Response",
+      "kind": "Http",
+      "inputs": {
+        "statusCode": 200,
+        "headers": { "Content-Type": "text/html; charset=utf-8" },
+        "body": "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Afgewezen</title></head><body style='font-family:Calibri,Arial,sans-serif;text-align:center;padding:60px 24px;color:#333;'><div style='max-width:420px;margin:0 auto;'><div style='font-size:64px;color:#c50f1f;'>&#10007;</div><h2 style='color:#c50f1f;margin:16px 0 8px;'>Bestand afgewezen</h2><p>Het bestand is gemarkeerd als afgewezen in SharePoint.</p><p style='font-size:12px;color:#888;margin-top:32px;'>U kunt dit venster sluiten.</p></div></body></html>"
+      }
+    },
+    "Response_error": {
+      "runAfter": { "Patch_list_item": ["Failed"] },
+      "type": "Response",
+      "kind": "Http",
+      "inputs": {
+        "statusCode": 500,
+        "headers": { "Content-Type": "text/html; charset=utf-8" },
+        "body": "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Fout</title></head><body style='font-family:Calibri,Arial,sans-serif;text-align:center;padding:60px 24px;color:#333;'><div style='max-width:420px;margin:0 auto;'><div style='font-size:64px;color:#c50f1f;'>&#9888;</div><h2 style='color:#c50f1f;margin:16px 0 8px;'>Fout bij afwijzing</h2><p>Er is een fout opgetreden bij het bijwerken van SharePoint.<br>Neem contact op met de beheerder.</p></div></body></html>"
+      }
+    }
+  }
+}

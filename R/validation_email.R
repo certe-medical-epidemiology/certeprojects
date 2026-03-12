@@ -19,76 +19,79 @@
 
 #' Send a File Validation Request by Email
 #'
-#' Sends an HTML email with three action buttons to request file validation
-#' from a team member. The **Validate** and **Reject** buttons are signed
-#' hyperlinks that, when clicked, call a companion plumber webhook which
-#' updates the file's SharePoint metadata via the Microsoft Graph API.
+#' Sends an HTML email with three action buttons (view file, validate, reject)
+#' to request file validation from a team member. The validate and reject
+#' buttons are hyperlinks to **Power Automate HTTP-triggered flows** hosted
+#' by Microsoft, which patch the file's SharePoint metadata via the SharePoint
+#' REST API. No custom server is needed.
 #'
-#' @param drive_item a Drive Item object (`ms_drive_item`) of the file to validate
+#' @param drive_item a Drive Item object (`ms_drive_item`) of the file to
+#'   validate
 #' @param email_to email address of the recipient who must validate the file
-#' @param base_url base URL of the validation webhook server, e.g.
-#'   `"https://your-server.certe.nl:8080"`. Defaults to
-#'   `read_secret("validation.webhook.url")`.
-#' @param secret HMAC-SHA256 secret key for signing action URLs. Must match the
-#'   secret configured in the companion plumber handler. Defaults to
-#'   `read_secret("validation.webhook.secret")`.
+#' @param validate_flow_url Power Automate HTTP trigger URL for the *validate*
+#'   flow. Defaults to `read_secret("validation.flow.validate_url")`.
+#' @param reject_flow_url Power Automate HTTP trigger URL for the *reject*
+#'   flow. Defaults to `read_secret("validation.flow.reject_url")`.
 #' @param from sender email address or shared mailbox. Defaults to
 #'   `read_secret("department.mail")`.
-#' @param teams a Teams account, e.g. outcome of [connect_teams()]. Used for
+#' @param teams a Teams account, e.g. outcome of [connect_teams()], used for
 #'   the Microsoft Graph API OAuth token.
-#' @param expires_in link expiry in seconds (default: 7 days = `604800`).
 #' @details
 #' ## How it works
 #'
-#' 1. `send_validation_email()` generates two **HMAC-SHA256 signed URLs** —
-#'    one for *validate*, one for *reject* — embedding `site_id`, `drive_id`,
-#'    `item_id`, the recipient's email, and an expiry timestamp. The signature
-#'    prevents tampering.
-#' 2. An HTML email with three buttons is sent via
+#' 1. Three Microsoft Graph API calls resolve the SharePoint context needed by
+#'    the Power Automate flows: the SharePoint site URL, the document library's
+#'    list GUID, and the numeric list item ID of the file.
+#' 2. These identifiers are appended as query parameters to the Power Automate
+#'    trigger URLs — the same URL already contains a Microsoft-issued SAS
+#'    signature that prevents unauthorised triggering.
+#' 3. An HTML email with three styled buttons is sent via
 #'    `POST /users/{from}/sendMail` (Microsoft Graph API).
-#' 3. When the recipient clicks a button their browser opens the signed URL on
-#'    the plumber webhook server (see `inst/plumber/validation_handler.R`).
-#' 4. The webhook verifies the signature, checks expiry, and patches the
-#'    SharePoint list item fields — reusing the same Graph API call as
-#'    [validate_file()].
+#' 4. When the recipient clicks **Validate** or **Reject**, their browser opens
+#'    the corresponding Power Automate URL. The flow patches the SharePoint
+#'    list item fields and returns an HTML confirmation page.
 #'
-#' ## Webhook server
+#' ## One-time Power Automate setup
 #'
-#' Start the companion webhook with:
-#' ```r
-#' plumber::pr(
-#'   system.file("plumber/validation_handler.R", package = "certeprojects")
-#' ) |> plumber::pr_run(port = 8080)
-#' ```
-#' The server must be reachable from the recipient's browser at `base_url`.
-#' Set the `VALIDATION_WEBHOOK_SECRET` environment variable (or
-#' `validation.webhook.secret` secret) to the same value on both sides.
+#' Create two instant flows in Power Automate
+#' (<https://make.powerautomate.com>), one for validate and one for reject.
+#' Use the JSON definitions in
+#' `system.file("power_automate", package = "certeprojects")` as a starting
+#' point (paste into the flow's **Code view**). Each flow:
+#'
+#' - **Trigger**: "When a HTTP request is received" (GET method)
+#' - **Action**: "Send an HTTP request to SharePoint" with parameters
+#'   `site_url`, `list_id`, and `list_item_id` read from the query string
+#' - **Response**: returns an HTML confirmation page
+#'
+#' Store the trigger URLs (available after saving the flow) as secrets:
+#' - `validation.flow.validate_url`
+#' - `validation.flow.reject_url`
 #'
 #' ## SharePoint fields updated
 #'
-#' - **Validate**: sets `Gevalideerd` (UTC timestamp) and
-#'   `GevalideerddoorLookupId` (SharePoint user lookup ID of the recipient).
-#' - **Reject**: sets `ValidationStatus` to `"Afgewezen"`.
+#' The flows patch the following fields on the SharePoint list item:
+#' - **Validate**: `Gevalideerd` (UTC timestamp), `ValidationStatus`
+#'   `"Gevalideerd"`
+#' - **Reject**: `ValidationStatus` `"Afgewezen"`
 #'
-#' @importFrom httr POST add_headers stop_for_status
-#' @importFrom digest hmac
+#' @importFrom httr GET POST add_headers stop_for_status content
 #' @seealso [validate_file()], [authorise_file()]
 #' @export
 send_validation_email <- function(drive_item,
                                    email_to,
-                                   base_url   = read_secret("validation.webhook.url"),
-                                   secret     = read_secret("validation.webhook.secret"),
-                                   from       = read_secret("department.mail"),
-                                   teams      = connect_teams(),
-                                   expires_in = 7 * 24 * 3600) {
+                                   validate_flow_url = read_secret("validation.flow.validate_url"),
+                                   reject_flow_url   = read_secret("validation.flow.reject_url"),
+                                   from              = read_secret("department.mail"),
+                                   teams             = connect_teams()) {
   if (!inherits(drive_item, "ms_drive_item")) {
     stop("`drive_item` must be a Drive Item (ms_drive_item)")
   }
-  if (is.null(base_url) || base_url == "") {
-    stop("No webhook base URL configured. Set `validation.webhook.url` secret or pass `base_url`.")
+  if (is.null(validate_flow_url) || validate_flow_url == "") {
+    stop("No validate flow URL configured. Set `validation.flow.validate_url` secret or pass `validate_flow_url`.")
   }
-  if (is.null(secret) || secret == "") {
-    stop("No webhook secret configured. Set `validation.webhook.secret` secret or pass `secret`.")
+  if (is.null(reject_flow_url) || reject_flow_url == "") {
+    stop("No reject flow URL configured. Set `validation.flow.reject_url` secret or pass `reject_flow_url`.")
   }
 
   file_name <- drive_item$properties$name
@@ -97,34 +100,52 @@ send_validation_email <- function(drive_item,
   item_id   <- drive_item$properties$id
   web_url   <- drive_item$properties$webUrl
 
-  # HMAC-signed, expiring action URLs -----------------------------------------
-  # The signature covers: action | item_id | drive_id | site_id | user | expires
-  # This prevents any modification of parameters (including swapping validate/reject).
-  expires <- as.integer(Sys.time()) + as.integer(expires_in)
-
-  make_action_url <- function(action) {
-    payload <- paste(action, item_id, drive_id, site_id, email_to, expires, sep = "|")
-    sig <- digest::hmac(key = secret, object = payload, algo = "sha256", raw = FALSE)
-    paste0(
-      base_url, "/", action,
-      "?site_id=",  URLencode(site_id,   reserved = TRUE),
-      "&drive_id=", URLencode(drive_id,  reserved = TRUE),
-      "&item_id=",  URLencode(item_id,   reserved = TRUE),
-      "&user=",     URLencode(email_to,  reserved = TRUE),
-      "&expires=",  expires,
-      "&sig=",      sig
-    )
-  }
-
-  validate_url  <- make_action_url("validate")
-  reject_url    <- make_action_url("reject")
-  expires_label <- format(
-    as.POSIXct(expires, origin = "1970-01-01", tz = "Europe/Amsterdam"),
-    "%d-%m-%Y"
+  graph_headers <- add_headers(
+    Authorization  = paste(teams$token$credentials$token_type,
+                           teams$token$credentials$access_token),
+    `Content-type` = "application/json"
   )
 
+  # Resolve SharePoint context needed by the Power Automate flows -------------
+  # 1. SharePoint site URL (e.g. "https://certenl.sharepoint.com/sites/MedEpi")
+  res_site <- GET(
+    paste0("https://graph.microsoft.com/v1.0/sites/", site_id, "?$select=webUrl"),
+    config = graph_headers
+  )
+  stop_for_status(res_site, task = "get SharePoint site URL")
+  site_url <- content(res_site, as = "parsed")$webUrl
+
+  # 2. SharePoint list GUID for the document library
+  res_drive <- GET(
+    paste0("https://graph.microsoft.com/v1.0/drives/", drive_id),
+    config = graph_headers
+  )
+  stop_for_status(res_drive, task = "get drive SharePoint IDs")
+  list_id <- content(res_drive, as = "parsed")$sharepointIds$listId
+
+  # 3. Numeric list item ID (used by the SharePoint REST API)
+  res_item <- GET(
+    paste0("https://graph.microsoft.com/v1.0/drives/", drive_id,
+           "/items/", item_id, "/listItem?$select=id"),
+    config = graph_headers
+  )
+  stop_for_status(res_item, task = "get SharePoint list item ID")
+  list_item_id <- content(res_item, as = "parsed")$id
+
+  # Build action URLs ---------------------------------------------------------
+  # Power Automate trigger URLs already contain a Microsoft SAS signature.
+  # We append our SharePoint identifiers as additional query parameters.
+  action_params <- paste0(
+    "&site_url=",      URLencode(site_url,      reserved = TRUE),
+    "&list_id=",       URLencode(list_id,        reserved = TRUE),
+    "&list_item_id=",  URLencode(list_item_id,   reserved = TRUE),
+    "&user=",          URLencode(email_to,        reserved = TRUE)
+  )
+  validate_url <- paste0(validate_flow_url, action_params)
+  reject_url   <- paste0(reject_flow_url,   action_params)
+
   # HTML email body ------------------------------------------------------------
-  # Uses table-based layout and inline styles for broad email client support.
+  # Table-based layout with inline styles for maximum email client support.
   html_body <- paste0(
     '<!DOCTYPE html>
 <html>
@@ -157,9 +178,7 @@ send_validation_email <- function(drive_item,
       </td>
     </tr>
     <tr>
-      <td style="padding:4px;">
-        <hr style="border:none;border-top:1px solid #e0e0e0;margin:4px 0;">
-      </td>
+      <td><hr style="border:none;border-top:1px solid #e0e0e0;margin:4px 0;"></td>
     </tr>
     <tr>
       <td style="padding:12px 0 4px 0;">
@@ -182,7 +201,6 @@ send_validation_email <- function(drive_item,
 
   <p style="margin-top:32px;font-size:11px;color:#888888;border-top:1px solid #eeeeee;padding-top:12px;">
     Deze e-mail is automatisch gegenereerd door certeprojects.<br>
-    De knoppen zijn geldig tot <strong>', expires_label, '</strong>.
     Reageer niet op dit bericht.
   </p>
 
@@ -191,32 +209,22 @@ send_validation_email <- function(drive_item,
 </html>'
   )
 
-  # Send via Microsoft Graph API -----------------------------------------------
+  # Send via Microsoft Graph API ----------------------------------------------
   body <- list(
     message = list(
       subject = paste0("Validatieverzoek: ", file_name),
-      body    = list(
-        contentType = "HTML",
-        content     = html_body
-      ),
-      toRecipients = list(
-        list(emailAddress = list(address = email_to))
-      )
+      body    = list(contentType = "HTML", content = html_body),
+      toRecipients = list(list(emailAddress = list(address = email_to)))
     ),
     saveToSentItems = TRUE
   )
 
   res <- POST(
     url    = paste0("https://graph.microsoft.com/v1.0/users/",
-                    URLencode(from, reserved = FALSE),
-                    "/sendMail"),
+                    URLencode(from, reserved = FALSE), "/sendMail"),
     encode = "json",
-    config = add_headers(
-      Authorization  = paste(teams$token$credentials$token_type,
-                             teams$token$credentials$access_token),
-      `Content-type` = "application/json"
-    ),
-    body = body
+    config = graph_headers,
+    body   = body
   )
   stop_for_status(res, task = paste0("send validation email for '", file_name, "'"))
   message("Validatieverzoek per e-mail verstuurd voor '", file_name, "' naar ", email_to, ".")

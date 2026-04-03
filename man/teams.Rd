@@ -163,6 +163,8 @@ teams_get_link(
 \arguments{
 \item{projects_channel_id}{Teams channel ID of the projects}
 
+\item{projects_folder_id}{Teams folder ID within the Teams channel}
+
 \item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
 
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}

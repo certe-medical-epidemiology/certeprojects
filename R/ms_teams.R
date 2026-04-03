@@ -24,6 +24,7 @@
 #' @param account a Microsoft 365 account to use for looking up properties. This has to be an object as returned by [connect_teams()] or [Microsoft365R::get_team()].
 #' @inheritParams connect
 #' @param projects_channel_id Teams channel ID of the projects
+#' @param projects_folder_id  Teams folder ID within the Teams channel
 #' @rdname teams
 #' @name teams
 #' @importFrom Microsoft365R get_team ms_team ms_drive_item ms_channel

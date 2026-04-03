@@ -751,9 +751,11 @@ project_consult_add <- function(planner = connect_planner(),
       if (is_consult()) {
         message("Consult c", output_task_id, " aangemaakt.")
         if (!is.null(pkg_env$internetMessageId)) {
-          # label mail as consult
-          flag_mail <- outlook$list_emails(filter = paste0("internetMessageId eq '", pkg_env$internetMessageId, "'"))[[1]]
-          flag_mail$update(categories = c("Consult aangemaakt", "MedEpi"))
+          tryCatch({
+            # label mail as consult
+            flag_mail <- outlook$list_emails(filter = paste0("internetMessageId eq '", pkg_env$internetMessageId, "'"))[[1]]
+            flag_mail$update(categories = c("Consult aangemaakt", "MedEpi"))
+          }, error = function(e) NULL)
         }
       } else {
         message("Project p", output_task_id, " aangemaakt.")  

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": { "defaultValue": {}, "type": "Object" },
+    "$authentication": { "defaultValue": {}, "type": "SecureObject" }
+  },
+
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {}
+      }
+    }
+  },
+
+  "actions": {
+
+    "ValidateUpdateListItem": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+          "connectionName": "shared_sharepointonline",
+          "operationId": "HttpRequest"
+        },
+        "parameters": {
+          "dataset": "@{coalesce(triggerBody()?['site_url'], triggerOutputs()?['queries']?['site_url'])}",
+          "parameters/method": "POST",
+          "parameters/uri": "_api/Web/Lists(guid'@{coalesce(triggerBody()?['list_id'], triggerOutputs()?['queries']?['list_id'])}')/Items(@{coalesce(triggerBody()?['list_item_id'], triggerOutputs()?['queries']?['list_item_id'])})/ValidateUpdateListItem()",
+          "parameters/headers": {
+            "Accept": "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata"
+          },
+          "parameters/body": "{\"formValues\":[{\"FieldName\":\"Gevalideerd\",\"FieldValue\":\"@{utcNow()}\"},{\"FieldName\":\"Gevalideerddoor\",\"FieldValue\":\"@{coalesce(triggerBody()?['user_lookup_id'], triggerOutputs()?['queries']?['user_lookup_id'])}\"}],\"bNewDocumentUpdate\":false}"
+        },
+        "authentication": "@parameters('$authentication')"
+      }
+    },
+
+    "Response_success": {
+      "runAfter": { "ValidateUpdateListItem": ["Succeeded"] },
+      "type": "Response",
+      "kind": "Http",
+      "inputs": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "CARD-UPDATE-IN-BODY": "true"
+        },
+        "body": {
+          "@type": "MessageCard",
+          "@context": "http://schema.org/extensions",
+          "themeColor": "107C10",
+          "title": "\u2713 Gevalideerd",
+          "text": "Het bestand **@{coalesce(triggerBody()?['file_name'], triggerOutputs()?['queries']?['file_name'])}** is succesvol gevalideerd."
+        }
+      }
+    },
+
+    "Response_error": {
+      "runAfter": { "ValidateUpdateListItem": ["Failed"] },
+      "type": "Response",
+      "kind": "Http",
+      "inputs": {
+        "statusCode": 500,
+        "headers": {
+          "Content-Type": "application/json",
+          "CARD-UPDATE-IN-BODY": "true"
+        },
+        "body": {
+          "@type": "MessageCard",
+          "@context": "http://schema.org/extensions",
+          "themeColor": "C50F1F",
+          "title": "\u26a0 Fout bij validatie",
+          "text": "Er is een fout opgetreden bij het bijwerken van SharePoint. Neem contact op met de beheerder."
+        }
+      }
+    }
+
+  }
+}

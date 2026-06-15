@@ -24,6 +24,7 @@
 \alias{planner_highest_consult_id}
 \alias{as.data.frame.ms_object}
 \alias{as_tibble.ms_object}
+\alias{planner_task_post_message}
 \title{Connect to Microsoft Planner via Microsoft 365}
 \usage{
 planner_browse(account = connect_planner())
@@ -78,6 +79,7 @@ planner_task_update(
   bucket_name = NULL,
   percent_completed = NULL,
   attachment_urls = NULL,
+  requested_by = NULL,
   preview_type = NULL,
   order_hint = NULL,
   account = connect_planner()
@@ -165,6 +167,8 @@ planner_highest_consult_id(
 )
 
 \method{as_tibble}{ms_object}(x, account = connect_planner(), ...)
+
+planner_task_post_message(task, message, account = connect_planner())
 }
 \arguments{
 \item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
@@ -199,7 +203,7 @@ planner_highest_consult_id(
 
 \item{...}{arguments passed on to \code{\link[=planner_task_create]{planner_task_create()}}}
 
-\item{task}{exact task ID or title, will be searched with \code{\link[certetoolbox:like]{\%like\%}}}
+\item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 
 \item{checklist_items_to_check}{names/titles of checklist items that need to become checked}
 
@@ -249,6 +253,9 @@ planner_highest_consult_id(
     \code{optional} only for column names treatment, basically with the
     meaning of \code{\link[base]{data.frame}(*, check.names = !optional)}.
     See also the \code{make.names} argument of the \code{matrix} method.}
+
+\item{message}{character string containing the chat message. Use \verb{@Name} to mention
+plan members, where \code{Name} is matched against known members via \code{\link[=planner_user_property]{planner_user_property()}}.}
 }
 \description{
 These functions use the connection to Microsoft Planner set up with \code{\link[=connect_planner]{connect_planner()}}.
@@ -278,4 +285,9 @@ teams_channels_list(plain = FALSE) |>
   lapply(as_tibble) |> 
   bind_rows()
 }\if{html}{\out{</div>}}
+
+\code{\link[=planner_task_post_message]{planner_task_post_message()}} posts a message to the Task Chat of a
+Planner task (beta Graph API). Any \verb{@FirstName LastName} pattern in \code{message}
+is resolved to a user mention. Names are matched using \code{\link[=planner_user_property]{planner_user_property()}}.
+Unresolved names are kept as plain text with a warning.
 }

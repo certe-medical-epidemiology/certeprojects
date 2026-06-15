@@ -174,9 +174,11 @@ planner_task_create <- function(title,
   
   if (!arg_is_empty(requested_by)) {
     if (!is.null(project_number)) {
-      description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), "."), description)
+      description <- c(paste0("Aangevraagd door: ", paste0(requested_by, collapse = " en "), ".\n"), description)
+    } else if (!is.null(consult_number)) {
+      description <- c(paste0("Consult voor: ", paste0(requested_by, collapse = " en "), ".\n"), description)
     } else {
-      description <- c(paste0("Consult voor: ", paste0(requested_by, collapse = " en "), "."), description)
+      description <- c(paste0("Via ", paste0(requested_by, collapse = " en "), ".\n"), description)
     }
   }
   
@@ -200,7 +202,7 @@ planner_task_create <- function(title,
   # some properties can only be added as update (using PATCH)
   # see https://learn.microsoft.com/en-us/graph/api/plannertaskdetails-update
   if (!arg_is_empty(description) || !arg_is_empty(categories) || !arg_is_empty(checklist_items) ||
-      !arg_is_empty(assigned) || !arg_is_empty(attachment_urls)) {
+      !arg_is_empty(assigned) || !arg_is_empty(attachment_urls) || (!arg_is_empty(requested_by) && planner_is_member(requested_by))) {
     tsk <- tryCatch(planner_task_find(title, account = account), error = function(e) NULL)
     if (is.null(tsk)) {
       # sync the fields
@@ -215,7 +217,7 @@ planner_task_create <- function(title,
     }
     planner_task_update(title, description = description, checklist_items = checklist_items,
                         assigned = assigned, categories = categories, attachment_urls = attachment_urls,
-                        account = account)
+                        requested_by = requested_by, account = account)
   }
   if (inherits(title, "ms_plan_task")) {
     title <- get_azure_property(title, property = "title")
@@ -316,6 +318,7 @@ planner_task_update <- function(task,
                                 bucket_name = NULL,
                                 percent_completed = NULL,
                                 attachment_urls = NULL,
+                                requested_by = NULL,
                                 preview_type = NULL,
                                 order_hint = NULL,
                                 # TODO comments = NULL, # these only work with Group.ReadWrite.All
@@ -558,6 +561,18 @@ planner_task_update <- function(task,
                                                       `Content-type` = "application/json"),
                                  body = body)
   stop_for_status(request_updatedetails, task = paste("update details of task", task_title, ".\nBody of request:\n\n", body))
+  
+  # Add name to Task Chat -------------------------------------------------------------------------
+  if (!arg_is_empty(requested_by) && planner_is_member(requested_by, account = account)) {
+    msg <- paste0(
+      "@", paste0(gsub("@", "", requested_by, fixed = TRUE), collapse = " en @"),
+      ", op deze kaart kun je de voortgang bijhouden en commentaren plaatsen."
+    )
+    tryCatch(
+      planner_task_post_message(task, message = msg, account = account),
+      error = function(e) warning("Could not post task chat message: ", e$message, call. = FALSE)
+    )
+  }
 }
 
 #' @rdname planner
@@ -700,7 +715,6 @@ planner_task_search <- function(search_term = ".*",
 }
 
 #' @rdname planner
-#' @param task exact task ID or title, will be searched with [`%like%`][certetoolbox::like]
 #' @details [planner_task_find()] searches task title or ID, and returns an [`ms_plan_task`][Microsoft365R::ms_plan_task] object. It is used internally b a lot of `planner_*` functions, very fast, and does not support interactive use.
 #' @importFrom Microsoft365R ms_plan_task
 #' @export
@@ -983,6 +997,14 @@ planner_user_property <- function(user,
   users
 }
 
+planner_is_member <- function(user,
+                              team_name = read_secret("team.name"),
+                              account = connect_planner()) {
+  user <- user[!user %in% c("", NA)]
+  coerced <- planner_user_property(user = user, team_name = team_name, account = account)
+  identical(length(coerced), length(user))
+}
+
 #' @rdname planner
 #' @details [planner_highest_project_id()] retrieves the currently highest project ID from the dummy project.
 #' @export
@@ -1127,4 +1149,109 @@ generate_guids <- function(length) {
            substr(out, 16, 18), "-",
            substr(out, 19, 30))
   })
+}
+
+#' @rdname planner
+#' @param message character string containing the chat message. Use `@Name` to mention
+#'   plan members, where `Name` is matched against known members via [planner_user_property()].
+#' @details [planner_task_post_message()] posts a message to the Task Chat of a
+#'   Planner task (beta Graph API). Any `@FirstName LastName` pattern in `message`
+#'   is resolved to a user mention. Names are matched using [planner_user_property()].
+#'   Unresolved names are kept as plain text with a warning.
+#' @importFrom httr POST add_headers stop_for_status
+#' @importFrom jsonlite toJSON
+#' @export
+planner_task_post_message <- function(task,
+                                      message,
+                                      account = connect_planner()) {
+  task <- planner_task_find(task, account = account)
+  task_id <- get_azure_property(task, "id")
+  task_title <- get_azure_property(task, "title")
+  
+  # find all @mentions in the message text
+  nm <- "[A-Z\u00C0-\u00D6\u00D8-\u00DE][a-z\u00E0-\u00F6\u00F8-\u00FF]+"
+  tv <- paste0(
+    "(?:van der|van de|van het|van den|in het|",
+    "van|den|der|de|het|ten|ter|te|op de|op het|uit het)"
+  )
+  mention_pattern <- paste0(
+    "@", nm,              # first name
+    "(?:", " ", tv, ")?", # optional tussenvoegsel
+    " ", nm,              # surname
+    "(?:",                # optional double surname
+    " - ",
+    "(?:", tv, " )?",   # optional second tussenvoegsel
+    nm,
+    ")?"
+  )
+  mention_matches <- gregexpr(mention_pattern, message, perl = TRUE)
+  mention_names <- regmatches(message, mention_matches)[[1]]
+  
+  mentions_list <- list()
+  html_content <- message
+  
+  if (length(mention_names) > 0) {
+    position <- 0L
+    for (raw_name in mention_names) {
+      clean_name <- trimws(sub("^@", "", raw_name))
+      # resolve to user ID via existing helper
+      user_id <- tryCatch(
+        planner_user_property(clean_name, account = account, property = "id"),
+        error = function(e) character(0)
+      )
+      if (length(user_id) == 0 || all(is.na(user_id))) {
+        warning("Could not resolve mention '", raw_name, "' to a plan member, ",
+                "keeping as plain text.",
+                call. = FALSE)
+        next
+      }
+      user_id <- user_id[1]
+      # also retrieve display name for the visible span text
+      display_name <- tryCatch(
+        planner_user_property(clean_name, account = account, property = "name"),
+        error = function(e) clean_name
+      )
+      if (length(display_name) == 0) display_name <- clean_name
+      display_name <- display_name[1]
+      
+      # build the mention span
+      mention_span <- paste0(
+        '<span itemid="', position,
+        '" itemtype="https://schema.skype.com/Mention/Person">',
+        "</span>"
+      )
+      # replace the first occurrence of the raw @Name in the HTML content
+      html_content <- sub(raw_name, mention_span, html_content, fixed = TRUE)
+      
+      mentions_list <- c(mentions_list, list(list(
+        mentioned = user_id,
+        mentionType = "user",
+        position = position
+      )))
+      position <- position + 1L
+    }
+  }
+  
+  html_content <- paste0("<div>", html_content, "</div>")
+  
+  body <- list(content = html_content)
+  if (length(mentions_list) > 0) {
+    body$mentions <- mentions_list
+  }
+  
+  body_json <- toJSON(body, auto_unbox = TRUE, null = "null", pretty = TRUE)
+  
+  response <- POST(
+    url = paste0("https://graph.microsoft.com/beta/planner/tasks/", task_id, "/messages"),
+    encode = "raw",
+    config = add_headers(
+      Authorization = paste(account$token$credentials$token_type,
+                            account$token$credentials$access_token),
+      `Content-type` = "application/json"
+    ),
+    body = body_json
+  )
+  stop_for_status(response, task = paste("post message to task", task_title))
+  
+  invisible(response)
 }

@@ -54,6 +54,7 @@ planner_create_projecttask(
   project_number,
   title,
   bucket_name = read_secret("planner.default.bucket.projecttask"),
+  account = connect_planner(),
   ...
 )
 

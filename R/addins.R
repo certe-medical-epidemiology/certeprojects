@@ -97,6 +97,23 @@ positron_project_consult_add <- function() {
 addin1_projects_new <- function() {
   project_consult_add()
 }
+addin1b_projects_new <- function() {
+  project <- project_get_current_id(ask = TRUE)
+  if (is.null(project) || isFALSE(project) || is.na(project)) {
+    return(invisible())
+  }
+  if (identical(Sys.getenv("RSTUDIO"), "1")) {
+    x <- rstudioapi::showPrompt(title = "Titel",
+                                message = paste0("Titel voor taak bij project ", project, ":"))
+  } else {
+    x <- readline(paste0("Titel voor taak bij project ", project, ": "))
+  }
+  if (is.null(x) || isFALSE(x) || is.na(x) || x == "") {
+    return(invisible())
+  }
+  planner_create_projecttask(project_number = project, title = x)
+  message("OK.")
+}
 addin1c_versions <- function() {
   positron_versions()
 }

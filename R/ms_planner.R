@@ -233,16 +233,17 @@ planner_task_create <- function(title,
 planner_create_projecttask <- function(project_number,
                                        title,
                                        bucket_name = read_secret("planner.default.bucket.projecttask"),
+                                       account = connect_planner(),
                                        ...) {
   if (is.numeric(project_number) || !substr(project_number, 1, 1) == "p") {
     project_number <- paste0("p", project_number)
   }
   
-  task <- planner_task_find(paste0(" - ", project_number, "$"))
+  root_task <- planner_task_search(project_number)
 
-  title <- paste0("[", project_number, "] ", title)
+  title <- paste0("<", project_number, "> ", title)
   
-  due <- get_azure_property(task, "dueDateTime")
+  due <- get_azure_property(root_task, "dueDateTime")
   if (!is.na(due)) {
     due <- as.Date(substr(due, 1, 10))
     if (due < Sys.Date()) {
@@ -254,15 +255,15 @@ planner_create_projecttask <- function(project_number,
   
   planner_task_create(title = title,
                       startdate = Sys.Date(),
-                      description = paste0("Project: ", task$properties$title),
+                      description = paste0("Taak bij project: ", root_task$properties$title),
                       duedate = due,
-                      assigned = names(get_azure_property(task, "assignments")),
+                      assigned = names(get_azure_property(root_task, "assignments")),
                       bucket_name = bucket_name,
                       categories = "Projecttaak",
                       project_number = NULL,
                       consult_number = NULL,
+                      account = account,
                       ...)
-  
 }
 
 #' @rdname planner
@@ -321,7 +322,7 @@ planner_task_update <- function(task,
                                 requested_by = NULL,
                                 preview_type = NULL,
                                 order_hint = NULL,
-                                # TODO comments = NULL, # these only work with Group.ReadWrite.All
+                                # comments = NULL,
                                 account = connect_planner()) {
   # does not work with Microsoft365R yet, so we do it manually
   

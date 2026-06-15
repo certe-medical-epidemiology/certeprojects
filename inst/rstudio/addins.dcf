@@ -2,6 +2,10 @@ Name: ⭐ Nieuw project/consult...
 Binding: addin1_projects_new
 Interactive: true
 
+Name: ⭐ Nieuwe projecttaak...
+Binding: addin1b_projects_new
+Interactive: true
+
 Name: 🗄️ Versievergelijking...
 Binding: addin1c_versions
 Interactive: true

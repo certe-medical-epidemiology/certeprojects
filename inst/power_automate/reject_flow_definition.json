@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": { "defaultValue": {}, "type": "Object" },
+    "$authentication": { "defaultValue": {}, "type": "SecureObject" }
+  },
+
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {}
+      }
+    }
+  },
+
+  "actions": {
+
+    "Response_rejected": {
+      "type": "Response",
+      "kind": "Http",
+      "inputs": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "CARD-UPDATE-IN-BODY": "true"
+        },
+        "body": {
+          "@type": "MessageCard",
+          "@context": "http://schema.org/extensions",
+          "themeColor": "C50F1F",
+          "title": "\u2717 Afgewezen",
+          "text": "Het bestand **@{coalesce(triggerBody()?['file_name'], triggerOutputs()?['queries']?['file_name'])}** is afgewezen. De aanvrager kan dit terugvinden in de SharePoint-map."
+        }
+      }
+    }
+
+  }
+}

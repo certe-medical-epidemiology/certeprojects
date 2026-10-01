@@ -435,7 +435,7 @@ project_consult_add <- function(planner = connect_planner(),
           msg <- msgxtractr::read_msg(input$file_upload$datapath)
           
           subject <- msg$subject
-          from <- msg$sender$sender_name
+          from <- msg$sender$sender_name[1]
           body <- msg$body$text
           body <- paste0(body[nchar(body) != 2], collapse = " ")
           body <- gsub("\r\n", "\n", body)

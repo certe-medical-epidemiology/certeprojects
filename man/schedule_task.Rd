@@ -47,7 +47,7 @@ schedule_task(
 
 \item{account}{Teams account}
 
-\item{check_mail}{a \link{logical} to indicate whether a project was sent by a previous user, by running \code{\link[certemail:mail]{certemail::mail_is_sent()}}}
+\item{check_mail}{a \link{logical} to indicate whether a project was sent by a previous user, by running \code{\link[certemail:mail_is_sent]{certemail::mail_is_sent()}}}
 
 \item{check_log}{a \link{logical} to indicate whether a log file exist for the project from a previous user}
 
@@ -60,7 +60,7 @@ schedule_task(
 \item{log_folder}{path that contains log files}
 }
 \description{
-This will \link[=source]{source} a project R file, or \link[=render]{render} any other project file, if time and user requirements are met using a CRON-like syntax (\url{https://cron.help}).
+This will \link{source} a project R file, or \link{render} any other project file, if time and user requirements are met using a CRON-like syntax (\url{https://cron.help}).
 }
 \details{
 For Windows, the Task Scheduler must be set up to use this function. Most convenient is to:

@@ -13,6 +13,6 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{pins}{\code{\link[pins]{pin_list}}, \code{\link[pins]{pin_meta}}, \code{\link[pins]{pin_versions}}}
+  \item{pins}{\code{\link[pins:pin_list]{pin_list()}}, \code{\link[pins:pin_meta]{pin_meta()}}, \code{\link[pins:pin_versions]{pin_versions()}}}
 }}
 

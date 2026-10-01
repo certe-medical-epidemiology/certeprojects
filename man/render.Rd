@@ -43,7 +43,7 @@ On Github Actions, it will always be \code{quiet = FALSE}.}
 
 \item{full_sharepoint_path}{Full path of the remote file, consisting of the project folder and the file name, such as \code{"Project - p123/my_file.R"}.}
 
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:get_team]{Microsoft365R::get_team()}}.}
 
 \item{output_folder}{any output folder of the resulting output file, defaults to \code{\link[=get_output_folder]{get_output_folder()}}. Can also be \code{"sharepoint"}, which sets \code{upload = TRUE}.}
 

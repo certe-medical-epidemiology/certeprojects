@@ -56,7 +56,7 @@ you expect. You can find the hash of an existing pin by looking for
 
 \item{projects_channel_id}{Teams channel ID of the projects}
 
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:get_team]{Microsoft365R::get_team()}}.}
 
 \item{delete_by_item}{Whether to handle folder deletions on an item-by-item
 basis, rather than deleting the entire folder at once. You may need to set

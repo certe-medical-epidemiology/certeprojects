@@ -172,7 +172,7 @@ planner_highest_consult_id(
 planner_task_post_message(task, message, account = connect_planner())
 }
 \arguments{
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_planner]{connect_planner()}} or via \code{\link[AzureGraph:create_graph_login]{AzureGraph::create_graph_login()}}\verb{$get_group(name)$get_plan(plan_title)}.}
 
 \item{bucket_name}{name of the bucket}
 
@@ -274,7 +274,7 @@ Use \code{\link[=planner_create_project_from_path]{planner_create_project_from_p
 
 \code{\link[=planner_highest_project_id]{planner_highest_project_id()}} retrieves the currently highest project ID from the dummy project. \code{\link[=planner_highest_consult_id]{planner_highest_consult_id()}} does this for consults.
 
-Using \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[tibble:as_tibble]{tibble::as_tibble()}} on an \code{ms_object}, such as \code{ms_plan_task}, will return the properties and details of the object as a \link{data.frame}. For transforming many \code{ms_object}s to a data.frame, use \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[tibble:as_tibble]{tibble::as_tibble()}} in \code{\link[=lapply]{lapply()}} and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
+Using \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[tibble:as_tibble]{as_tibble()}} on an \code{ms_object}, such as \code{ms_plan_task}, will return the properties and details of the object as a \link{data.frame}. For transforming many \code{ms_object}s to a data.frame, use \code{\link[=as.data.frame]{as.data.frame()}} or \code{\link[tibble:as_tibble]{as_tibble()}} in \code{\link[=lapply]{lapply()}} and bind the list of objects together. For example, this retrieves a tibble with the properties and details of all tasks:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{library(dplyr)
 planner_tasks_list() |> 

@@ -34,11 +34,11 @@ connect_teams(team_name = read_secret("team.name"), overwrite = FALSE, ...)
 \arguments{
 \item{scope}{any (combination) of "outlook", "teams", "planner", "tasks" (which is "planner" without group rights), or "sharepoint". Can also be a manual vector of Microsoft Permissions, such as \verb{"User.Read}.}
 
-\item{tenant}{the tenant to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
+\item{tenant}{the tenant to use, passed on to \code{\link[AzureGraph:create_graph_login]{AzureGraph::create_graph_login()}}}
 
-\item{app_id}{the Azure app id to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
+\item{app_id}{the Azure app id to use, passed on to \code{\link[AzureGraph:create_graph_login]{AzureGraph::create_graph_login()}}}
 
-\item{auth_type}{the authentication method to use, passed on to \code{\link[AzureGraph:graph_login]{AzureGraph::create_graph_login()}}}
+\item{auth_type}{the authentication method to use, passed on to \code{\link[AzureGraph:create_graph_login]{AzureGraph::create_graph_login()}}}
 
 \item{R_AZURE_DATA_DIR}{the (environment value of the) path to the token file(s), as explained in \code{\link[AzureAuth:AzureR_dir]{AzureAuth::AzureR_dir()}}}
 

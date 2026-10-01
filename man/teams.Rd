@@ -167,7 +167,7 @@ teams_get_link(
 
 \item{overwrite}{a \link{logical} to overwrite an existing connection, useful for switching accounts}
 
-\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:client]{Microsoft365R::get_team()}}.}
+\item{account}{a Microsoft 365 account to use for looking up properties. This has to be an object as returned by \code{\link[=connect_teams]{connect_teams()}} or \code{\link[Microsoft365R:get_team]{Microsoft365R::get_team()}}.}
 
 \item{task}{any task title, task ID, or \code{\link[Microsoft365R:ms_plan_task]{ms_plan_task}} object (e.g. from \code{\link[=planner_task_find]{planner_task_find()}})}
 

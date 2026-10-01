@@ -84,132 +84,160 @@ export(upload_to_sharepoint)
 export(validate_file)
 export(validate_request_file)
 importFrom(AzureAuth,AzureR_dir)
-importFrom(AzureGraph,call_graph_endpoint)
-importFrom(AzureGraph,create_graph_login)
-importFrom(AzureGraph,get_graph_login)
-importFrom(AzureGraph,list_graph_logins)
-importFrom(Microsoft365R,get_team)
-importFrom(Microsoft365R,ms_channel)
-importFrom(Microsoft365R,ms_drive)
-importFrom(Microsoft365R,ms_drive_item)
-importFrom(Microsoft365R,ms_outlook)
-importFrom(Microsoft365R,ms_plan)
-importFrom(Microsoft365R,ms_plan_task)
-importFrom(Microsoft365R,ms_team)
+importFrom(AzureGraph,
+  call_graph_endpoint,
+  create_graph_login,
+  get_graph_login,
+  list_graph_logins
+)
+importFrom(Microsoft365R,
+  get_team,
+  ms_channel,
+  ms_drive,
+  ms_drive_item,
+  ms_outlook,
+  ms_plan,
+  ms_plan_task,
+  ms_team
+)
 importFrom(callr,r_bg)
-importFrom(certestyle,colourpicker)
-importFrom(certestyle,font_blue)
-importFrom(certestyle,font_bold)
-importFrom(certestyle,format2)
-importFrom(certestyle,plain_html_table)
-importFrom(certestyle,rmarkdown_author)
-importFrom(certestyle,rmarkdown_date)
-importFrom(certestyle,rmarkdown_logo)
-importFrom(certestyle,rmarkdown_template)
-importFrom(dplyr,arrange)
-importFrom(dplyr,as_tibble)
-importFrom(dplyr,bind_rows)
-importFrom(dplyr,case_when)
-importFrom(dplyr,desc)
-importFrom(dplyr,filter)
-importFrom(dplyr,if_else)
-importFrom(dplyr,mutate)
-importFrom(dplyr,pull)
-importFrom(dplyr,select)
-importFrom(httr,BROWSE)
-importFrom(httr,GET)
-importFrom(httr,PATCH)
-importFrom(httr,POST)
-importFrom(httr,add_headers)
-importFrom(httr,content)
-importFrom(httr,stop_for_status)
-importFrom(jsonlite,toJSON)
-importFrom(jsonlite,write_json)
+importFrom(certestyle,
+  colourpicker,
+  font_blue,
+  font_bold,
+  format2,
+  plain_html_table,
+  rmarkdown_author,
+  rmarkdown_date,
+  rmarkdown_logo,
+  rmarkdown_template
+)
+importFrom(dplyr,
+  arrange,
+  as_tibble,
+  bind_rows,
+  case_when,
+  desc,
+  filter,
+  if_else,
+  mutate,
+  pull,
+  select
+)
+importFrom(httr,
+  BROWSE,
+  GET,
+  PATCH,
+  POST,
+  add_headers,
+  content,
+  stop_for_status
+)
+importFrom(jsonlite,
+  toJSON,
+  write_json
+)
 importFrom(knitr,current_input)
-importFrom(lubridate,hour)
-importFrom(lubridate,minute)
-importFrom(lubridate,minutes)
-importFrom(lubridate,round_date)
-importFrom(miniUI,miniContentPanel)
-importFrom(miniUI,miniPage)
-importFrom(pins,board_ms365)
-importFrom(pins,pin_delete)
-importFrom(pins,pin_list)
-importFrom(pins,pin_meta)
-importFrom(pins,pin_read)
-importFrom(pins,pin_version_delete)
-importFrom(pins,pin_versions)
-importFrom(pins,pin_write)
-importFrom(quarto,quarto_path)
-importFrom(quarto,quarto_render)
+importFrom(lubridate,
+  hour,
+  minute,
+  minutes,
+  round_date
+)
+importFrom(miniUI,
+  miniContentPanel,
+  miniPage
+)
+importFrom(pins,
+  board_ms365,
+  pin_delete,
+  pin_list,
+  pin_meta,
+  pin_read,
+  pin_version_delete,
+  pin_versions,
+  pin_write
+)
+importFrom(quarto,
+  quarto_path,
+  quarto_render
+)
 importFrom(rmarkdown,render)
-importFrom(rstudioapi,documentSave)
-importFrom(rstudioapi,filesPaneNavigate)
-importFrom(rstudioapi,getSourceEditorContext)
-importFrom(rstudioapi,initializeProject)
-importFrom(rstudioapi,isAvailable)
-importFrom(rstudioapi,navigateToFile)
-importFrom(rstudioapi,openProject)
-importFrom(rstudioapi,showDialog)
-importFrom(rstudioapi,showPrompt)
-importFrom(rstudioapi,showQuestion)
-importFrom(shiny,HTML)
-importFrom(shiny,a)
-importFrom(shiny,actionButton)
-importFrom(shiny,br)
-importFrom(shiny,checkboxInput)
-importFrom(shiny,column)
-importFrom(shiny,dateInput)
-importFrom(shiny,dialogViewer)
-importFrom(shiny,div)
-importFrom(shiny,downloadButton)
-importFrom(shiny,downloadHandler)
-importFrom(shiny,fileInput)
-importFrom(shiny,fluidPage)
-importFrom(shiny,fluidRow)
-importFrom(shiny,h4)
-importFrom(shiny,h5)
-importFrom(shiny,hr)
-importFrom(shiny,icon)
-importFrom(shiny,img)
-importFrom(shiny,incProgress)
-importFrom(shiny,mainPanel)
-importFrom(shiny,observe)
-importFrom(shiny,observeEvent)
-importFrom(shiny,p)
-importFrom(shiny,paneViewer)
-importFrom(shiny,radioButtons)
-importFrom(shiny,reactive)
-importFrom(shiny,reactiveValuesToList)
-importFrom(shiny,renderUI)
-importFrom(shiny,req)
-importFrom(shiny,runApp)
-importFrom(shiny,runGadget)
-importFrom(shiny,selectInput)
-importFrom(shiny,selectizeInput)
-importFrom(shiny,sidebarLayout)
-importFrom(shiny,sidebarPanel)
-importFrom(shiny,stopApp)
-importFrom(shiny,strong)
-importFrom(shiny,tagList)
-importFrom(shiny,tags)
-importFrom(shiny,textAreaInput)
-importFrom(shiny,textInput)
-importFrom(shiny,uiOutput)
-importFrom(shiny,updateCheckboxInput)
-importFrom(shiny,updateRadioButtons)
-importFrom(shiny,updateSelectInput)
-importFrom(shiny,updateSelectizeInput)
-importFrom(shiny,updateTextAreaInput)
-importFrom(shiny,updateTextInput)
-importFrom(shiny,withProgress)
-importFrom(shinyWidgets,awesomeCheckbox)
-importFrom(shinyWidgets,awesomeRadio)
-importFrom(shinyWidgets,searchInput)
-importFrom(shinyWidgets,updateAwesomeRadio)
-importFrom(shinyjs,disable)
-importFrom(shinyjs,enable)
-importFrom(shinyjs,hide)
-importFrom(shinyjs,show)
-importFrom(shinyjs,useShinyjs)
+importFrom(rstudioapi,
+  documentSave,
+  filesPaneNavigate,
+  getSourceEditorContext,
+  initializeProject,
+  isAvailable,
+  navigateToFile,
+  openProject,
+  showDialog,
+  showPrompt,
+  showQuestion
+)
+importFrom(shiny,
+  HTML,
+  a,
+  actionButton,
+  br,
+  checkboxInput,
+  column,
+  dateInput,
+  dialogViewer,
+  div,
+  downloadButton,
+  downloadHandler,
+  fileInput,
+  fluidPage,
+  fluidRow,
+  h4,
+  h5,
+  hr,
+  icon,
+  img,
+  incProgress,
+  mainPanel,
+  observe,
+  observeEvent,
+  p,
+  paneViewer,
+  radioButtons,
+  reactive,
+  reactiveValuesToList,
+  renderUI,
+  req,
+  runApp,
+  runGadget,
+  selectInput,
+  selectizeInput,
+  sidebarLayout,
+  sidebarPanel,
+  stopApp,
+  strong,
+  tagList,
+  tags,
+  textAreaInput,
+  textInput,
+  uiOutput,
+  updateCheckboxInput,
+  updateRadioButtons,
+  updateSelectInput,
+  updateSelectizeInput,
+  updateTextAreaInput,
+  updateTextInput,
+  withProgress
+)
+importFrom(shinyWidgets,
+  awesomeCheckbox,
+  awesomeRadio,
+  searchInput,
+  updateAwesomeRadio
+)
+importFrom(shinyjs,
+  disable,
+  enable,
+  hide,
+  show,
+  useShinyjs
+)
 importFrom(yaml,read_yaml)
